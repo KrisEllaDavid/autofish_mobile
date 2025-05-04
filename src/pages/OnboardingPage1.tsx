@@ -19,7 +19,7 @@ const OnboardingPage1: React.FC<OnboardingPage1Props> = ({
 }) => (
   <SwipeableContainer onSwipeLeft={onNext} onSwipeRight={onPrevious}>
     <style>{animations.fadeInOnboard}</style>
-    <div style={{ height: 100, flexShrink: 0 }} />
+    <div style={{ height: 20, flexShrink: 0 }} />
 
     <ImageWithLogo
       imageSrc="/icons/onboarding_image_1.png"
@@ -29,7 +29,7 @@ const OnboardingPage1: React.FC<OnboardingPage1Props> = ({
     />
 
     <TextContent
-      title="Bienvenue sur Auto-Fish Store !"
+      title="Bienvenue sur Autofish Store !"
       description="Découvrez la fraîcheur de la mer à votre table avec Autofish Store. Trouvez une large sélection de poissons de qualité supérieure, directement des meilleurs pêcheurs"
     />
 
@@ -42,7 +42,7 @@ const OnboardingPage1: React.FC<OnboardingPage1Props> = ({
         width: "90vw",
         padding: "0 3vw",
         maxWidth: 340,
-        margin: "0 auto calc(18px + 15vw) auto",
+        margin: "0 auto 40vw auto",
         animation: "fadeInOnboard 0.7s 0.2s cubic-bezier(.4,0,.2,1) both",
         boxSizing: "border-box",
       }}
