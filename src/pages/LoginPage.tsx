@@ -13,7 +13,7 @@ const passwordIconBlue = "/icons/Password_blue.svg";
 const getInputStyle = (hasContent: boolean): React.CSSProperties => ({
   width: "100%",
   padding: "16px 48px 16px 55px",
-  borderRadius: 24,
+  borderRadius: 15,
   border: hasContent ? "1.2px solid #222" : "1.2px solid #e0e0e0",
   background: "#fafbfc",
   fontSize: 16,
@@ -147,7 +147,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
           </span>
           <input
             type={showPassword ? "text" : "password"}
-            placeholder="Entrez votre mdp"
+            placeholder="Entrez votre mot de passe"
             style={getInputStyle(!!password)}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -183,7 +183,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
             color: "#fff",
             fontWeight: 700,
             fontSize: 18,
-            borderRadius: 16,
+            borderRadius: 15,
             border: "none",
             padding: "16px 0",
             marginBottom: 18,

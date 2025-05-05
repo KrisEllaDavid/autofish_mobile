@@ -14,7 +14,7 @@ const getInputStyle = (
 ): React.CSSProperties => ({
   width: "100%",
   padding: "16px 48px 16px 55px",
-  borderRadius: 24,
+  borderRadius: 15,
   border: `1.2px solid ${borderColor || (hasContent ? "#222" : "#e0e0e0")}`,
   background: "#fafbfc",
   fontSize: 16,
@@ -217,14 +217,32 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             color: "#fff",
             fontWeight: 700,
             fontSize: 18,
-            borderRadius: 16,
+            borderRadius: 15,
             border: "none",
             padding: "16px 0",
             marginBottom: 18,
             cursor: "pointer",
           }}
         >
-          Valider
+          Réinitialiser
+        </button>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            width: "100%",
+            background: "#fff",
+            color: "#222",
+            fontWeight: 700,
+            fontSize: 18,
+            borderRadius: 15,
+            border: "1.2px solid #e0e0e0",
+            padding: "12px 0",
+            marginBottom: 18,
+            cursor: "pointer",
+          }}
+        >
+          Retour à la connexion
         </button>
       </form>
     </div>

@@ -15,11 +15,12 @@ const emailIconBlue = "/icons/Email_blue.svg";
 const passwordIconBlue = "/icons/Password_blue.svg";
 const checkIcon = "/icons/Check.svg";
 const checkboxIcon = "/icons/Checkbox.svg";
+const bravoCheckIcon = "/icons/Check.svg";
 
 const getInputStyle = (hasContent: boolean): React.CSSProperties => ({
   width: "100%",
   padding: "16px 48px 16px 55px",
-  borderRadius: 24,
+  borderRadius: 15,
   border: hasContent ? "1.2px solid #222" : "1.2px solid #e0e0e0",
   background: "#fafbfc",
   fontSize: 16,
@@ -68,8 +69,14 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const isFormValid = name && email && password && acceptTerms;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isFormValid) setShowModal(true);
+  };
 
   return (
     <div
@@ -148,6 +155,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         </div>
       </div>
       <form
+        onSubmit={handleSubmit}
         style={{
           width: "90vw",
           maxWidth: 340,
@@ -267,7 +275,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             color: "#222",
             fontWeight: 700,
             fontSize: 18,
-            borderRadius: 24,
+            borderRadius: 15,
             border: "1.2px solid #e0e0e0",
             padding: "12px 0",
             marginBottom: 18,
@@ -294,7 +302,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             color: "#fff",
             fontWeight: 700,
             fontSize: 18,
-            borderRadius: 24,
+            borderRadius: 15,
             border: "none",
             padding: "16px 0",
             marginBottom: 18,
@@ -319,6 +327,94 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           Connexion
         </span>
       </div>
+      {showModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(180,180,180,0.35)",
+            backdropFilter: "blur(6px)",
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 32,
+              boxShadow: "0 4px 32px rgba(0,0,0,0.10)",
+              padding: "40px 24px 32px 24px",
+              minWidth: 300,
+              maxWidth: 340,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                width: 90,
+                height: 90,
+                borderRadius: "50%",
+                background: "rgba(0,166,192,0.07)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginBottom: 24,
+              }}
+            >
+              <img
+                src={bravoCheckIcon}
+                alt="check"
+                style={{ width: 54, height: 54, color: "#009CB7" }}
+              />
+            </div>
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: 22,
+                color: "#222",
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Bravo !
+            </div>
+            <div
+              style={{
+                fontSize: 16,
+                color: "#b0b0b0",
+                marginBottom: 28,
+                textAlign: "center",
+              }}
+            >
+              Votre compte a bien été enregistré
+            </div>
+            <button
+              style={{
+                width: "100%",
+                background: "#009CB7",
+                color: "#fff",
+                fontWeight: 700,
+                fontSize: 17,
+                borderRadius: 15,
+                border: "none",
+                padding: "14px 0",
+                marginBottom: 0,
+                cursor: "pointer",
+              }}
+              onClick={() => setShowModal(false)}
+            >
+              Vers choix du profil
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
