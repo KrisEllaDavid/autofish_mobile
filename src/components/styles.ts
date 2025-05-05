@@ -22,6 +22,7 @@ export const commonStyles = {
     borderRadius: "10% 10% 0 0",
     overflow: "hidden",
     margin: "100rem 0 0auto",
+    marginTop: "3vh",
   },
   image: {
     width: "100%",
