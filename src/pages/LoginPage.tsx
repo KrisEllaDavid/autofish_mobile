@@ -70,144 +70,164 @@ const LoginPage: React.FC<LoginPageProps> = ({
   const [password, setPassword] = useState("");
 
   return (
-    <div
-      style={{ ...commonStyles.pageContainer, justifyContent: "flex-start" }}
-    >
+    <>
       <style>{`
+        .fade-in-page {
+          opacity: 0;
+          animation: fadeInPage 0.5s ease-in forwards;
+        }
+        @keyframes fadeInPage {
+          to { opacity: 1; }
+        }
         input::placeholder {
           color: #222;
           opacity: 0.3;
         }
       `}</style>
-      <NavBar title="Login" />
-      <div style={{ height: 16 }} />
-      <img
-        src={autofishBlueLogo}
-        alt="Autofish Logo"
-        style={{ width: 90, height: 90, margin: "18px 0 8px 0" }}
-      />
       <div
+        className="fade-in-page"
         style={{
-          fontSize: 26,
-          fontWeight: 700,
-          color: "#009CB7",
-          marginBottom: 10,
-          fontFamily: "Arial Rounded MT Bold",
-        }}
-      >
-        Autofish Store
-      </div>
-      <div
-        style={{
-          fontSize: 16,
-          color: "#222",
-          marginBottom: 32,
-          textAlign: "center",
-          maxWidth: 320,
-          fontFamily: "Arial, sans-serif",
-        }}
-      >
-        Bienvenue ! Entrez vos identifiants
-        <br />
-        pour vous connecter
-      </div>
-      <form
-        style={{
-          width: "90vw",
-          maxWidth: 340,
+          minHeight: "100vh",
+          background: "#fff",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          paddingTop: 64,
         }}
       >
-        <div style={inputContainerStyle}>
-          <span style={iconStyle}>
-            <img
-              src={email ? emailIconBlue : emailIcon}
-              alt="email"
-              style={{ width: 22, height: 22, opacity: email ? 1 : 0.6 }}
-            />
-          </span>
-          <input
-            type="email"
-            placeholder="Entrez votre email"
-            style={getInputStyle(!!email)}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
+        <NavBar title="Login" />
+        <div style={{ height: 16 }} />
+        <img
+          src={autofishBlueLogo}
+          alt="Autofish Logo"
+          style={{ width: 90, height: 90, margin: "18px 0 8px 0" }}
+        />
+        <div
+          style={{
+            fontSize: 26,
+            fontWeight: 700,
+            color: "#009CB7",
+            marginBottom: 10,
+            fontFamily: "Arial Rounded MT Bold",
+          }}
+        >
+          Autofish Store
         </div>
-        <div style={inputContainerStyle}>
-          <span style={iconStyle}>
-            <img
-              src={password ? passwordIconBlue : passwordIcon}
-              alt="password"
-              style={{ width: 22, height: 22, opacity: password ? 1 : 0.6 }}
-            />
-          </span>
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Entrez votre mot de passe"
-            style={getInputStyle(!!password)}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
-          <span style={eyeIconStyle} onClick={() => setShowPassword((s) => !s)}>
-            <img
-              src={showPassword ? eyeOpenIcon : eyeIcon}
-              alt="toggle password visibility"
-              style={{ width: 22, height: 22, opacity: 0.6 }}
-            />
-          </span>
+        <div
+          style={{
+            fontSize: 16,
+            color: "#222",
+            marginBottom: 32,
+            textAlign: "center",
+            maxWidth: 320,
+            fontFamily: "Arial, sans-serif",
+          }}
+        >
+          Bienvenue ! Entrez vos identifiants
+          <br />
+          pour vous connecter
         </div>
-        <div style={{ width: "100%", textAlign: "right", marginBottom: 18 }}>
+        <form
+          style={{
+            width: "90vw",
+            maxWidth: 340,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <div style={inputContainerStyle}>
+            <span style={iconStyle}>
+              <img
+                src={email ? emailIconBlue : emailIcon}
+                alt="email"
+                style={{ width: 22, height: 22, opacity: email ? 1 : 0.6 }}
+              />
+            </span>
+            <input
+              type="email"
+              placeholder="Entrez votre email"
+              style={getInputStyle(!!email)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+          </div>
+          <div style={inputContainerStyle}>
+            <span style={iconStyle}>
+              <img
+                src={password ? passwordIconBlue : passwordIcon}
+                alt="password"
+                style={{ width: 22, height: 22, opacity: password ? 1 : 0.6 }}
+              />
+            </span>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Entrez votre mot de passe"
+              style={getInputStyle(!!password)}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+            />
+            <span
+              style={eyeIconStyle}
+              onClick={() => setShowPassword((s) => !s)}
+            >
+              <img
+                src={showPassword ? eyeOpenIcon : eyeIcon}
+                alt="toggle password visibility"
+                style={{ width: 22, height: 22, opacity: 0.6 }}
+              />
+            </span>
+          </div>
+          <div style={{ width: "100%", textAlign: "right", marginBottom: 18 }}>
+            <span
+              onClick={onForgotPassword}
+              style={{
+                color: "#009CB7",
+                fontWeight: 500,
+                fontSize: 15,
+                textDecoration: "none",
+                cursor: "pointer",
+              }}
+            >
+              Mot de passe oublié?
+            </span>
+          </div>
+          <button
+            type="submit"
+            style={{
+              width: "100%",
+              background: "#009CB7",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 18,
+              borderRadius: 15,
+              border: "none",
+              padding: "16px 0",
+              marginBottom: 18,
+              cursor: "pointer",
+            }}
+          >
+            Connexion
+          </button>
+        </form>
+        <div style={{ marginTop: 8, fontSize: 15, color: "#b0b0b0" }}>
+          Pas de compte ?{" "}
           <span
-            onClick={onForgotPassword}
+            onClick={onSignup}
             style={{
               color: "#009CB7",
-              fontWeight: 500,
-              fontSize: 15,
+              fontWeight: 600,
               textDecoration: "none",
               cursor: "pointer",
             }}
           >
-            Mot de passe oublié?
+            S'inscrire
           </span>
         </div>
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            background: "#009CB7",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 18,
-            borderRadius: 15,
-            border: "none",
-            padding: "16px 0",
-            marginBottom: 18,
-            cursor: "pointer",
-          }}
-        >
-          Connexion
-        </button>
-      </form>
-      <div style={{ marginTop: 8, fontSize: 15, color: "#b0b0b0" }}>
-        Pas de compte ?{" "}
-        <span
-          onClick={onSignup}
-          style={{
-            color: "#009CB7",
-            fontWeight: 600,
-            textDecoration: "none",
-            cursor: "pointer",
-          }}
-        >
-          S'inscrire
-        </span>
       </div>
-    </div>
+    </>
   );
 };
 

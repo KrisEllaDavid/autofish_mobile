@@ -12,11 +12,12 @@ const navBarStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  borderBottom: "1px solidrgb(255, 255, 255)",
+  borderBottom: "1px solid rgb(255, 255, 255)",
   background: "#fff",
-  position: "sticky",
+  position: "fixed",
   top: 0,
-  zIndex: 10,
+  left: 0,
+  zIndex: 100,
 };
 
 const titleStyle: React.CSSProperties = {

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { commonStyles } from "../components/styles";
 import NavBar from "../components/NavBar";
 
 const autofishBlueLogo = "/icons/autofish_blue_logo.svg";
@@ -84,168 +83,189 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     : undefined;
 
   return (
-    <div
-      style={{ ...commonStyles.pageContainer, justifyContent: "flex-start" }}
-    >
+    <>
       <style>{`
+        .fade-in-page {
+          opacity: 0;
+          animation: fadeInPage 0.5s ease-in forwards;
+        }
+        @keyframes fadeInPage {
+          to { opacity: 1; }
+        }
         input::placeholder {
           color: #222;
           opacity: 0.3;
         }
       `}</style>
-      <NavBar title="Mot de passe oublié" onBack={onBack} />
-      <div style={{ height: 16 }} />
-      <img
-        src={autofishBlueLogo}
-        alt="Autofish Logo"
-        style={{ width: 90, height: 90, margin: "18px 0 8px 0" }}
-      />
       <div
+        className="fade-in-page"
         style={{
-          fontSize: 26,
-          fontWeight: 700,
-          color: "#009CB7",
-          marginBottom: 10,
-          fontFamily: "Arial Rounded MT Bold",
-        }}
-      >
-        Autofish Store
-      </div>
-      <div
-        style={{
-          fontSize: 16,
-          color: "#222",
-          marginBottom: 32,
-          textAlign: "center",
-          maxWidth: 320,
-          fontFamily: "Arial, sans-serif",
-        }}
-      >
-        Saisissez le code que vous avez reçu par email et entrez votre nouveau
-        mot de passe
-      </div>
-      <form
-        style={{
-          width: "90vw",
-          maxWidth: 340,
+          minHeight: "100vh",
+          background: "#fff",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          paddingTop: 64,
         }}
       >
-        <div style={inputContainerStyle}>
-          <span style={iconStyle}>
-            <img
-              src={code ? lockIconBlue : lockIcon}
-              alt="lock"
-              style={{ width: 22, height: 22, opacity: code ? 1 : 0.6 }}
-            />
-          </span>
-          <input
-            type="text"
-            placeholder="Entrez le code ici"
-            style={getInputStyle(!!code)}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
+        <NavBar title="Réinitialiser le mot de passe" onBack={onBack} />
+        <div style={{ height: 16 }} />
+        <img
+          src={autofishBlueLogo}
+          alt="Autofish Logo"
+          style={{ width: 90, height: 90, margin: "18px 0 8px 0" }}
+        />
+        <div
+          style={{
+            fontSize: 26,
+            fontWeight: 700,
+            color: "#009CB7",
+            marginBottom: 10,
+            fontFamily: "Arial Rounded MT Bold",
+          }}
+        >
+          Autofish Store
         </div>
-        <div style={inputContainerStyle}>
-          <span style={iconStyle}>
-            <img
-              src={newPassword ? lockIconBlue : lockIcon}
-              alt="lock"
-              style={{ width: 22, height: 22, opacity: newPassword ? 1 : 0.6 }}
-            />
-          </span>
-          <input
-            type={showNewPassword ? "text" : "password"}
-            placeholder="Nouveau mot de passe"
-            style={getInputStyle(!!newPassword, passwordBorderColor)}
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-          />
-          <span
-            style={eyeIconStyle}
-            onClick={() => setShowNewPassword((s) => !s)}
-          >
-            <img
-              src={showNewPassword ? eyeOpenIcon : eyeIcon}
-              alt="toggle password visibility"
-              style={{ width: 22, height: 22, opacity: 1 }}
-            />
-          </span>
+        <div
+          style={{
+            fontSize: 16,
+            color: "#222",
+            marginBottom: 32,
+            textAlign: "center",
+            maxWidth: 320,
+            fontFamily: "Arial, sans-serif",
+          }}
+        >
+          Saisissez le code que vous avez reçu par email et entrez votre nouveau
+          mot de passe
         </div>
-        <div style={inputContainerStyle}>
-          <span style={iconStyle}>
-            <img
-              src={confirmPassword ? lockIconBlue : lockIcon}
-              alt="lock"
+        <form
+          style={{
+            width: "90vw",
+            maxWidth: 340,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <div style={inputContainerStyle}>
+            <span style={iconStyle}>
+              <img
+                src={code ? lockIconBlue : lockIcon}
+                alt="lock"
+                style={{ width: 22, height: 22, opacity: code ? 1 : 0.6 }}
+              />
+            </span>
+            <input
+              type="text"
+              placeholder="Entrez le code ici"
+              style={getInputStyle(!!code)}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
+          </div>
+          <div style={inputContainerStyle}>
+            <span style={iconStyle}>
+              <img
+                src={newPassword ? lockIconBlue : lockIcon}
+                alt="lock"
+                style={{
+                  width: 22,
+                  height: 22,
+                  opacity: newPassword ? 1 : 0.6,
+                }}
+              />
+            </span>
+            <input
+              type={showNewPassword ? "text" : "password"}
+              placeholder="Nouveau mot de passe"
+              style={getInputStyle(!!newPassword, passwordBorderColor)}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+            <span
+              style={eyeIconStyle}
+              onClick={() => setShowNewPassword((s) => !s)}
+            >
+              <img
+                src={showNewPassword ? eyeOpenIcon : eyeIcon}
+                alt="toggle password visibility"
+                style={{ width: 22, height: 22, opacity: 1 }}
+              />
+            </span>
+          </div>
+          <div style={inputContainerStyle}>
+            <span style={iconStyle}>
+              <img
+                src={confirmPassword ? lockIconBlue : lockIcon}
+                alt="lock"
+                style={{
+                  width: 22,
+                  height: 22,
+                  opacity: confirmPassword ? 1 : 0.6,
+                }}
+              />
+            </span>
+            <input
+              type={showNewPassword ? "text" : "password"}
+              placeholder="Confirmez le mot de passe"
+              style={getInputStyle(!!confirmPassword, passwordBorderColor)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
+          {message && (
+            <div
               style={{
-                width: 22,
-                height: 22,
-                opacity: confirmPassword ? 1 : 0.6,
+                color: messageColor,
+                fontSize: 14,
+                marginBottom: 12,
+                width: "100%",
+                textAlign: "left",
+                paddingLeft: 8,
               }}
-            />
-          </span>
-          <input
-            type={showNewPassword ? "text" : "password"}
-            placeholder="Confirmez le mot de passe"
-            style={getInputStyle(!!confirmPassword, passwordBorderColor)}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </div>
-        {message && (
-          <div
+            >
+              {message}
+            </div>
+          )}
+          <button
+            type="submit"
             style={{
-              color: messageColor,
-              fontSize: 14,
-              marginBottom: 12,
               width: "100%",
-              textAlign: "left",
-              paddingLeft: 8,
+              background: "#009CB7",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 18,
+              borderRadius: 15,
+              border: "none",
+              padding: "16px 0",
+              marginBottom: 18,
+              cursor: "pointer",
             }}
           >
-            {message}
-          </div>
-        )}
-        <button
-          type="submit"
-          style={{
-            width: "100%",
-            background: "#009CB7",
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 18,
-            borderRadius: 15,
-            border: "none",
-            padding: "16px 0",
-            marginBottom: 18,
-            cursor: "pointer",
-          }}
-        >
-          Réinitialiser
-        </button>
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            width: "100%",
-            background: "#fff",
-            color: "#222",
-            fontWeight: 700,
-            fontSize: 18,
-            borderRadius: 15,
-            border: "1.2px solid #e0e0e0",
-            padding: "12px 0",
-            marginBottom: 18,
-            cursor: "pointer",
-          }}
-        >
-          Retour à la connexion
-        </button>
-      </form>
-    </div>
+            Réinitialiser
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              width: "100%",
+              background: "#fff",
+              color: "#222",
+              fontWeight: 700,
+              fontSize: 18,
+              borderRadius: 15,
+              border: "1.2px solid #e0e0e0",
+              padding: "12px 0",
+              marginBottom: 18,
+              cursor: "pointer",
+            }}
+          >
+            Retour à la connexion
+          </button>
+        </form>
+      </div>
+    </>
   );
 };
 
