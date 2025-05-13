@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { commonStyles } from "../components/styles";
 import NavBar from "../components/NavBar";
 import ProfileChoicePage from "./ProfileChoicePage";
 import Modal from "../components/Modal";
@@ -66,26 +65,57 @@ const eyeIconStyle: React.CSSProperties = {
 };
 
 const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [userData, setUserData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    avatar: "",
+    userRole: "",
+    address: "",
+    pageName: "",
+    country: "",
+    phone: "",
+    code: "",
+    description: "",
+    // add more fields as needed
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [goToProfileChoice, setGoToProfileChoice] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const isFormValid = name && email && password && acceptTerms;
+  const isFormValid =
+    userData.name && userData.email && userData.password && acceptTerms;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isFormValid) setShowModal(true);
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image")) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setUserData((prev) => ({
+          ...prev,
+          avatar: ev.target?.result as string,
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (goToProfileChoice) {
     return (
       <ProfileChoicePage
-        name={name}
-        avatar={userIcon}
+        userData={userData}
+        setUserData={setUserData}
         onBack={() => setGoToProfileChoice(false)}
       />
     );
@@ -136,7 +166,9 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              cursor: "pointer",
             }}
+            onClick={handleAvatarClick}
           >
             <div
               style={{
@@ -148,13 +180,33 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 alignItems: "center",
                 justifyContent: "center",
                 background: "#fff",
+                overflow: "hidden",
               }}
             >
-              <img
-                src={userIcon}
-                alt="avatar"
-                style={{ width: 60, height: 60, opacity: 0.7 }}
-              />
+              {userData.avatar ? (
+                <img
+                  src={userData.avatar}
+                  alt="avatar"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: "50%",
+                  }}
+                />
+              ) : (
+                <img
+                  src={userIcon}
+                  alt="avatar"
+                  style={{
+                    width: 60,
+                    height: 60,
+                    opacity: 0.7,
+                    display: "block",
+                    margin: "0 auto",
+                  }}
+                />
+              )}
             </div>
             <div
               style={{
@@ -177,6 +229,13 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 style={{ width: 22, height: 22 }}
               />
             </div>
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={handleAvatarChange}
+            />
           </div>
         </div>
         <form
@@ -192,50 +251,68 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
-                src={name ? userUserOutlineBlue : userUserOutline}
+                src={userData.name ? userUserOutlineBlue : userUserOutline}
                 alt="user"
-                style={{ width: 22, height: 22, opacity: name ? 1 : 0.6 }}
+                style={{
+                  width: 22,
+                  height: 22,
+                  opacity: userData.name ? 1 : 0.6,
+                }}
               />
             </span>
             <input
               type="text"
               placeholder="Entrez votre nom"
-              style={getInputStyle(!!name)}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              style={getInputStyle(!!userData.name)}
+              value={userData.name}
+              onChange={(e) =>
+                setUserData((prev) => ({ ...prev, name: e.target.value }))
+              }
             />
           </div>
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
-                src={email ? emailIconBlue : emailIcon}
+                src={userData.email ? emailIconBlue : emailIcon}
                 alt="email"
-                style={{ width: 22, height: 22, opacity: email ? 1 : 0.6 }}
+                style={{
+                  width: 22,
+                  height: 22,
+                  opacity: userData.email ? 1 : 0.6,
+                }}
               />
             </span>
             <input
               type="email"
               placeholder="Entrez votre email"
-              style={getInputStyle(!!email)}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              style={getInputStyle(!!userData.email)}
+              value={userData.email}
+              onChange={(e) =>
+                setUserData((prev) => ({ ...prev, email: e.target.value }))
+              }
               autoComplete="email"
             />
           </div>
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
-                src={password ? passwordIconBlue : passwordIcon}
+                src={userData.password ? passwordIconBlue : passwordIcon}
                 alt="password"
-                style={{ width: 22, height: 22, opacity: password ? 1 : 0.6 }}
+                style={{
+                  width: 22,
+                  height: 22,
+                  opacity: userData.password ? 1 : 0.6,
+                }}
               />
             </span>
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Entrez votre mot de passe"
-              style={getInputStyle(!!password)}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              style={getInputStyle(!!userData.password)}
+              value={userData.password}
+              onChange={(e) =>
+                setUserData((prev) => ({ ...prev, password: e.target.value }))
+              }
               autoComplete="new-password"
             />
             <span

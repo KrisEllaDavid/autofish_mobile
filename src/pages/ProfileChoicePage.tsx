@@ -1,20 +1,50 @@
 import React from "react";
 import NavBar from "../components/NavBar";
+import CategoriesPage from "./CategoriesPage/CategoriesPage";
+import IDVerificationPage from "./IDVerificationPage";
 
 const userOutlineBlue = "/icons/User-Outline_blue.svg";
 const userOutlineWhite = "/icons/User-Outline_white.svg";
 
 interface ProfileChoicePageProps {
-  name: string;
-  avatar: string;
-  onBack?: () => void;
+  userData: any;
+  setUserData: React.Dispatch<React.SetStateAction<any>>;
+  onBack: () => void;
 }
 
 const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
-  name,
-  avatar,
+  userData,
+  setUserData,
   onBack,
 }) => {
+  const [goToCategories, setGoToCategories] = React.useState(false);
+  const [goToIDVerification, setGoToIDVerification] = React.useState(false);
+  const [profileType, setProfileType] = React.useState<
+    "client" | "producer" | null
+  >(null);
+
+  if (goToCategories && profileType === "client") {
+    return (
+      <CategoriesPage
+        onBack={() => setGoToCategories(false)}
+        profileType={profileType}
+        userData={userData}
+        setUserData={setUserData}
+      />
+    );
+  }
+
+  if (goToIDVerification && profileType === "producer") {
+    return (
+      <IDVerificationPage
+        onBack={() => setGoToIDVerification(false)}
+        userData={userData}
+        setUserData={setUserData}
+        profileType={profileType}
+      />
+    );
+  }
+
   return (
     <>
       <style>{`
@@ -60,11 +90,11 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
             }}
           >
             <img
-              src={avatar}
+              src={userData.avatar}
               alt="avatar"
               style={{
-                width: 70,
-                height: 70,
+                width: "100%",
+                height: "100%",
                 objectFit: "cover",
                 borderRadius: "50%",
               }}
@@ -79,7 +109,7 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
               marginBottom: 30,
             }}
           >
-            {name}
+            {userData.name}
           </div>
           <div
             style={{
@@ -103,66 +133,103 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
           >
             Quel type d'utilisateur êtes vous ?
           </div>
-          <button
+
+          <div
             style={{
               width: "90vw",
               maxWidth: 340,
-              background: "#fafbfc",
-              color: "#009CB7",
-              fontWeight: 700,
-              fontSize: 17,
-              borderRadius: 24,
-              border: "1.2px solid #e0e0e0",
-              padding: "16px 0",
-              marginBottom: 18,
-              cursor: "pointer",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              gap: 4,
-              boxSizing: "border-box",
-              transition: "background 0.2s, color 0.2s",
+              flexDirection: "column",
+              gap: 16,
             }}
           >
-            <img
-              src={userOutlineBlue}
-              alt="client"
-              style={{ width: 28, height: 28, marginLeft: 24, marginRight: 16 }}
-            />
-            <span style={{ fontWeight: 600, fontSize: 17 }}>
-              Poursuivre comme client
-            </span>
-          </button>
-          <button
-            style={{
-              width: "90vw",
-              maxWidth: 340,
-              background: "#222",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 17,
-              borderRadius: 24,
-              border: "none",
-              padding: "16px 0",
-              marginBottom: 0,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              gap: 4,
-              boxSizing: "border-box",
-              transition: "background 0.2s, color 0.2s",
-            }}
-          >
-            <img
-              src={userOutlineWhite}
-              alt="producteur"
-              style={{ width: 28, height: 28, marginLeft: 24, marginRight: 16 }}
-            />
-            <span style={{ fontWeight: 600, fontSize: 17 }}>
-              Poursuivre comme producteur
-            </span>
-          </button>
+            <button
+              onClick={() => {
+                setProfileType("client");
+                setUserData((prev: any) => ({ ...prev, userRole: "client" }));
+                setGoToCategories(true);
+              }}
+              style={{
+                width: "100%",
+                background: "#fafbfc",
+                border: "1.5px solid #00A6C0",
+                borderRadius: 20,
+                padding: "18px 0 18px 0",
+                display: "flex",
+                alignItems: "center",
+                gap: 0,
+                cursor: "pointer",
+                boxShadow: "none",
+                transition: "background 0.2s, color 0.2s",
+              }}
+            >
+              <img
+                src={userOutlineBlue}
+                alt="client"
+                style={{
+                  width: 28,
+                  height: 28,
+                  marginLeft: 18,
+                  marginRight: 12,
+                }}
+              />
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 18,
+                  color: "#222",
+                  fontFamily: "inherit",
+                }}
+              >
+                Poursuivre comme client
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                setProfileType("producer");
+                setUserData((prev: any) => ({
+                  ...prev,
+                  userRole: "producteur",
+                }));
+                setGoToIDVerification(true);
+              }}
+              style={{
+                width: "100%",
+                background: "#232228",
+                border: "none",
+                borderRadius: 20,
+                padding: "18px 0 18px 0",
+                display: "flex",
+                alignItems: "center",
+                gap: 0,
+                cursor: "pointer",
+                boxShadow: "none",
+                transition: "background 0.2s, color 0.2s",
+              }}
+            >
+              <img
+                src={userOutlineWhite}
+                alt="producteur"
+                style={{
+                  width: 28,
+                  height: 28,
+                  marginLeft: 18,
+                  marginRight: 12,
+                }}
+              />
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 18,
+                  color: "#fff",
+                  fontFamily: "inherit",
+                }}
+              >
+                Poursuivre comme producteur
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </>
