@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import NavBar from "../components/NavBar";
 import PagePreviewPage from "./PagePreviewPage";
 import Modal from "../components/Modal";
+import HomePage from "./HomePage";
 
 const countries = [
   { name: "Cameroun", code: "+237" },
@@ -32,8 +33,22 @@ const PageCreationPage: React.FC<PageCreationPageProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [previewInfo, setPreviewInfo] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showHomePage, setShowHomePage] = useState(false);
 
   const isValid = pageName && country && address && phone;
+
+  if (showHomePage) {
+    return (
+      <HomePage
+        userData={{
+          name: userData.name,
+          avatar: userData.avatar,
+          selectedCategories: userData.selectedCategories || [],
+          userRole: userData.userRole,
+        }}
+      />
+    );
+  }
 
   if (showPreview && previewInfo) {
     return (
@@ -322,7 +337,7 @@ const PageCreationPage: React.FC<PageCreationPageProps> = ({
                   }}
                 >
                   <img
-                    src={userData.banner || "/images/page_banner.jpg"}
+                    src={userData.avatar}
                     alt="cover"
                     style={{
                       width: "100%",
@@ -364,7 +379,10 @@ const PageCreationPage: React.FC<PageCreationPageProps> = ({
                     padding: "16px 0",
                     cursor: "pointer",
                   }}
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    setShowHomePage(true);
+                  }}
                 >
                   Vers l'accueil
                 </button>

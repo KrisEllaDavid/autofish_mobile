@@ -40,11 +40,23 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
     setSelectedCategories([...selectedCategories, cat]);
     setAvailableCategories(availableCategories.filter((c) => c !== cat));
     setDropdownOpen(false);
+
+    // Update userData with the selected categories
+    setUserData((prev: any) => ({
+      ...prev,
+      selectedCategories: [...selectedCategories, cat],
+    }));
   };
 
   const handleRemove = (cat: string) => {
     setSelectedCategories(selectedCategories.filter((c) => c !== cat));
     setAvailableCategories([...availableCategories, cat]);
+
+    // Update userData with the updated selected categories
+    setUserData((prev: any) => ({
+      ...prev,
+      selectedCategories: selectedCategories.filter((c) => c !== cat),
+    }));
   };
 
   const handleContinue = () => {
@@ -99,7 +111,6 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
   return (
     <div className="categories-page">
       <NavBar title="Mes catégories" onBack={onBack} />
-      <div className="categories-title">Mes catégories</div>
       <div className="categories-subtitle">
         Sélectionnez vos catégories principales
       </div>

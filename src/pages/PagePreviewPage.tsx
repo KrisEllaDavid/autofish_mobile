@@ -296,7 +296,7 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
                   alt="location"
                   style={{ width: 18, height: 18, marginRight: 6 }}
                 />
-                <span>{info.address}</span>
+                <span style={{ color: "#fff" }}>{info.address}</span>
               </div>
               <div
                 className="banner-camera"

@@ -1,8 +1,41 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  position: relative;
+}
+
+.app {
+  width: 100%;
+  height: 100dvh;
+  position: relative;
+}
+
+/* Fix any inherited styles that might hide bottom navigation */
+.bottom-nav {
+  visibility: visible !important;
+  display: block !important;
+  opacity: 1 !important;
+  z-index: 9999 !important;
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+button {
+  cursor: pointer;
 }
 
 .logo {
@@ -39,4 +72,15 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }

@@ -42,7 +42,7 @@ const OnboardingPage1: React.FC<OnboardingPage1Props> = ({
         width: "90vw",
         padding: "0 3vw",
         maxWidth: 340,
-        margin: "0 auto 40vw auto",
+        margin: "0 auto 20vw auto",
         animation: "fadeInOnboard 0.7s 0.2s cubic-bezier(.4,0,.2,1) both",
         boxSizing: "border-box",
       }}

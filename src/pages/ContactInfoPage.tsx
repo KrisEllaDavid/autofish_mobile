@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import NavBar from "../components/NavBar";
 import Modal from "../components/Modal";
+import HomePage from "./HomePage";
 
 const countries = [
   { name: "Cameroun", code: "+237" },
@@ -33,6 +34,7 @@ const ContactInfoPage: React.FC<ContactInfoPageProps> = ({
   const [phone, setPhone] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [userDataState, setUserDataState] = useState<any>(null);
+  const [showHomePage, setShowHomePage] = useState(false);
 
   const isValid = country && address && phone;
 
@@ -41,6 +43,19 @@ const ContactInfoPage: React.FC<ContactInfoPageProps> = ({
     // e.g., axios.post('/api/signup', data)
     setShowModal(true);
   };
+
+  if (showHomePage) {
+    return (
+      <HomePage
+        userData={{
+          name: userData.name,
+          avatar: userData.avatar,
+          selectedCategories: userData.selectedCategories || [],
+          userRole: userData.userRole,
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -263,81 +278,84 @@ const ContactInfoPage: React.FC<ContactInfoPageProps> = ({
             Terminer l'inscription
           </button>
         </div>
-      </div>
-      {showModal && (
-        <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 28,
-              boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-              padding: 32,
-              maxWidth: 340,
-              width: "90vw",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+        {showModal && (
+          <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
             <div
               style={{
-                width: 90,
-                height: 90,
-                borderRadius: "50%",
-                border: "3px solid #009cb7",
-                overflow: "hidden",
-                marginBottom: 18,
+                background: "#fff",
+                borderRadius: 28,
+                boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
+                padding: 32,
+                maxWidth: 340,
+                width: "90vw",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
               }}
             >
-              <img
-                src={userData.avatar || "/icons/account.svg"}
-                alt="avatar"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
+              <div
+                style={{
+                  width: 90,
+                  height: 90,
+                  borderRadius: "50%",
+                  border: "3px solid #009cb7",
+                  overflow: "hidden",
+                  marginBottom: 18,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src={userData.avatar || "/icons/account.svg"}
+                  alt="avatar"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 24,
+                  color: "#222",
+                  marginBottom: 8,
+                  textAlign: "center",
+                }}
+              >
+                Bravo !
+              </div>
+              <div
+                style={{
+                  color: "#b0b0b0",
+                  fontSize: 17,
+                  marginBottom: 28,
+                  textAlign: "center",
+                }}
+              >
+                Votre compte client a bien été enregistré
+              </div>
+              <button
+                style={{
+                  width: "100%",
+                  background: "#009cb7",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 18,
+                  borderRadius: 18,
+                  border: "none",
+                  padding: "16px 0",
+                  cursor: "pointer",
+                }}
+                onClick={() => {
+                  setShowModal(false);
+                  setShowHomePage(true);
+                }}
+              >
+                Vers l'accueil
+              </button>
             </div>
-            <div
-              style={{
-                fontWeight: 700,
-                fontSize: 24,
-                color: "#222",
-                marginBottom: 8,
-                textAlign: "center",
-              }}
-            >
-              Bravo !
-            </div>
-            <div
-              style={{
-                color: "#b0b0b0",
-                fontSize: 17,
-                marginBottom: 28,
-                textAlign: "center",
-              }}
-            >
-              Votre compte client a bien été enregistré
-            </div>
-            <button
-              style={{
-                width: "100%",
-                background: "#009cb7",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 18,
-                borderRadius: 18,
-                border: "none",
-                padding: "16px 0",
-                cursor: "pointer",
-              }}
-              onClick={() => setShowModal(false)}
-            >
-              Vers l'accueil
-            </button>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        )}
+      </div>
     </>
   );
 };
