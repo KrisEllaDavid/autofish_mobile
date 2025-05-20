@@ -173,6 +173,7 @@ const PostCard: React.FC<PostCardProps> = ({
         style={{
           display: "flex",
           alignItems: "center",
+          justifyContent: "space-between",
           padding: "12px 16px 0 16px",
         }}
       >
@@ -204,6 +205,16 @@ const PostCard: React.FC<PostCardProps> = ({
             {post.likes}
           </span>
         </button>
+        <span
+          style={{
+            color: "#222",
+            fontWeight: 800,
+            fontSize: 18,
+            fontFamily: "Arial Rounded MT Bold, Arial, sans-serif",
+          }}
+        >
+          {post.price.toLocaleString()} FCFA
+        </span>
       </div>
 
       {/* Bottom action bar */}

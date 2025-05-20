@@ -2,24 +2,22 @@ import React, { useState, useRef } from "react";
 import Webcam from "react-webcam";
 import NavBar from "../components/NavBar";
 import CategoriesPage from "./CategoriesPage/CategoriesPage";
+import { useAuth } from "../context/AuthContext";
 
 const cameraIcon = "/icons/camera_icon.svg";
 
 interface IDVerificationPageProps {
   onBack: () => void;
-  userData: any;
-  setUserData: React.Dispatch<React.SetStateAction<any>>;
-  profileType: "producer";
+  profileType: "client" | "producer";
 }
 
 type Side = "recto" | "verso";
 
 const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
   onBack,
-  userData,
-  setUserData,
   profileType,
 }) => {
+  const { userData, updateUserData } = useAuth();
   const [isCameraOpen, setIsCameraOpen] = useState<false | Side>(false);
   const [rectoImage, setRectoImage] = useState<string | null>(null);
   const [versoImage, setVersoImage] = useState<string | null>(null);
@@ -38,8 +36,14 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
       setShowFlash(true);
       setTimeout(() => setShowFlash(false), 120);
       const imageSrc = webcamRef.current.getScreenshot();
-      if (isCameraOpen === "recto") setRectoImage(imageSrc);
-      if (isCameraOpen === "verso") setVersoImage(imageSrc);
+      if (isCameraOpen === "recto") {
+        setRectoImage(imageSrc);
+        updateUserData({ idRecto: imageSrc });
+      }
+      if (isCameraOpen === "verso") {
+        setVersoImage(imageSrc);
+        updateUserData({ idVerso: imageSrc });
+      }
       setIsCameraOpen(false);
     }
   };
@@ -59,8 +63,6 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
     return (
       <CategoriesPage
         profileType={profileType}
-        userData={userData}
-        setUserData={setUserData}
         onBack={() => setGoToCategories(false)}
       />
     );

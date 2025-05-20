@@ -9,6 +9,7 @@ export interface Post {
   comments: number;
   category: string;
   location: string;
+  price: number; // Price in FCFA
 }
 
 export const mockPosts: Post[] = [
@@ -22,7 +23,8 @@ export const mockPosts: Post[] = [
     likes: 124,
     comments: 18,
     category: "Poisson",
-    location: "Douala, Akwa"
+    location: "Douala, Akwa",
+    price: 5000
   },
   {
     id: "2",
@@ -34,7 +36,8 @@ export const mockPosts: Post[] = [
     likes: 87,
     comments: 9,
     category: "Légumes",
-    location: "Yaoundé, Tsinga"
+    location: "Yaoundé, Tsinga",
+    price: 2500
   },
   {
     id: "3",
@@ -46,7 +49,8 @@ export const mockPosts: Post[] = [
     likes: 65,
     comments: 7,
     category: "Viande",
-    location: "Douala, Bonapriso"
+    location: "Douala, Bonapriso",
+    price: 8000
   },
   {
     id: "4",
@@ -58,7 +62,8 @@ export const mockPosts: Post[] = [
     likes: 93,
     comments: 21,
     category: "Produits laitiers",
-    location: "Yaoundé, Bastos"
+    location: "Yaoundé, Bastos",
+    price: 3500
   },
   {
     id: "5",
@@ -70,7 +75,8 @@ export const mockPosts: Post[] = [
     likes: 142,
     comments: 12,
     category: "Cacao",
-    location: "Bafoussam"
+    location: "Bafoussam",
+    price: 4500
   },
   {
     id: "6",
@@ -82,7 +88,8 @@ export const mockPosts: Post[] = [
     likes: 110,
     comments: 14,
     category: "Fruits",
-    location: "Limbé"
+    location: "Limbé",
+    price: 2000
   },
   {
     id: "7",
@@ -94,7 +101,8 @@ export const mockPosts: Post[] = [
     likes: 78,
     comments: 8,
     category: "Miel",
-    location: "Dschang"
+    location: "Dschang",
+    price: 6000
   },
   {
     id: "8",
@@ -106,7 +114,8 @@ export const mockPosts: Post[] = [
     likes: 56,
     comments: 6,
     category: "Œufs",
-    location: "Kribi"
+    location: "Kribi",
+    price: 1500
   },
   {
     id: "9",
@@ -118,7 +127,8 @@ export const mockPosts: Post[] = [
     likes: 42,
     comments: 5,
     category: "Farines",
-    location: "Douala, Bonamoussadi"
+    location: "Douala, Bonamoussadi",
+    price: 3000
   },
   {
     id: "10",
@@ -130,19 +140,21 @@ export const mockPosts: Post[] = [
     likes: 89,
     comments: 11,
     category: "Épices",
-    location: "Yaoundé, Nlongkak"
+    location: "Yaoundé, Nlongkak",
+    price: 4000
   },
   {
     id: "11",
     producerName: "Poissonnerie Maritime",
     producerAvatar: "https://randomuser.me/api/portraits/men/36.jpg",
     postImage: "https://images.unsplash.com/photo-1534766555764-ce878a5e3a2b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=870&q=80",
-    description: "Crevettes fraîches pêchées au large de nos côtes. Parfaites pour vos grillades ou plats en sauce !",
+    description: "Crevettes fraîches pêchées au large de nos côtes. Parfaites pour vos grillages ou plats en sauce !",
     date: "2023-09-05T08:50:00Z",
     likes: 117,
     comments: 19,
     category: "Fruits de mer",
-    location: "Kribi, Port"
+    location: "Kribi, Port",
+    price: 7500
   },
   {
     id: "12",
@@ -154,6 +166,7 @@ export const mockPosts: Post[] = [
     likes: 135,
     comments: 23,
     category: "Vins",
-    location: "Foumban"
+    location: "Foumban",
+    price: 12000
   }
 ]; 

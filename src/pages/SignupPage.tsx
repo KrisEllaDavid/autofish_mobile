@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import NavBar from "../components/NavBar";
 import ProfileChoicePage from "./ProfileChoicePage";
 import Modal from "../components/Modal";
+import { useAuth } from "../context/AuthContext";
+import { compressImage, validateImage } from "../utils/imageCompression";
 
 const userIcon = "/icons/account.svg";
 const cameraIcon = "/icons/camera_icon.svg";
@@ -64,20 +66,20 @@ const eyeIconStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
+interface FormData {
+  name: string;
+  email: string;
+  password: string;
+  avatar: string;
+}
+
 const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
-  const [userData, setUserData] = useState({
+  const { updateUserData } = useAuth();
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
     password: "",
     avatar: "",
-    userRole: "",
-    address: "",
-    pageName: "",
-    country: "",
-    phone: "",
-    code: "",
-    description: "",
-    // add more fields as needed
   });
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -86,39 +88,55 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const isFormValid =
-    userData.name && userData.email && userData.password && acceptTerms;
+    formData.name && formData.email && formData.password && acceptTerms;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isFormValid) setShowModal(true);
+    if (isFormValid) {
+      updateUserData({
+        name: formData.name,
+        email: formData.email,
+        avatar: formData.avatar,
+      });
+      setShowModal(true);
+    }
   };
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image")) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setUserData((prev) => ({
-          ...prev,
-          avatar: ev.target?.result as string,
-        }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Validate the image first
+        validateImage(file);
+
+        // Compress the image
+        const compressedFile = await compressImage(file, {
+          maxWidth: 800,
+          maxHeight: 800,
+          quality: 0.8,
+        });
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setFormData((prev) => ({
+            ...prev,
+            avatar: ev.target?.result as string,
+          }));
+        };
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        // You might want to show an error message to the user here
+        console.error("Error processing image:", error);
+      }
     }
   };
 
   if (goToProfileChoice) {
-    return (
-      <ProfileChoicePage
-        userData={userData}
-        setUserData={setUserData}
-        onBack={() => setGoToProfileChoice(false)}
-      />
-    );
+    return <ProfileChoicePage onBack={() => setGoToProfileChoice(false)} />;
   }
 
   return (
@@ -183,9 +201,9 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 overflow: "hidden",
               }}
             >
-              {userData.avatar ? (
+              {formData.avatar ? (
                 <img
-                  src={userData.avatar}
+                  src={formData.avatar}
                   alt="avatar"
                   style={{
                     width: "100%",
@@ -251,44 +269,44 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
-                src={userData.name ? userUserOutlineBlue : userUserOutline}
+                src={formData.name ? userUserOutlineBlue : userUserOutline}
                 alt="user"
                 style={{
                   width: 22,
                   height: 22,
-                  opacity: userData.name ? 1 : 0.6,
+                  opacity: formData.name ? 1 : 0.6,
                 }}
               />
             </span>
             <input
               type="text"
               placeholder="Entrez votre nom"
-              style={getInputStyle(!!userData.name)}
-              value={userData.name}
+              style={getInputStyle(!!formData.name)}
+              value={formData.name}
               onChange={(e) =>
-                setUserData((prev) => ({ ...prev, name: e.target.value }))
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
               }
             />
           </div>
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
-                src={userData.email ? emailIconBlue : emailIcon}
+                src={formData.email ? emailIconBlue : emailIcon}
                 alt="email"
                 style={{
                   width: 22,
                   height: 22,
-                  opacity: userData.email ? 1 : 0.6,
+                  opacity: formData.email ? 1 : 0.6,
                 }}
               />
             </span>
             <input
               type="email"
               placeholder="Entrez votre email"
-              style={getInputStyle(!!userData.email)}
-              value={userData.email}
+              style={getInputStyle(!!formData.email)}
+              value={formData.email}
               onChange={(e) =>
-                setUserData((prev) => ({ ...prev, email: e.target.value }))
+                setFormData((prev) => ({ ...prev, email: e.target.value }))
               }
               autoComplete="email"
             />
@@ -296,22 +314,25 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
-                src={userData.password ? passwordIconBlue : passwordIcon}
+                src={formData.password ? passwordIconBlue : passwordIcon}
                 alt="password"
                 style={{
                   width: 22,
                   height: 22,
-                  opacity: userData.password ? 1 : 0.6,
+                  opacity: formData.password ? 1 : 0.6,
                 }}
               />
             </span>
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Entrez votre mot de passe"
-              style={getInputStyle(!!userData.password)}
-              value={userData.password}
+              style={getInputStyle(!!formData.password)}
+              value={formData.password}
               onChange={(e) =>
-                setUserData((prev) => ({ ...prev, password: e.target.value }))
+                setFormData((prev) => ({
+                  ...prev,
+                  password: e.target.value,
+                }))
               }
               autoComplete="new-password"
             />

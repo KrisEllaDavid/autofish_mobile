@@ -1,28 +1,37 @@
-import React from "react";
+import React, { useRef, useState } from "react";
+import AccountMenu from "./AccountMenu";
 
 interface TopNavBarProps {
   title: string;
   userAvatar?: string;
-  onNotificationClick?: () => void;
-  onMenuClick?: () => void;
+  userEmail?: string;
   userRole?: string;
+  onNotificationClick?: () => void;
   onMyPageClick?: () => void;
+  activeTab?: string;
+  userName?: string;
 }
 
 const defaultAvatar = "/icons/account.svg";
 const notificationIcon = "/icons/Notification.svg";
+const notificationIconWhite = "/icons/Notification_white.svg";
 const menuIcon = "/icons/3-dots-home-menu.svg";
 const myPageIcon = "/icons/mypage-icon.svg";
+const mainBlue = "#00B2D6";
 
 const TopNavBar: React.FC<TopNavBarProps> = ({
   title,
   userAvatar,
-  onNotificationClick,
-  onMenuClick,
+  userEmail,
   userRole,
+  onNotificationClick,
   onMyPageClick,
+  activeTab,
+  userName,
 }) => {
-  console.log("TopNavBar userRole:", userRole);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
   return (
     <div
       className="top-nav"
@@ -107,32 +116,54 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         <button
           className="nav-button"
           style={{
-            background: "none",
+            background: activeTab === "notifications" ? mainBlue : "none",
             border: "none",
             padding: 8,
             marginRight: 0,
             cursor: "pointer",
+            borderRadius: activeTab === "notifications" ? "10px" : undefined,
+            width: 40,
+            height: 40,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
           onClick={onNotificationClick}
         >
           <img
-            src={notificationIcon}
+            src={
+              activeTab === "notifications"
+                ? notificationIconWhite
+                : notificationIcon
+            }
             alt="Notifications"
             style={{ width: 24, height: 24 }}
           />
         </button>
         <button
           className="nav-button"
+          ref={menuButtonRef}
           style={{
             background: "none",
             border: "none",
             padding: 8,
             cursor: "pointer",
           }}
-          onClick={onMenuClick}
+          onClick={() => setMenuOpen((open) => !open)}
         >
           <img src={menuIcon} alt="Menu" style={{ width: 24, height: 24 }} />
         </button>
+        <AccountMenu
+          open={menuOpen}
+          anchorRef={menuButtonRef}
+          onClose={() => setMenuOpen(false)}
+          userData={{
+            name: userName || "Utilisateur",
+            avatar: userAvatar,
+            email: userEmail,
+            userRole: userRole,
+          }}
+        />
       </div>
     </div>
   );

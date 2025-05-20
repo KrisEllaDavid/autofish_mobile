@@ -4,7 +4,7 @@ import DescriptionPage from "../DescriptionPage";
 import ContactInfoPage from "../ContactInfoPage";
 import PageCreationPage from "../PageCreationPage";
 import "./CategoriesPage.css";
-import CryptoJS from "crypto-js";
+import { useAuth } from "../../context/AuthContext";
 
 const mockCategories = [
   "Produits agricoles",
@@ -18,16 +18,13 @@ const mockCategories = [
 interface CategoriesPageProps {
   onBack?: () => void;
   profileType: "client" | "producer";
-  userData: any;
-  setUserData: React.Dispatch<React.SetStateAction<any>>;
 }
 
 const CategoriesPage: React.FC<CategoriesPageProps> = ({
   onBack,
   profileType,
-  userData,
-  setUserData,
 }) => {
+  const { userData, updateUserData } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [availableCategories, setAvailableCategories] =
     useState(mockCategories);
@@ -42,10 +39,9 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
     setDropdownOpen(false);
 
     // Update userData with the selected categories
-    setUserData((prev: any) => ({
-      ...prev,
+    updateUserData({
       selectedCategories: [...selectedCategories, cat],
-    }));
+    });
   };
 
   const handleRemove = (cat: string) => {
@@ -53,10 +49,9 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
     setAvailableCategories([...availableCategories, cat]);
 
     // Update userData with the updated selected categories
-    setUserData((prev: any) => ({
-      ...prev,
+    updateUserData({
       selectedCategories: selectedCategories.filter((c) => c !== cat),
-    }));
+    });
   };
 
   const handleContinue = () => {
@@ -67,20 +62,8 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
     }
   };
 
-  const hashedPassword = userData.password
-    ? CryptoJS.SHA256(userData.password).toString()
-    : undefined;
-
   if (goToPageCreation) {
-    return (
-      <PageCreationPage
-        onBack={() => setGoToPageCreation(false)}
-        onPreview={() => {}}
-        onContinue={() => {}}
-        userData={userData}
-        setUserData={setUserData}
-      />
-    );
+    return <PageCreationPage onBack={() => setGoToPageCreation(false)} />;
   }
 
   if (goToContactInfo) {
@@ -88,8 +71,6 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
       <ContactInfoPage
         onBack={() => setGoToContactInfo(false)}
         onContinue={() => {}}
-        userData={userData}
-        setUserData={setUserData}
       />
     );
   }
@@ -102,8 +83,6 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
           if (profileType === "producer") setGoToPageCreation(true);
           else setGoToContactInfo(true);
         }}
-        userData={userData}
-        setUserData={setUserData}
       />
     );
   }

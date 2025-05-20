@@ -5,17 +5,11 @@ import PostCard from "../components/PostCard";
 import { mockPosts, Post } from "../mock/posts";
 import useLocalStorage from "../hooks/useLocalStorage";
 import "./HomePage.css";
+import NotificationsPage from "./Notifications/NotificationsPage";
+import { useAuth } from "../context/AuthContext";
 
-interface HomePageProps {
-  userData: {
-    name: string;
-    avatar?: string;
-    selectedCategories?: string[];
-    userRole: string;
-  };
-}
-
-const HomePage: React.FC<HomePageProps> = ({ userData }) => {
+const HomePage: React.FC = () => {
+  const { userData } = useAuth();
   const [activeTab, setActiveTab] = useState<
     "home" | "messages" | "connections" | "profile"
   >("home");
@@ -26,6 +20,7 @@ const HomePage: React.FC<HomePageProps> = ({ userData }) => {
   );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState("");
+  const [showNotifications, setShowNotifications] = useState(false);
 
   // Debug logging
   useEffect(() => {
@@ -39,7 +34,10 @@ const HomePage: React.FC<HomePageProps> = ({ userData }) => {
     const sortedPosts = [...mockPosts];
 
     // If user has selected categories, prioritize them
-    if (userData.selectedCategories && userData.selectedCategories.length > 0) {
+    if (
+      userData?.selectedCategories &&
+      userData.selectedCategories.length > 0
+    ) {
       sortedPosts.sort((a, b) => {
         const aMatch =
           userData.selectedCategories?.includes(a.category) || false;
@@ -53,7 +51,7 @@ const HomePage: React.FC<HomePageProps> = ({ userData }) => {
     }
 
     setPosts(sortedPosts);
-  }, [userData.selectedCategories]);
+  }, [userData?.selectedCategories]);
 
   // Filter posts by search
   const filteredPosts = useMemo(() => {
@@ -117,17 +115,24 @@ const HomePage: React.FC<HomePageProps> = ({ userData }) => {
     }, 1000);
   };
 
+  if (showNotifications) {
+    return (
+      <NotificationsPage onBackToHome={() => setShowNotifications(false)} />
+    );
+  }
+
   return (
     <div className="home-container">
       {/* Top Navigation */}
-      console.log("HomePage userData:", userData);
       <TopNavBar
         title="Accueil"
-        userAvatar={userData.avatar}
-        onNotificationClick={() => console.log("Notifications clicked")}
-        onMenuClick={() => console.log("Menu clicked")}
-        userRole={userData.userRole}
+        userAvatar={userData?.avatar}
+        userName={userData?.name}
+        userEmail={userData?.email}
+        onNotificationClick={() => setShowNotifications(true)}
+        userRole={userData?.userRole}
         onMyPageClick={() => console.log("My Page clicked")}
+        activeTab="home"
       />
       {/* Search Bar */}
       <div
@@ -136,7 +141,7 @@ const HomePage: React.FC<HomePageProps> = ({ userData }) => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          margin: "58px 0 16px 0",
+          margin: "80px 0 16px 0",
           background: "white",
           height: "80px",
         }}

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createGlobalStyle } from "styled-components";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import SplashScreen from "./pages/SplashScreen";
 import OnboardingPage1 from "./pages/OnboardingPage1";
 import OnboardingPage2 from "./pages/OnboardingPage2";
@@ -8,12 +10,38 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SignupPage from "./pages/SignupPage";
 import { animations, fontFaces } from "./components/styles";
+import { AuthProvider } from "./context/AuthContext";
 
 const GlobalStyle = createGlobalStyle`
   ${animations.fadeInOnboard}
   ${animations.fadeIn}
   ${animations.blink}
   ${fontFaces}
+
+  /* Toast styles */
+  .Toastify__toast {
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 16px;
+    margin-bottom: 8px;
+  }
+
+  .Toastify__toast--error {
+    background: #fff;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+  }
+
+  .Toastify__toast--success {
+    background: #fff;
+    color: #2ecc71;
+    border: 1px solid #2ecc71;
+  }
+
+  .Toastify__toast-body {
+    font-weight: 500;
+  }
 `;
 
 function App() {
@@ -48,8 +76,20 @@ function App() {
   }
 
   return (
-    <>
+    <AuthProvider>
       <GlobalStyle />
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       {currentStep === 0 && (
         <OnboardingPage1 activeIndex={0} onNext={handleNext} />
       )}
@@ -102,7 +142,7 @@ function App() {
           <ResetPasswordPage onBack={() => setShowResetPasswordPage(false)} />
         </div>
       )}
-    </>
+    </AuthProvider>
   );
 }
 

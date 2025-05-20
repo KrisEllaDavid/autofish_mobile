@@ -1,22 +1,24 @@
 import React, { useRef, useState } from "react";
 import NavBar from "../components/NavBar";
-import Modal from "../components/Modal";
+import { compressImage, validateImage } from "../utils/imageCompression";
+
+interface PageInfo {
+  pageName: string;
+  country: string;
+  address: string;
+  phone: string;
+  code: string;
+  avatar?: string;
+  banner?: string;
+  userName?: string;
+  userRole?: string;
+  isPreview?: boolean;
+  name: string;
+}
 
 interface PagePreviewPageProps {
-  onBack: (data: any) => void;
-  info: {
-    pageName: string;
-    country: string;
-    address: string;
-    phone: string;
-    code: string;
-    avatar?: string;
-    banner?: string;
-    userName?: string;
-    userRole?: string;
-    isPreview?: boolean;
-    name: string;
-  };
+  onBack: (data: PageInfo) => void;
+  info: PageInfo;
   onBannerChange?: (banner: string) => void;
 }
 
@@ -30,8 +32,7 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
   info,
   onBannerChange,
 }) => {
-  const [banner, setBanner] = useState<string | undefined>(info.banner);
-  const [showModal, setShowModal] = useState(false);
+  const [banner, setBanner] = useState<string>(info.banner || defaultBanner);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,17 +40,33 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
     fileInputRef.current?.click();
   };
 
-  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image")) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setBanner(ev.target?.result as string);
-        if (onBannerChange) {
-          onBannerChange(ev.target?.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Validate the image first
+        validateImage(file);
+
+        // Compress the image
+        const compressedFile = await compressImage(file, {
+          maxWidth: 1200,
+          maxHeight: 600,
+          quality: 0.8,
+        });
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const newBanner = ev.target?.result as string;
+          setBanner(newBanner);
+          if (onBannerChange) {
+            onBannerChange(newBanner);
+          }
+        };
+        reader.readAsDataURL(compressedFile);
+      } catch (error) {
+        // You might want to show an error message to the user here
+        console.error("Error processing image:", error);
+      }
     }
   };
 
@@ -205,8 +222,8 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
           style={{
             position: "relative",
             width: "100%",
-            height: 270,
-            marginBottom: 24,
+            height: 300,
+            marginBottom: 30,
             background: "#000",
             borderTopLeftRadius: 0,
             borderTopRightRadius: 0,
@@ -214,10 +231,11 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
           }}
         >
           <img
-            src={banner || defaultBanner}
+            src={banner}
             alt="banner"
             className="banner"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            onError={() => setBanner(defaultBanner)}
           />
           <div className="banner-overlay" style={{ height: "100%" }} />
           <div

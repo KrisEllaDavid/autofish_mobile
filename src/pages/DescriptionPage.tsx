@@ -1,34 +1,22 @@
 import React, { useState } from "react";
 import NavBar from "../components/NavBar";
 import PageCreationPage from "./PageCreationPage";
+import { useAuth } from "../context/AuthContext";
 
 const MAX_WORDS = 50;
 
 interface DescriptionPageProps {
   onBack: () => void;
   onContinue: (description: string) => void;
-  userData: any;
-  setUserData: React.Dispatch<React.SetStateAction<any>>;
 }
 
-const DescriptionPage: React.FC<DescriptionPageProps> = ({
-  onBack,
-  onContinue,
-  userData,
-  setUserData,
-}) => {
+const DescriptionPage: React.FC<DescriptionPageProps> = ({ onBack }) => {
+  const { updateUserData } = useAuth();
   const [description, setDescription] = useState("");
   const [goToPageCreation, setGoToPageCreation] = useState(false);
-  const [pageDescription, setPageDescription] = useState("");
 
   if (goToPageCreation) {
-    return (
-      <PageCreationPage
-        onBack={onBack}
-        userData={{ ...userData, description: pageDescription }}
-        setUserData={setUserData}
-      />
-    );
+    return <PageCreationPage onBack={onBack} />;
   }
 
   const wordCount = description.trim()
@@ -44,8 +32,10 @@ const DescriptionPage: React.FC<DescriptionPageProps> = ({
       setDescription("");
     } else if (words.length <= MAX_WORDS) {
       setDescription(value);
+      updateUserData({ description: value });
     } else {
       setDescription(words.slice(0, MAX_WORDS).join(" "));
+      updateUserData({ description: words.slice(0, MAX_WORDS).join(" ") });
     }
   };
 
@@ -138,7 +128,7 @@ const DescriptionPage: React.FC<DescriptionPageProps> = ({
             }}
             disabled={!isValid}
             onClick={() => {
-              setPageDescription(description);
+              setDescription(description);
               setGoToPageCreation(true);
             }}
           >

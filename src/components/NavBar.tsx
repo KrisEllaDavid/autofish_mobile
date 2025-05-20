@@ -8,7 +8,7 @@ interface NavBarProps {
 const navBarStyle: React.CSSProperties = {
   width: "100vw",
   maxWidth: 480,
-  height: 56,
+  height: 80,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",

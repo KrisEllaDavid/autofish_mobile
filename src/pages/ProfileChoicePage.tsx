@@ -2,21 +2,17 @@ import React from "react";
 import NavBar from "../components/NavBar";
 import CategoriesPage from "./CategoriesPage/CategoriesPage";
 import IDVerificationPage from "./IDVerificationPage";
+import { useAuth } from "../context/AuthContext";
 
 const userOutlineBlue = "/icons/User-Outline_blue.svg";
 const userOutlineWhite = "/icons/User-Outline_white.svg";
 
 interface ProfileChoicePageProps {
-  userData: any;
-  setUserData: React.Dispatch<React.SetStateAction<any>>;
   onBack: () => void;
 }
 
-const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
-  userData,
-  setUserData,
-  onBack,
-}) => {
+const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({ onBack }) => {
+  const { userData, updateUserData } = useAuth();
   const [goToCategories, setGoToCategories] = React.useState(false);
   const [goToIDVerification, setGoToIDVerification] = React.useState(false);
   const [profileType, setProfileType] = React.useState<
@@ -28,8 +24,6 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
       <CategoriesPage
         onBack={() => setGoToCategories(false)}
         profileType={profileType}
-        userData={userData}
-        setUserData={setUserData}
       />
     );
   }
@@ -38,8 +32,6 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
     return (
       <IDVerificationPage
         onBack={() => setGoToIDVerification(false)}
-        userData={userData}
-        setUserData={setUserData}
         profileType={profileType}
       />
     );
@@ -90,7 +82,7 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
             }}
           >
             <img
-              src={userData.avatar}
+              src={userData?.avatar}
               alt="avatar"
               style={{
                 width: "100%",
@@ -109,7 +101,7 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
               marginBottom: 30,
             }}
           >
-            {userData.name}
+            {userData?.name}
           </div>
           <div
             style={{
@@ -146,7 +138,7 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
             <button
               onClick={() => {
                 setProfileType("client");
-                setUserData((prev: any) => ({ ...prev, userRole: "client" }));
+                updateUserData({ userRole: "client" });
                 setGoToCategories(true);
               }}
               style={{
@@ -188,10 +180,7 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({
             <button
               onClick={() => {
                 setProfileType("producer");
-                setUserData((prev: any) => ({
-                  ...prev,
-                  userRole: "producteur",
-                }));
+                updateUserData({ userRole: "producteur" });
                 setGoToIDVerification(true);
               }}
               style={{

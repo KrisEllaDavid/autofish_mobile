@@ -3,27 +3,15 @@ import NavBar from "../components/NavBar";
 import PagePreviewPage from "./PagePreviewPage";
 import Modal from "../components/Modal";
 import HomePage from "./HomePage";
+import { useAuth } from "../context/AuthContext";
 
 const countries = [
   { name: "Cameroun", code: "+237" },
   { name: "République du Congo", code: "+242" },
 ];
 
-interface PageCreationPageProps {
-  onBack: () => void;
-  onPreview?: (info: any) => void;
-  onContinue?: (info: any) => void;
-  userData: any;
-  setUserData: React.Dispatch<React.SetStateAction<any>>;
-}
-
-const PageCreationPage: React.FC<PageCreationPageProps> = ({
-  onBack,
-  onPreview,
-  onContinue,
-  userData,
-  setUserData,
-}) => {
+const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { userData, updateUserData } = useAuth();
   const [pageName, setPageName] = useState("");
   const [country, setCountry] = useState(countries[0].name);
   const [countryCode, setCountryCode] = useState(countries[0].code);
@@ -38,16 +26,7 @@ const PageCreationPage: React.FC<PageCreationPageProps> = ({
   const isValid = pageName && country && address && phone;
 
   if (showHomePage) {
-    return (
-      <HomePage
-        userData={{
-          name: userData.name,
-          avatar: userData.avatar,
-          selectedCategories: userData.selectedCategories || [],
-          userRole: userData.userRole,
-        }}
-      />
-    );
+    return <HomePage />;
   }
 
   if (showPreview && previewInfo) {
@@ -58,9 +37,7 @@ const PageCreationPage: React.FC<PageCreationPageProps> = ({
           ...userData,
           ...previewInfo,
         }}
-        onBannerChange={(banner: string) =>
-          setUserData((prev: any) => ({ ...prev, banner }))
-        }
+        onBannerChange={(banner: string) => updateUserData({ banner })}
       />
     );
   }

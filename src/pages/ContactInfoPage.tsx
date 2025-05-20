@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import NavBar from "../components/NavBar";
 import Modal from "../components/Modal";
 import HomePage from "./HomePage";
+import { useAuth } from "../context/AuthContext";
 
 const countries = [
   { name: "Cameroun", code: "+237" },
@@ -9,52 +10,38 @@ const countries = [
   // Add more as needed
 ];
 
-interface ContactInfoPageProps {
+const ContactInfoPage: React.FC<{
   onBack: () => void;
-  onContinue: (info: {
-    country: string;
-    address: string;
-    phone: string;
-    code: string;
-  }) => void;
-  userData: any;
-  setUserData: React.Dispatch<React.SetStateAction<any>>;
-}
-
-const ContactInfoPage: React.FC<ContactInfoPageProps> = ({
-  onBack,
-  onContinue,
-  userData,
-  setUserData,
-}) => {
+  onContinue: (info: any) => void;
+}> = ({ onBack, onContinue }) => {
+  const { userData, updateUserData } = useAuth();
   const [country, setCountry] = useState(countries[0].name);
   const [countryCode, setCountryCode] = useState(countries[0].code);
   const [showCountryList, setShowCountryList] = useState(false);
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [userDataState, setUserDataState] = useState<any>(null);
   const [showHomePage, setShowHomePage] = useState(false);
 
   const isValid = country && address && phone;
 
   const handleSignup = (data: any) => {
-    // This is where the backend POST request will go
-    // e.g., axios.post('/api/signup', data)
+    updateUserData({
+      country,
+      code: countryCode,
+      address,
+      phone,
+      email: userData?.email,
+      name: userData?.name,
+      avatar: userData?.avatar,
+      userRole: userData?.userRole,
+      selectedCategories: userData?.selectedCategories,
+    });
     setShowModal(true);
   };
 
   if (showHomePage) {
-    return (
-      <HomePage
-        userData={{
-          name: userData.name,
-          avatar: userData.avatar,
-          selectedCategories: userData.selectedCategories || [],
-          userRole: userData.userRole,
-        }}
-      />
-    );
+    return <HomePage />;
   }
 
   return (
@@ -265,13 +252,11 @@ const ContactInfoPage: React.FC<ContactInfoPageProps> = ({
             disabled={!isValid}
             onClick={() => {
               const data = {
-                ...userData,
                 country,
                 address,
                 phone,
                 code: countryCode,
               };
-              setUserData(data);
               handleSignup(data);
             }}
           >
@@ -307,7 +292,7 @@ const ContactInfoPage: React.FC<ContactInfoPageProps> = ({
                 }}
               >
                 <img
-                  src={userData.avatar || "/icons/account.svg"}
+                  src={userData?.avatar || "/icons/account.svg"}
                   alt="avatar"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
