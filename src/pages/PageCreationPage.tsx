@@ -12,14 +12,17 @@ const countries = [
 
 const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { userData, updateUserData } = useAuth();
-  const [pageName, setPageName] = useState("");
-  const [country, setCountry] = useState(countries[0].name);
-  const [countryCode, setCountryCode] = useState(countries[0].code);
+  const [pageName, setPageName] = useState(userData?.page?.pageName || "");
+  const [country, setCountry] = useState(
+    userData?.page?.country || countries[0].name
+  );
+  const [countryCode, setCountryCode] = useState(
+    userData?.page?.code || countries[0].code
+  );
   const [showCountryList, setShowCountryList] = useState(false);
-  const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState(userData?.page?.address || "");
+  const [phone, setPhone] = useState(userData?.page?.phone || "");
   const [showPreview, setShowPreview] = useState(false);
-  const [previewInfo, setPreviewInfo] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
   const [showHomePage, setShowHomePage] = useState(false);
 
@@ -29,17 +32,21 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return <HomePage />;
   }
 
-  if (showPreview && previewInfo) {
-    return (
-      <PagePreviewPage
-        onBack={() => setShowPreview(false)}
-        info={{
-          ...userData,
-          ...previewInfo,
-        }}
-        onBannerChange={(banner: string) => updateUserData({ banner })}
-      />
-    );
+  const handleShowPreview = () => {
+    updateUserData({
+      page: {
+        pageName,
+        country,
+        address,
+        phone,
+        code: countryCode,
+      },
+    });
+    setShowPreview(true);
+  };
+
+  if (showPreview) {
+    return <PagePreviewPage onBack={() => setShowPreview(false)} />;
   }
 
   return (
@@ -265,16 +272,7 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <button
             className="preview-btn"
             type="button"
-            onClick={() => {
-              setPreviewInfo({
-                pageName,
-                country,
-                address,
-                phone,
-                code: countryCode,
-              });
-              setShowPreview(true);
-            }}
+            onClick={handleShowPreview}
           >
             Aperçu de la page
           </button>
@@ -314,7 +312,7 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   }}
                 >
                   <img
-                    src={userData.avatar}
+                    src={userData?.avatar}
                     alt="cover"
                     style={{
                       width: "100%",

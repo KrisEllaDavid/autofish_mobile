@@ -7,6 +7,7 @@ interface PostCardProps {
   onLike?: (postId: string) => void;
   onComment?: (postId: string) => void;
   onProducerClick?: (producerId: string) => void;
+  hideContactButton?: boolean;
 }
 
 const formatDate = (dateString: string): string => {
@@ -37,6 +38,7 @@ const PostCard: React.FC<PostCardProps> = ({
   onLike,
   onComment,
   onProducerClick,
+  hideContactButton = false,
 }) => {
   const locationIcon = "/icons/Location.svg";
   const favouriteIcon = isLiked
@@ -250,26 +252,28 @@ const PostCard: React.FC<PostCardProps> = ({
           />
           J'aime
         </button>
-        <button
-          onClick={() => onComment?.(post.id)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "#222",
-            fontWeight: 500,
-            fontSize: 15,
-          }}
-        >
-          <img
-            src={commentIcon}
-            alt="comment"
-            style={{ width: 22, height: 22, marginRight: 6 }}
-          />
-          Contacter
-        </button>
+        {!hideContactButton && (
+          <button
+            onClick={() => onComment?.(post.id)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#222",
+              fontWeight: 500,
+              fontSize: 15,
+            }}
+          >
+            <img
+              src={commentIcon}
+              alt="comment"
+              style={{ width: 22, height: 22, marginRight: 6 }}
+            />
+            Contacter
+          </button>
+        )}
       </div>
     </div>
   );

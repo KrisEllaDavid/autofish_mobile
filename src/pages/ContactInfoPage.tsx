@@ -15,27 +15,26 @@ const ContactInfoPage: React.FC<{
   onContinue: (info: any) => void;
 }> = ({ onBack, onContinue }) => {
   const { userData, updateUserData } = useAuth();
-  const [country, setCountry] = useState(countries[0].name);
-  const [countryCode, setCountryCode] = useState(countries[0].code);
+  const [country, setCountry] = useState(
+    userData?.country || countries[0].name
+  );
+  const [countryCode, setCountryCode] = useState(
+    userData?.code || countries[0].code
+  );
   const [showCountryList, setShowCountryList] = useState(false);
-  const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState(userData?.address || "");
+  const [phone, setPhone] = useState(userData?.phone || "");
   const [showModal, setShowModal] = useState(false);
   const [showHomePage, setShowHomePage] = useState(false);
 
   const isValid = country && address && phone;
 
-  const handleSignup = (data: any) => {
+  const handleSignup = () => {
     updateUserData({
       country,
       code: countryCode,
       address,
       phone,
-      email: userData?.email,
-      name: userData?.name,
-      avatar: userData?.avatar,
-      userRole: userData?.userRole,
-      selectedCategories: userData?.selectedCategories,
     });
     setShowModal(true);
   };
@@ -250,15 +249,7 @@ const ContactInfoPage: React.FC<{
               boxShadow: "0 2px 12px rgba(0, 156, 183, 0.08)",
             }}
             disabled={!isValid}
-            onClick={() => {
-              const data = {
-                country,
-                address,
-                phone,
-                code: countryCode,
-              };
-              handleSignup(data);
-            }}
+            onClick={handleSignup}
           >
             Terminer l'inscription
           </button>

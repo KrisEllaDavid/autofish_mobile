@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import NavBar from "../components/NavBar";
 import ProfileChoicePage from "./ProfileChoicePage";
+import LoginPage from "./LoginPage";
 import Modal from "../components/Modal";
 import { useAuth } from "../context/AuthContext";
 import { compressImage, validateImage } from "../utils/imageCompression";
@@ -445,6 +446,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         <div style={{ marginTop: 8, fontSize: 15, color: "#b0b0b0" }}>
           Vous avez un compte ?{" "}
           <span
+            onClick={onBack}
             style={{
               color: "#009CB7",
               fontWeight: 600,

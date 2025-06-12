@@ -1,15 +1,11 @@
 import React, { useEffect, useRef } from "react";
+import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
 
 interface AccountMenuProps {
   open: boolean;
   anchorRef: React.RefObject<HTMLButtonElement>;
   onClose: () => void;
-  userData: {
-    name?: string;
-    avatar?: string;
-    email?: string;
-    userRole?: string;
-  };
 }
 
 const mainBlue = "#00B2D6";
@@ -18,9 +14,9 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   open,
   anchorRef,
   onClose,
-  userData,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const { userData, logout } = useAuth();
 
   // Close on click outside
   useEffect(() => {
@@ -37,6 +33,14 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onClose, anchorRef]);
+
+  const handleLogout = () => {
+    onClose();
+    toast.info("Déconnexion en cours...");
+    setTimeout(() => {
+      logout();
+    }, 500);
+  };
 
   // Positioning: below anchor
   const getMenuStyle = (): React.CSSProperties => {
@@ -82,8 +86,8 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
               }}
             >
               <img
-                src={userData.avatar || "/icons/account.svg"}
-                alt={userData.name}
+                src={userData?.avatar || "/icons/account.svg"}
+                alt={userData?.name}
                 style={{
                   width: 54,
                   height: 54,
@@ -94,10 +98,10 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
               />
               <div>
                 <div style={{ fontWeight: 600, fontSize: 15 }}>
-                  {userData.name}
+                  {userData?.name}
                 </div>
                 <div style={{ color: "#888", fontSize: 13 }}>
-                  {userData.email || "-"}
+                  {userData?.email || "-"}
                 </div>
               </div>
             </div>
@@ -119,7 +123,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                   letterSpacing: 0.2,
                 }}
               >
-                {userData.userRole
+                {userData?.userRole
                   ? userData.userRole.charAt(0).toUpperCase() +
                     userData.userRole.slice(1)
                   : "Client"}
@@ -154,7 +158,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                 cursor: "pointer",
                 textAlign: "left",
               }}
-              onClick={() => alert("Déconnexion")}
+              onClick={handleLogout}
             >
               Déconnexion
             </button>

@@ -6,13 +6,20 @@ import { mockPosts, Post } from "../mock/posts";
 import useLocalStorage from "../hooks/useLocalStorage";
 import "./HomePage.css";
 import NotificationsPage from "./Notifications/NotificationsPage";
+import MyPage from "./MyPage";
 import { useAuth } from "../context/AuthContext";
+
+type MainTab = "home" | "messages" | "connections" | "profile" | "myPage";
+
+enum Overlay {
+  None = "none",
+  Notifications = "notifications",
+}
 
 const HomePage: React.FC = () => {
   const { userData } = useAuth();
-  const [activeTab, setActiveTab] = useState<
-    "home" | "messages" | "connections" | "profile"
-  >("home");
+  const [activeTab, setActiveTab] = useState<MainTab>("home");
+  const [overlay, setOverlay] = useState<Overlay>(Overlay.None);
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedPosts, setLikedPosts] = useLocalStorage<string[]>(
     "likedPosts",
@@ -20,7 +27,6 @@ const HomePage: React.FC = () => {
   );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [showNotifications, setShowNotifications] = useState(false);
 
   // Debug logging
   useEffect(() => {
@@ -97,11 +103,32 @@ const HomePage: React.FC = () => {
     // In a real app, you would navigate to the producer's profile
   };
 
-  const handleTabChange = (
-    tab: "home" | "messages" | "connections" | "profile"
-  ) => {
-    console.log("Tab changed to:", tab);
+  // --- Navigation Logic ---
+  // Always go to home, clear overlays
+  const goHome = () => {
+    setActiveTab("home");
+    setOverlay(Overlay.None);
+  };
+
+  // BottomNavBar tab change
+  const handleTabChange = (tab: MainTab) => {
+    if (tab === "home") {
+      goHome();
+      return;
+    }
     setActiveTab(tab);
+    setOverlay(Overlay.None);
+  };
+
+  // TopNavBar notification click
+  const handleNotificationClick = () => {
+    setOverlay(Overlay.Notifications);
+  };
+
+  // TopNavBar my page click
+  const handleMyPageClick = () => {
+    setOverlay(Overlay.None);
+    setActiveTab("myPage");
   };
 
   const refreshFeed = () => {
@@ -115,9 +142,39 @@ const HomePage: React.FC = () => {
     }, 1000);
   };
 
-  if (showNotifications) {
+  // Show notifications overlay
+  if (overlay === Overlay.Notifications) {
     return (
-      <NotificationsPage onBackToHome={() => setShowNotifications(false)} />
+      <NotificationsPage
+        onBackToHome={goHome}
+        onNotificationClick={handleNotificationClick}
+        onMyPageClick={handleMyPageClick}
+        activeTab="notifications"
+        userAvatar={userData?.avatar}
+        userName={userData?.name}
+        userEmail={userData?.email}
+        userRole={userData?.userRole}
+      />
+    );
+  }
+
+  // Show my page
+  if (activeTab === "myPage") {
+    return (
+      <div className="home-container">
+        <TopNavBar
+          title="Ma page"
+          userAvatar={userData?.avatar}
+          userName={userData?.name}
+          userEmail={userData?.email}
+          onNotificationClick={handleNotificationClick}
+          userRole={userData?.userRole}
+          onMyPageClick={handleMyPageClick}
+          activeTab="myPage"
+        />
+        <MyPage onBack={goHome} />
+        <BottomNavBar activeTab="profile" onTabChange={handleTabChange} />
+      </div>
     );
   }
 
@@ -129,10 +186,10 @@ const HomePage: React.FC = () => {
         userAvatar={userData?.avatar}
         userName={userData?.name}
         userEmail={userData?.email}
-        onNotificationClick={() => setShowNotifications(true)}
+        onNotificationClick={handleNotificationClick}
         userRole={userData?.userRole}
-        onMyPageClick={() => console.log("My Page clicked")}
-        activeTab="home"
+        onMyPageClick={handleMyPageClick}
+        activeTab={activeTab}
       />
       {/* Search Bar */}
       <div

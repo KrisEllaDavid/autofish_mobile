@@ -17,6 +17,7 @@ const notificationIcon = "/icons/Notification.svg";
 const notificationIconWhite = "/icons/Notification_white.svg";
 const menuIcon = "/icons/3-dots-home-menu.svg";
 const myPageIcon = "/icons/mypage-icon.svg";
+const myPageIconWhite = "/icons/mypage-icon-white.svg";
 const mainBlue = "#00B2D6";
 
 const TopNavBar: React.FC<TopNavBarProps> = ({
@@ -29,8 +30,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   activeTab,
   userName,
 }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div
@@ -98,16 +99,22 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
           <button
             className="nav-button"
             style={{
-              background: "none",
+              background: activeTab === "myPage" ? mainBlue : "none",
               border: "none",
               padding: 8,
               marginRight: 0,
               cursor: "pointer",
+              borderRadius: activeTab === "myPage" ? "10px" : undefined,
+              width: 40,
+              height: 40,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
             onClick={onMyPageClick}
           >
             <img
-              src={myPageIcon}
+              src={activeTab === "myPage" ? myPageIconWhite : myPageIcon}
               alt="Ma page"
               style={{ width: 24, height: 24 }}
             />
@@ -155,7 +162,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         </button>
         <AccountMenu
           open={menuOpen}
-          anchorRef={menuButtonRef}
+          anchorRef={menuButtonRef as React.RefObject<HTMLButtonElement>}
           onClose={() => setMenuOpen(false)}
           userData={{
             name: userName || "Utilisateur",

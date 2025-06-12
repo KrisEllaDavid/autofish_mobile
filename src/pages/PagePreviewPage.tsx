@@ -1,40 +1,21 @@
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import NavBar from "../components/NavBar";
 import { compressImage, validateImage } from "../utils/imageCompression";
-
-interface PageInfo {
-  pageName: string;
-  country: string;
-  address: string;
-  phone: string;
-  code: string;
-  avatar?: string;
-  banner?: string;
-  userName?: string;
-  userRole?: string;
-  isPreview?: boolean;
-  name: string;
-}
-
-interface PagePreviewPageProps {
-  onBack: (data: PageInfo) => void;
-  info: PageInfo;
-  onBannerChange?: (banner: string) => void;
-}
+import { useAuth } from "../context/AuthContext";
 
 const defaultBanner = "/images/page_banner.jpg";
 const defaultAvatar = "/icons/account.svg";
 const cameraIcon = "/icons/camera_icon_white.svg";
 const locationIcon = "/icons/Location.svg";
 
-const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
-  onBack,
-  info,
-  onBannerChange,
-}) => {
-  const [banner, setBanner] = useState<string>(info.banner || defaultBanner);
-
+const PagePreviewPage: React.FC<{
+  onBack: () => void;
+  onBannerChange?: (banner: string) => void;
+}> = ({ onBack, onBannerChange }) => {
+  const { userData, updateUserData } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const banner = userData?.page?.banner || defaultBanner;
 
   const handleBannerClick = () => {
     fileInputRef.current?.click();
@@ -44,34 +25,30 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image")) {
       try {
-        // Validate the image first
         validateImage(file);
-
-        // Compress the image
         const compressedFile = await compressImage(file, {
           maxWidth: 1200,
           maxHeight: 600,
           quality: 0.8,
         });
-
         const reader = new FileReader();
         reader.onload = (ev) => {
           const newBanner = ev.target?.result as string;
-          setBanner(newBanner);
+          updateUserData({
+            page: {
+              ...userData?.page,
+              banner: newBanner,
+            },
+          });
           if (onBannerChange) {
             onBannerChange(newBanner);
           }
         };
         reader.readAsDataURL(compressedFile);
       } catch (error) {
-        // You might want to show an error message to the user here
         console.error("Error processing image:", error);
       }
     }
-  };
-
-  const handleBack = () => {
-    onBack({ ...info, banner });
   };
 
   return (
@@ -217,7 +194,7 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
         className="fade-in-page"
         style={{ minHeight: "100vh", background: "#fff" }}
       >
-        <NavBar title="Aperçu de la page" onBack={handleBack} />
+        <NavBar title="Aperçu de la page" onBack={onBack} />
         <div
           style={{
             position: "relative",
@@ -235,7 +212,9 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
             alt="banner"
             className="banner"
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            onError={() => setBanner(defaultBanner)}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = defaultBanner;
+            }}
           />
           <div className="banner-overlay" style={{ height: "100%" }} />
           <div
@@ -253,7 +232,7 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
           >
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <img
-                src={info.avatar}
+                src={userData?.avatar || defaultAvatar}
                 alt="avatar"
                 className="avatar"
                 style={{ width: 56, height: 56, border: "3px solid #fff" }}
@@ -273,7 +252,7 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
                     lineHeight: 1,
                   }}
                 >
-                  {info.name}
+                  {userData?.name}
                 </span>
                 <span
                   style={{
@@ -283,7 +262,7 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
                     opacity: 0.9,
                   }}
                 >
-                  {info.userRole}
+                  {userData?.userRole}
                 </span>
               </div>
             </div>
@@ -297,7 +276,7 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
                 textShadow: "0 2px 8px rgba(0,0,0,0.18)",
               }}
             >
-              {info.pageName}
+              {userData?.page?.pageName}
             </div>
             <div
               style={{
@@ -314,7 +293,7 @@ const PagePreviewPage: React.FC<PagePreviewPageProps> = ({
                   alt="location"
                   style={{ width: 18, height: 18, marginRight: 6 }}
                 />
-                <span style={{ color: "#fff" }}>{info.address}</span>
+                <span style={{ color: "#fff" }}>{userData?.page?.address}</span>
               </div>
               <div
                 className="banner-camera"

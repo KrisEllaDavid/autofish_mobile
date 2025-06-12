@@ -4,27 +4,41 @@ import BottomNavBar from "../../components/BottomNavBar";
 import "../HomePage.css";
 import NotificationList from "./NotificationList";
 import { notifications } from "./notificationsMock";
-import { useAuth } from "../../context/AuthContext";
 
-const NotificationsPage: React.FC<{ onBackToHome: () => void }> = ({
+const NotificationsPage: React.FC<{
+  onBackToHome: () => void;
+  onNotificationClick: () => void;
+  onMyPageClick: () => void;
+  activeTab: string;
+  userAvatar?: string;
+  userName?: string;
+  userEmail?: string;
+  userRole?: string;
+}> = ({
   onBackToHome,
+  onNotificationClick,
+  onMyPageClick,
+  activeTab,
+  userAvatar,
+  userName,
+  userEmail,
+  userRole,
 }) => {
-  const { userData } = useAuth();
   return (
     <div className="home-container">
       {/* Top Navigation with notifications icon highlighted */}
       <TopNavBar
         title="Notifs"
-        userAvatar={userData?.avatar}
-        userRole={userData?.userRole}
-        userName={userData?.name}
-        userEmail={userData?.email}
-        activeTab="notifications"
-        onNotificationClick={() => {}}
-        onMyPageClick={() => {}}
+        userAvatar={userAvatar}
+        userRole={userRole}
+        userName={userName}
+        userEmail={userEmail}
+        activeTab={activeTab}
+        onNotificationClick={onNotificationClick}
+        onMyPageClick={onMyPageClick}
       />
       {/* Notifications Feed */}
-      <div className="posts-feed">
+      <div className="posts-feed" style={{ marginTop: "90px" }}>
         <NotificationList notifications={notifications} />
         {/* Add extra space at the bottom to ensure content doesn't hide behind bottom nav */}
         <div style={{ height: "70px" }}></div>
