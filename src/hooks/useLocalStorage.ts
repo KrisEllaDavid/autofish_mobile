@@ -12,9 +12,8 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       const item = window.localStorage.getItem(key);
       // Parse stored json or if none return initialValue
       return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      // If error also return initialValue
-      console.log(error);
+    } catch {
+      // Handle localStorage parsing errors - return initial value as fallback
       return initialValue;
     }
   });
@@ -32,9 +31,9 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
-    } catch (error) {
-      // A more advanced implementation would handle the error case
-      console.log(error);
+    } catch {
+      // Silently handle localStorage write errors
+      // Application should continue to function without localStorage
     }
   };
   
@@ -44,8 +43,8 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val
       if (e.key === key && e.newValue) {
         try {
           setStoredValue(JSON.parse(e.newValue));
-        } catch (error) {
-          console.error('Error parsing storage value', error);
+        } catch {
+          // Silently handle parsing errors - return initial value as fallback
         }
       }
     };

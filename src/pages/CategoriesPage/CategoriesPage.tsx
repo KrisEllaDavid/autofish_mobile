@@ -24,7 +24,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
   onBack,
   profileType,
 }) => {
-  const { userData, updateUserData } = useAuth();
+  const { updateUserData } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [availableCategories, setAvailableCategories] =
     useState(mockCategories);

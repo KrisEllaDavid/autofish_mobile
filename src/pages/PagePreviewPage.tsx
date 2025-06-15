@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import NavBar from "../components/NavBar";
 import { compressImage, validateImage } from "../utils/imageCompression";
 import { useAuth } from "../context/AuthContext";
+import { toast } from "react-toastify";
 
 const defaultBanner = "/images/page_banner.jpg";
 const defaultAvatar = "/icons/account.svg";
@@ -45,8 +46,9 @@ const PagePreviewPage: React.FC<{
           }
         };
         reader.readAsDataURL(compressedFile);
-      } catch (error) {
-        console.error("Error processing image:", error);
+      } catch {
+        // Error processing image - show user-friendly message
+        toast.error("Erreur lors du traitement de l'image");
       }
     }
   };

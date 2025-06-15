@@ -5,25 +5,34 @@ import { compressImage, validateImage } from "../utils/imageCompression";
 import { useAuth } from "../context/AuthContext";
 import Modal from "../components/Modal";
 import PostCard from "../components/PostCard";
+import { Post } from "../mock/posts";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const defaultBanner = "/images/page_banner.jpg";
+// Extended Post interface for MyPage with additional properties
+interface MyPost extends Post {
+  lastModified?: string;
+  isLiked?: boolean;
+}
+
+// Constants
+const DEFAULT_BANNER = "/images/page_banner.jpg";
+const MAIN_BLUE = "#00B2D6";
+const CATEGORIES = [
+  "Sélectionner une catégorie",
+  "Produits agricoles",
+  "Poissons",
+  "Fruits de mer",
+  "Épices",
+  "Légumes",
+  "Céréales",
+];
+const MODAL_Z_INDEX = 100000;
+
+const defaultBanner = DEFAULT_BANNER;
 const cameraIcon = "/icons/camera_icon_white.svg";
 const editIconWhite = "/icons/edit-white.svg";
 const editIconBlack = "/icons/edit-black.svg";
-const mainBlue = "#009cb7";
-
-const categories = [
-  "Fruits",
-  "Légumes",
-  "Poisson",
-  "Viande",
-  "Céréales",
-  "Produits laitiers",
-  "Boissons",
-  "Autres",
-];
 
 const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { userData, updateUserData } = useAuth();
@@ -36,15 +45,15 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [pageName, setPageName] = useState(userData?.page?.pageName || "");
   const [location, setLocation] = useState(userData?.page?.address || "");
   const [showPostModal, setShowPostModal] = useState(false);
-  const [editingPost, setEditingPost] = useState<any>(null);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [editingPost, setEditingPost] = useState<MyPost | null>(null);
+  const [posts, setPosts] = useState<MyPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   // Post modal state
   const [postImage, setPostImage] = useState<string>("");
   const [postDescription, setPostDescription] = useState("");
-  const [postCategory, setPostCategory] = useState(categories[0]);
+  const [postCategory, setPostCategory] = useState(CATEGORIES[0]);
   const [postPrice, setPostPrice] = useState("");
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -61,14 +70,14 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           const parsedPosts = JSON.parse(cachedPosts);
           // Sort posts by lastModified date
           parsedPosts.sort(
-            (a: any, b: any) =>
+            (a: MyPost, b: MyPost) =>
               new Date(b.lastModified || b.date).getTime() -
               new Date(a.lastModified || a.date).getTime()
           );
           setPosts(parsedPosts);
         } else if (userData?.myPosts) {
           const sortedPosts = [...userData.myPosts].sort(
-            (a: any, b: any) =>
+            (a: MyPost, b: MyPost) =>
               new Date(b.lastModified || b.date).getTime() -
               new Date(a.lastModified || a.date).getTime()
           );
@@ -76,8 +85,9 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           // Cache the posts
           localStorage.setItem("myPosts", JSON.stringify(sortedPosts));
         }
-      } catch (error) {
-        console.error("Error loading posts:", error);
+      } catch {
+        // Error loading posts - show user-friendly message
+        toast.error("Erreur lors du chargement des publications");
       } finally {
         setIsLoading(false);
       }
@@ -105,8 +115,9 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           updateUserData({ page: { ...userData?.page, banner: newBanner } });
         };
         reader.readAsDataURL(compressedFile);
-      } catch (error) {
-        console.error("Error processing image:", error);
+      } catch {
+        // Error processing image - show user-friendly message
+        toast.error("Erreur lors du traitement de l'image");
       }
     }
   };
@@ -128,15 +139,15 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     setEditingPost(null);
     setPostImage("");
     setPostDescription("");
-    setPostCategory(categories[0]);
+    setPostCategory(CATEGORIES[0]);
     setPostPrice("");
     setShowPostModal(true);
   };
-  const openEditPostModal = (post: any) => {
+  const openEditPostModal = (post: MyPost) => {
     setEditingPost(post);
     setPostImage(post.postImage || "");
     setPostDescription(post.description || "");
-    setPostCategory(post.category || categories[0]);
+    setPostCategory(post.category || CATEGORIES[0]);
     setPostPrice(post.price?.toString() || "");
     setShowPostModal(true);
   };
@@ -157,8 +168,9 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           setPostImage(ev.target?.result as string);
         };
         reader.readAsDataURL(compressedFile);
-      } catch (error) {
-        console.error("Error processing image:", error);
+      } catch {
+        // Error processing image - show user-friendly message
+        toast.error("Erreur lors du traitement de l'image");
       }
     }
   };
@@ -176,8 +188,8 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       localStorage.setItem("myPosts", JSON.stringify(updatedPosts));
       await updateUserData({ myPosts: updatedPosts });
       toast.success("Publication supprimée avec succès");
-    } catch (error) {
-      console.error("Error deleting post:", error);
+    } catch {
+      // Error deleting post - already handled with toast.error below
       toast.error("Erreur lors de la suppression de la publication");
     } finally {
       setShowDeleteModal(false);
@@ -210,7 +222,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     setIsSaving(true);
     try {
-      const newPost = {
+      const newPost: MyPost = {
         id: editingPost ? editingPost.id : Date.now().toString(),
         postImage: postImage,
         description: postDescription.trim(),
@@ -222,8 +234,8 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         date: new Date().toISOString(),
         lastModified: new Date().toISOString(),
         likes: editingPost?.likes || 0,
-        comments: editingPost?.comments || [],
-        isLiked: false,
+        comments: editingPost?.comments || 0,
+        isLiked: editingPost?.isLiked || false,
       };
 
       let updatedPosts;
@@ -249,8 +261,8 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       await updateUserData({ myPosts: updatedPosts });
 
       setShowPostModal(false);
-    } catch (error) {
-      console.error("Error saving post:", error);
+    } catch {
+      // Error saving post - already handled with toast.error below
       toast.error("Erreur lors de l'enregistrement de la publication");
     } finally {
       setIsSaving(false);
@@ -277,7 +289,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            zIndex: 100000,
+            zIndex: MODAL_Z_INDEX,
           }}
         >
           <div
@@ -285,7 +297,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               fontWeight: 700,
               fontSize: 20,
               marginBottom: 18,
-              color: mainBlue,
+              color: MAIN_BLUE,
             }}
           >
             {editingPost ? "Modifier la publication" : "Nouvelle publication"}
@@ -325,7 +337,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             value={postCategory}
             onChange={(e) => setPostCategory(e.target.value)}
           >
-            {categories.map((cat) => (
+            {CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>
@@ -346,8 +358,16 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             >
               Annuler
             </button>
-            <button className="modal-btn save" onClick={handleSavePost}>
-              {editingPost ? "Enregistrer" : "Créer"}
+            <button
+              className="modal-btn save"
+              onClick={handleSavePost}
+              disabled={isSaving}
+            >
+              {isSaving
+                ? "Enregistrement..."
+                : editingPost
+                ? "Enregistrer"
+                : "Créer"}
             </button>
           </div>
         </div>
@@ -379,7 +399,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            zIndex: 100000,
+            zIndex: MODAL_Z_INDEX,
           }}
         >
           <div
@@ -387,7 +407,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               fontWeight: 700,
               fontSize: 20,
               marginBottom: 18,
-              color: mainBlue,
+              color: MAIN_BLUE,
             }}
           >
             Modifier le nom de la page
@@ -442,7 +462,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            zIndex: 100000,
+            zIndex: MODAL_Z_INDEX,
           }}
         >
           <div
@@ -450,7 +470,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               fontWeight: 700,
               fontSize: 20,
               marginBottom: 18,
-              color: mainBlue,
+              color: MAIN_BLUE,
             }}
           >
             Modifier l'adresse
@@ -502,7 +522,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            zIndex: 100000,
+            zIndex: MODAL_Z_INDEX,
           }}
         >
           <div

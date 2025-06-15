@@ -23,12 +23,10 @@ const mainBlue = "#00B2D6";
 const TopNavBar: React.FC<TopNavBarProps> = ({
   title,
   userAvatar,
-  userEmail,
   userRole,
   onNotificationClick,
   onMyPageClick,
   activeTab,
-  userName,
 }) => {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -164,12 +162,6 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
           open={menuOpen}
           anchorRef={menuButtonRef as React.RefObject<HTMLButtonElement>}
           onClose={() => setMenuOpen(false)}
-          userData={{
-            name: userName || "Utilisateur",
-            avatar: userAvatar,
-            email: userEmail,
-            userRole: userRole,
-          }}
         />
       </div>
     </div>

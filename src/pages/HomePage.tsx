@@ -25,13 +25,12 @@ const HomePage: React.FC = () => {
     "likedPosts",
     []
   );
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState("");
 
   // Debug logging
   useEffect(() => {
-    console.log("HomePage mounted - userData:", userData);
-    console.log("Is bottom nav visible?");
+    // TODO: Add analytics tracking for HomePage mount
+    // TODO: Add bottom navigation visibility tracking
   }, [userData]);
 
   // Load and sort posts, prioritizing user's selected categories
@@ -94,13 +93,15 @@ const HomePage: React.FC = () => {
   };
 
   const handleComment = (postId: string) => {
-    console.log("Comment on post:", postId);
+    // TODO: Implement comment functionality - navigate to comments page or open comment modal
     // In a real app, you would open a comment dialog or navigate to a comments page
+    console.log("Comment on post:", postId);
   };
 
   const handleProducerClick = (producerId: string) => {
-    console.log("Navigate to producer:", producerId);
+    // TODO: Implement producer profile navigation
     // In a real app, you would navigate to the producer's profile
+    console.log("Navigate to producer profile:", producerId);
   };
 
   // --- Navigation Logic ---
@@ -131,16 +132,16 @@ const HomePage: React.FC = () => {
     setActiveTab("myPage");
   };
 
-  const refreshFeed = () => {
-    setIsRefreshing(true);
-
-    // Simulate network request
-    setTimeout(() => {
-      // Shuffle the posts to simulate new content
-      setPosts([...mockPosts].sort(() => Math.random() - 0.5));
-      setIsRefreshing(false);
-    }, 1000);
-  };
+  // TODO: Connect to pull-to-refresh functionality
+  // const refreshFeed = () => {
+  //   setIsRefreshing(true);
+  //   // Simulate feed refresh
+  //   setTimeout(() => {
+  //     // Refresh logic here
+  //     // setPosts([...newPosts]);
+  //     setIsRefreshing(false);
+  //   }, 1500);
+  // };
 
   // Show notifications overlay
   if (overlay === Overlay.Notifications) {
@@ -240,15 +241,15 @@ const HomePage: React.FC = () => {
       {/* Posts Feed - Only this part should be scrollable */}
       <div className="posts-feed">
         {/* Pull to refresh indicator */}
-        {isRefreshing && (
+        {/* {isRefreshing && (
           <div className="refresh-indicator">
             <span className="refresh-spinner">⟳</span>
             Chargement...
           </div>
-        )}
+        )} */}
 
         {/* Posts list */}
-        {filteredPosts.map((post, index) => (
+        {filteredPosts.map((post) => (
           <div key={post.id} className="post-animation">
             <PostCard
               post={post}

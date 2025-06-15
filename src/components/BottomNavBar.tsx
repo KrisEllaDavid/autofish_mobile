@@ -97,7 +97,14 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
           {leftTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => onTabChange(tab.id as any)}
+              onClick={() => {
+                if (tab.id === "connections") {
+                  onTabChange("connections");
+                } else if (tab.id === "like") {
+                  // Handle like action - this could be a separate callback
+                  console.log("Like button clicked");
+                }
+              }}
               style={{
                 background: "none",
                 border: "none",
@@ -126,7 +133,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
           {rightTabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => onTabChange(tab.id as any)}
+              onClick={() => onTabChange(tab.id as "messages" | "profile")}
               style={{
                 background: "none",
                 border: "none",

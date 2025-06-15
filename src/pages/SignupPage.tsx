@@ -1,11 +1,10 @@
 import React, { useState } from "react";
+import { toast } from "react-toastify";
 import NavBar from "../components/NavBar";
 import ProfileChoicePage from "./ProfileChoicePage";
-import LoginPage from "./LoginPage";
 import Modal from "../components/Modal";
 import { useAuth } from "../context/AuthContext";
 import { compressImage, validateImage } from "../utils/imageCompression";
-
 const userIcon = "/icons/account.svg";
 const cameraIcon = "/icons/camera_icon.svg";
 const emailIcon = "/icons/Email.svg";
@@ -20,7 +19,6 @@ const passwordIconBlue = "/icons/Password_blue.svg";
 const checkIcon = "/icons/Check.svg";
 const checkboxIcon = "/icons/Checkbox.svg";
 const bravoCheckIcon = "/icons/Check.svg";
-
 const getInputStyle = (hasContent: boolean): React.CSSProperties => ({
   width: "100%",
   padding: "16px 48px 16px 55px",
@@ -35,7 +33,6 @@ const getInputStyle = (hasContent: boolean): React.CSSProperties => ({
   boxSizing: "border-box",
   fontWeight: 500,
 });
-
 const inputContainerStyle: React.CSSProperties = {
   position: "relative",
   width: "100%",
@@ -45,7 +42,6 @@ const inputContainerStyle: React.CSSProperties = {
   justifyContent: "center",
   flexDirection: "row",
 };
-
 const iconStyle: React.CSSProperties = {
   position: "absolute",
   left: 18,
@@ -55,7 +51,6 @@ const iconStyle: React.CSSProperties = {
   height: 22,
   opacity: 0.6,
 };
-
 const eyeIconStyle: React.CSSProperties = {
   position: "absolute",
   right: 18,
@@ -66,14 +61,12 @@ const eyeIconStyle: React.CSSProperties = {
   opacity: 0.6,
   cursor: "pointer",
 };
-
 interface FormData {
   name: string;
   email: string;
   password: string;
   avatar: string;
 }
-
 const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { updateUserData } = useAuth();
   const [formData, setFormData] = useState<FormData>({
@@ -87,10 +80,8 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [showModal, setShowModal] = useState(false);
   const [goToProfileChoice, setGoToProfileChoice] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
   const isFormValid =
     formData.name && formData.email && formData.password && acceptTerms;
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isFormValid) {
@@ -102,25 +93,21 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       setShowModal(true);
     }
   };
-
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
-
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image")) {
       try {
         // Validate the image first
         validateImage(file);
-
         // Compress the image
         const compressedFile = await compressImage(file, {
           maxWidth: 800,
           maxHeight: 800,
           quality: 0.8,
         });
-
         const reader = new FileReader();
         reader.onload = (ev) => {
           setFormData((prev) => ({
@@ -129,17 +116,15 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           }));
         };
         reader.readAsDataURL(compressedFile);
-      } catch (error) {
-        // You might want to show an error message to the user here
-        console.error("Error processing image:", error);
+      } catch {
+        // Error processing image - show user-friendly message
+        toast.error("Erreur lors du traitement de l'image");
       }
     }
   };
-
   if (goToProfileChoice) {
     return <ProfileChoicePage onBack={() => setGoToProfileChoice(false)} />;
   }
-
   return (
     <>
       <style>{`
@@ -538,5 +523,4 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     </>
   );
 };
-
 export default SignupPage;

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { commonStyles } from "../components/styles";
+import { toast } from "react-toastify";
 import NavBar from "../components/NavBar";
+import { useAuth } from "../context/AuthContext";
+import HomePage from "./HomePage";
 
 const autofishBlueLogo = "/icons/autofish_blue_logo.svg";
 const emailIcon = "/icons/Email.svg";
@@ -68,6 +70,41 @@ const LoginPage: React.FC<LoginPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showHomePage, setShowHomePage] = useState(false);
+  
+  const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Clear any previous errors
+    clearError();
+    
+    // Basic validation
+    if (!email.trim()) {
+      toast.error("Veuillez entrer votre email");
+      return;
+    }
+    
+    if (!password.trim()) {
+      toast.error("Veuillez entrer votre mot de passe");
+      return;
+    }
+    
+    try {
+      await login({ email: email.trim(), password });
+      toast.success("Connexion réussie!");
+      setShowHomePage(true);
+    } catch {
+      // Error is handled by AuthContext and displayed via error state
+      toast.error(error || "Erreur de connexion");
+    }
+  };
+
+  // If user is authenticated or login was successful, show HomePage
+  if (isAuthenticated || showHomePage) {
+    return <HomePage />;
+  }
 
   return (
     <>
@@ -128,6 +165,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
           pour vous connecter
         </div>
         <form
+          onSubmit={handleSubmit}
           style={{
             width: "90vw",
             maxWidth: 340,
@@ -196,9 +234,10 @@ const LoginPage: React.FC<LoginPageProps> = ({
           </div>
           <button
             type="submit"
+            disabled={isLoading}
             style={{
               width: "100%",
-              background: "#009CB7",
+              background: isLoading ? "#ccc" : "#009CB7",
               color: "#fff",
               fontWeight: 700,
               fontSize: 18,
@@ -206,10 +245,11 @@ const LoginPage: React.FC<LoginPageProps> = ({
               border: "none",
               padding: "16px 0",
               marginBottom: 18,
-              cursor: "pointer",
+              cursor: isLoading ? "not-allowed" : "pointer",
+              opacity: isLoading ? 0.7 : 1,
             }}
           >
-            Connexion
+            {isLoading ? "Connexion en cours..." : "Connexion"}
           </button>
         </form>
         <div style={{ marginTop: 8, fontSize: 15, color: "#b0b0b0" }}>

@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.1.2",
     "@types/lodash": "^4.17.16",
     "@types/react-router-dom": "^5.3.3",
     "@types/styled-components": "^5.1.34",

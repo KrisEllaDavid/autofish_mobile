@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createGlobalStyle } from "styled-components";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -10,7 +10,8 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SignupPage from "./pages/SignupPage";
 import { animations, fontFaces } from "./components/styles";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const GlobalStyle = createGlobalStyle`
   ${animations.fadeInOnboard}
@@ -44,12 +45,14 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
-function App() {
+// Inner component that can access AuthContext
+function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showResetPasswordPage, setShowResetPasswordPage] = useState(false);
   const [showSignupPage, setShowSignupPage] = useState(false);
+  const { isLoggingOut } = useAuth();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -57,6 +60,22 @@ function App() {
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Reset app state when user logs out
+  useEffect(() => {
+    if (isLoggingOut) {
+      setShowSplash(true);
+      setCurrentStep(0);
+      setShowForgotPassword(false);
+      setShowResetPasswordPage(false);
+      setShowSignupPage(false);
+      
+      // Reset splash screen after a brief moment
+      setTimeout(() => {
+        setShowSplash(false);
+      }, 2000);
+    }
+  }, [isLoggingOut]);
 
   const handleNext = () => {
     setCurrentStep((prev) => prev + 1);
@@ -76,73 +95,84 @@ function App() {
   }
 
   return (
-    <AuthProvider>
-      <GlobalStyle />
-      <ToastContainer
-        position="top-center"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-      {currentStep === 0 && (
-        <OnboardingPage1 activeIndex={0} onNext={handleNext} />
-      )}
-      {currentStep === 1 && (
-        <OnboardingPage2
-          activeIndex={1}
-          onNext={handleNext}
-          onPrevious={handlePrevious}
+    <>
+        <GlobalStyle />
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
         />
-      )}
-      {currentStep === 2 && !showForgotPassword && !showSignupPage && (
-        <div
-          style={{
-            animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
-          }}
-        >
-          <LoginPage
-            onForgotPassword={() => setShowForgotPassword(true)}
-            onSignup={() => setShowSignupPage(true)}
+        {currentStep === 0 && (
+          <OnboardingPage1 activeIndex={0} onNext={handleNext} />
+        )}
+        {currentStep === 1 && (
+          <OnboardingPage2
+            activeIndex={1}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
           />
-        </div>
-      )}
-      {currentStep === 2 && showSignupPage && (
-        <div
-          style={{
-            animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
-          }}
-        >
-          <SignupPage onBack={() => setShowSignupPage(false)} />
-        </div>
-      )}
-      {currentStep === 2 && showForgotPassword && !showResetPasswordPage && (
-        <div
-          style={{
-            animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
-          }}
-        >
-          <ForgotPasswordPage
-            onBack={() => setShowForgotPassword(false)}
-            onSubmit={() => setShowResetPasswordPage(true)}
-          />
-        </div>
-      )}
-      {currentStep === 2 && showForgotPassword && showResetPasswordPage && (
-        <div
-          style={{
-            animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
-          }}
-        >
-          <ResetPasswordPage onBack={() => setShowResetPasswordPage(false)} />
-        </div>
-      )}
-    </AuthProvider>
+        )}
+        {currentStep === 2 && !showForgotPassword && !showSignupPage && (
+          <div
+            style={{
+              animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
+            }}
+          >
+            <LoginPage
+              onForgotPassword={() => setShowForgotPassword(true)}
+              onSignup={() => setShowSignupPage(true)}
+            />
+          </div>
+        )}
+        {currentStep === 2 && showSignupPage && (
+          <div
+            style={{
+              animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
+            }}
+          >
+            <SignupPage onBack={() => setShowSignupPage(false)} />
+          </div>
+        )}
+        {currentStep === 2 && showForgotPassword && !showResetPasswordPage && (
+          <div
+            style={{
+              animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
+            }}
+          >
+            <ForgotPasswordPage
+              onBack={() => setShowForgotPassword(false)}
+              onSubmit={() => setShowResetPasswordPage(true)}
+            />
+          </div>
+        )}
+        {currentStep === 2 && showForgotPassword && showResetPasswordPage && (
+          <div
+            style={{
+              animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
+            }}
+          >
+            <ResetPasswordPage onBack={() => setShowResetPasswordPage(false)} />
+          </div>
+        )}
+    </>
+  );
+}
+
+// Main App wrapper
+function App() {
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

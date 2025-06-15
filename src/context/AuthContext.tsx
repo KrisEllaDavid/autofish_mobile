@@ -1,99 +1,242 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { 
+  createContext, 
+  useContext, 
+  useState, 
+  useEffect, 
+  ReactNode 
+} from 'react';
+import useLocalStorage from '../hooks/useLocalStorage';
+import { authService, UserRegistrationRequest, LoginRequest, ApiError, ApiClient } from '../services/api';
 
+// Define the user data structure based on usage patterns in the app
 export interface UserData {
-  // Basic user info
-  name: string;
-  email: string;
-  password?: string;
+  name?: string;
+  email?: string;
   avatar?: string;
-  userRole: string;
-  // Signup profile info
-  phone?: string;
-  address?: string;
+  userRole?: 'client' | 'producteur';
+  description?: string;
   country?: string;
   code?: string;
+  address?: string;
+  phone?: string;
+  idRecto?: string | null;
+  idVerso?: string | null;
   selectedCategories?: string[];
-  // Page info (nested for clarity)
   page?: {
     pageName?: string;
     banner?: string;
-    description?: string;
     address?: string;
-    country?: string;
     phone?: string;
+    country?: string;
     code?: string;
-    // Add more page-specific fields as needed
   };
-  // Other info
-  description?: string;
-  // Add more fields as needed for signup steps
-  [key: string]: any;
+  myPosts?: Array<{
+    id: string;
+    producerName: string;
+    producerAvatar: string;
+    postImage: string;
+    description: string;
+    date: string;
+    likes: number;
+    comments: number;
+    category: string;
+    location: string;
+    price: number;
+    lastModified?: string;
+    isLiked?: boolean;
+  }>;
 }
 
 interface AuthContextType {
   userData: UserData | null;
-  setUserData: (data: UserData | null) => void;
   updateUserData: (data: Partial<UserData>) => void;
-  clearUserData: () => void;
   logout: () => void;
+  login: (credentials: LoginRequest) => Promise<void>;
+  register: (userData: UserRegistrationRequest) => Promise<void>;
+  isAuthenticated: boolean;
+  isLoggingOut: boolean;
+  isLoading: boolean;
+  error: string | null;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [userData, setUserDataState] = useState<UserData | null>(null);
+interface AuthProviderProps {
+  children: ReactNode;
+}
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("userData");
-    if (stored) setUserDataState(JSON.parse(stored));
-  }, []);
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [userData, setUserDataState] = useLocalStorage<UserData | null>('userData', null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Save to localStorage on change
   useEffect(() => {
-    if (userData) {
-      localStorage.setItem("userData", JSON.stringify(userData));
-    } else {
-      localStorage.removeItem("userData");
-    }
+    // Check if user is authenticated based on userData presence
+    setIsAuthenticated(userData !== null && userData.email !== undefined);
   }, [userData]);
 
-  const setUserData = (data: UserData | null) => {
-    setUserDataState(data);
-  };
-
   const updateUserData = (data: Partial<UserData>) => {
-    setUserDataState((prev) =>
-      prev ? { ...prev, ...data } : ({ ...data } as UserData)
-    );
+    setUserDataState(prevData => {
+      if (!prevData) {
+        return data as UserData;
+      }
+      
+      // Deep merge for nested objects like page
+      const updatedData = { ...prevData };
+      
+      Object.keys(data).forEach(key => {
+        const typedKey = key as keyof UserData;
+        if (typedKey === 'page' && data.page && prevData.page) {
+          updatedData.page = { ...prevData.page, ...data.page };
+        } else if (typedKey === 'myPosts' && data.myPosts) {
+          updatedData.myPosts = data.myPosts;
+        } else if (typedKey === 'selectedCategories' && data.selectedCategories) {
+          updatedData.selectedCategories = data.selectedCategories;
+        } else if (data[typedKey] !== undefined) {
+          // Safe assignment for remaining properties
+          if (data[typedKey] !== undefined) {
+            (updatedData as Record<string, unknown>)[typedKey] = data[typedKey];
+          }
+        }
+      });
+      
+      return updatedData;
+    });
   };
 
-  const clearUserData = () => {
-    setUserDataState(null);
+  const login = async (credentials: LoginRequest): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await authService.login(credentials);
+      
+      // Convert API UserType to our UserData format
+      const mappedUserData: UserData = {
+        name: `${response.user.first_name} ${response.user.last_name}`.trim(),
+        email: response.user.email,
+        avatar: response.user.profile_picture_url,
+        userRole: response.user.user_type === 'producer' ? 'producteur' : 'client',
+        description: response.user.description,
+        country: response.user.country,
+        address: response.user.address,
+        phone: response.user.phone,
+        // Initialize other fields as needed
+        selectedCategories: [],
+        myPosts: []
+      };
+      
+      setUserDataState(mappedUserData);
+      setIsAuthenticated(true);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 
+        typeof err === 'object' && err !== null ? 
+        ApiClient.getErrorMessage(err as ApiError) : 
+        'Login failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const logout = () => {
+  const register = async (registrationData: UserRegistrationRequest): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await authService.register(registrationData);
+      
+      // For producers, they need email verification, so don't auto-login
+      // For consumers, they can login immediately after registration
+      if (registrationData.user_type === 'consumer' && response.user.is_active) {
+        // Auto-login after successful consumer registration
+        await login({
+          email: registrationData.email,
+          password: registrationData.password
+        });
+      }
+      
+      // Note: Producers will need to verify email before they can login
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 
+        typeof err === 'object' && err !== null ? 
+        ApiClient.getErrorMessage(err as ApiError) : 
+        'Registration failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    setIsLoggingOut(true);
+    setIsLoading(true);
+    
+    try {
+      // Call API logout to invalidate tokens
+      await authService.logout();
+    } catch {
+      console.warn('API logout failed, but continuing with local cleanup');
+    }
+    
     // Clear all user data
-    clearUserData();
-    // Clear any other stored data
-    localStorage.clear();
-    // Reload the page to reset the app state
-    window.location.reload();
+    setUserDataState(null);
+    setIsAuthenticated(false);
+    
+    // Clear other app data from localStorage
+    localStorage.removeItem('myPosts');
+    localStorage.removeItem('likedPosts');
+    localStorage.removeItem('selectedCategories');
+    
+    // Clear any other cached data
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('autofish_') || key.startsWith('app_')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    setIsLoading(false);
+    
+    // isLoggingOut flag will trigger app reset in App.tsx
+    // Reset isLoggingOut after logout process completes
+    setTimeout(() => {
+      setIsLoggingOut(false);
+    }, 3000);
+  };
+
+  const clearError = () => {
+    setError(null);
+  };
+
+  const value: AuthContextType = {
+    userData,
+    updateUserData,
+    login,
+    register,
+    logout,
+    isAuthenticated,
+    isLoggingOut,
+    isLoading,
+    error,
+    clearError
   };
 
   return (
-    <AuthContext.Provider
-      value={{ userData, setUserData, updateUserData, clearUserData, logout }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
-  return ctx;
-}
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

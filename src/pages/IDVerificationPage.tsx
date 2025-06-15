@@ -17,7 +17,7 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
   onBack,
   profileType,
 }) => {
-  const { userData, updateUserData } = useAuth();
+  const { updateUserData } = useAuth();
   const [isCameraOpen, setIsCameraOpen] = useState<false | Side>(false);
   const [rectoImage, setRectoImage] = useState<string | null>(null);
   const [versoImage, setVersoImage] = useState<string | null>(null);

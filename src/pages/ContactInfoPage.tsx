@@ -4,6 +4,14 @@ import Modal from "../components/Modal";
 import HomePage from "./HomePage";
 import { useAuth } from "../context/AuthContext";
 
+// Contact information interface
+interface ContactInfo {
+  country: string;
+  code: string;
+  address: string;
+  phone: string;
+}
+
 const countries = [
   { name: "Cameroun", code: "+237" },
   { name: "République du Congo", code: "+242" },
@@ -11,9 +19,9 @@ const countries = [
 ];
 
 const ContactInfoPage: React.FC<{
-  onBack: () => void;
-  onContinue: (info: any) => void;
-}> = ({ onBack, onContinue }) => {
+  onBack?: () => void;
+  onContinue?: (info: ContactInfo) => void;
+}> = ({ onBack }) => {
   const { userData, updateUserData } = useAuth();
   const [country, setCountry] = useState(
     userData?.country || countries[0].name
