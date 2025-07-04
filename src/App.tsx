@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createGlobalStyle } from "styled-components";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { IonApp, IonContent } from "@ionic/react";
 import SplashScreen from "./pages/SplashScreen";
 import OnboardingPage1 from "./pages/OnboardingPage1";
 import OnboardingPage2 from "./pages/OnboardingPage2";
@@ -87,15 +88,15 @@ function AppContent() {
 
   if (showSplash) {
     return (
-      <>
+      <IonContent>
         <GlobalStyle />
         <SplashScreen />
-      </>
+      </IonContent>
     );
   }
 
   return (
-    <>
+    <IonContent>
         <GlobalStyle />
         <ToastContainer
           position="top-center"
@@ -161,18 +162,20 @@ function AppContent() {
             <ResetPasswordPage onBack={() => setShowResetPasswordPage(false)} />
           </div>
         )}
-    </>
+    </IonContent>
   );
 }
 
 // Main App wrapper
 function App() {
   return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ErrorBoundary>
+    <IonApp>
+      <ErrorBoundary>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ErrorBoundary>
+    </IonApp>
   );
 }
 

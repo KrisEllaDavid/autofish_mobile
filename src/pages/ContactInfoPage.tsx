@@ -1,16 +1,10 @@
 import React, { useState } from "react";
+import { toast } from "react-toastify";
 import NavBar from "../components/NavBar";
 import Modal from "../components/Modal";
 import HomePage from "./HomePage";
 import { useAuth } from "../context/AuthContext";
-
-// Contact information interface
-interface ContactInfo {
-  country: string;
-  code: string;
-  address: string;
-  phone: string;
-}
+import { parseUserDataForClientRegistration, validateUserDataForRegistration } from "../utils/registrationUtils";
 
 const countries = [
   { name: "Cameroun", code: "+237" },
@@ -20,9 +14,8 @@ const countries = [
 
 const ContactInfoPage: React.FC<{
   onBack?: () => void;
-  onContinue?: (info: ContactInfo) => void;
-}> = ({ onBack }) => {
-  const { userData, updateUserData } = useAuth();
+  }> = ({ onBack }) => {
+  const { userData, updateUserData, register, clearError } = useAuth();
   const [country, setCountry] = useState(
     userData?.country || countries[0].name
   );
@@ -34,17 +27,75 @@ const ContactInfoPage: React.FC<{
   const [phone, setPhone] = useState(userData?.phone || "");
   const [showModal, setShowModal] = useState(false);
   const [showHomePage, setShowHomePage] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const isValid = country && address && phone;
 
-  const handleSignup = () => {
-    updateUserData({
+  const handleSignup = async () => {
+    // Clear any previous errors
+    clearError();
+    
+    // Update user data first
+    const updatedContactInfo = {
       country,
       code: countryCode,
       address,
       phone,
-    });
-    setShowModal(true);
+    };
+    
+    updateUserData(updatedContactInfo);
+    
+    // ContactInfoPage is only for clients - proceed with API registration
+    
+    // Wait a bit to ensure userData is updated
+    setTimeout(async () => {
+      try {
+        // Get the complete user data (including contact info just updated)
+        const completeUserData = { ...userData, ...updatedContactInfo };
+        
+        // Validate user data
+        const validation = validateUserDataForRegistration(completeUserData, completeUserData.password);
+        if (!validation.isValid) {
+          const missingFieldsMessage = validation.missingFields.length > 3 
+            ? `${validation.missingFields.slice(0, 3).join(', ')} et ${validation.missingFields.length - 3} autres champs`
+            : validation.missingFields.join(', ');
+          toast.error(`Données manquantes: ${missingFieldsMessage}`);
+          return;
+        }
+        
+        setIsRegistering(true);
+        
+        // Parse user data for API registration
+        const registrationData = parseUserDataForClientRegistration(
+          completeUserData, 
+          completeUserData.password!
+        );
+        
+        // Call the API registration
+        await register(registrationData);
+        
+        toast.success('Compte créé avec succès! Bienvenue sur AutoFish!');
+        
+        // Show success modal
+        setShowModal(true);
+        
+      } catch (error: any) {
+        // Handle different types of errors
+        if (error?.email) {
+          toast.error(`Email: ${error.email[0]}`);
+        } else if (error?.password) {
+          toast.error(`Mot de passe: ${error.password[0]}`);
+        } else if (error?.non_field_errors) {
+          toast.error(error.non_field_errors[0]);
+        } else if (error?.detail) {
+          toast.error(error.detail);
+        } else {
+          toast.error('Erreur lors de l\'inscription. Veuillez réessayer.');
+        }
+      } finally {
+        setIsRegistering(false);
+      }
+    }, 100);
   };
 
   if (showHomePage) {
@@ -244,7 +295,7 @@ const ContactInfoPage: React.FC<{
           <button
             style={{
               width: "100%",
-              background: isValid ? "#009cb7" : "#b0b0b0",
+              background: (isValid && !isRegistering) ? "#009cb7" : "#b0b0b0",
               color: "#fff",
               fontWeight: 700,
               fontSize: 18,
@@ -252,14 +303,15 @@ const ContactInfoPage: React.FC<{
               border: "none",
               padding: "18px 0",
               marginTop: 18,
-              cursor: isValid ? "pointer" : "not-allowed",
+              cursor: (isValid && !isRegistering) ? "pointer" : "not-allowed",
               transition: "background 0.2s",
               boxShadow: "0 2px 12px rgba(0, 156, 183, 0.08)",
+              opacity: isRegistering ? 0.7 : 1,
             }}
-            disabled={!isValid}
+            disabled={!isValid || isRegistering}
             onClick={handleSignup}
           >
-            Terminer l'inscription
+            {isRegistering ? "Inscription en cours..." : "Terminer l'inscription"}
           </button>
         </div>
         {showModal && (
@@ -315,7 +367,7 @@ const ContactInfoPage: React.FC<{
                   textAlign: "center",
                 }}
               >
-                Votre compte client a bien été enregistré
+                Votre compte client a été créé avec succès !
               </div>
               <button
                 style={{

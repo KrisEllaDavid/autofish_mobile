@@ -2,7 +2,7 @@
 // Based on AutoFish API.yaml specification
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 // Types based on API schema
 export interface UserType {
@@ -24,6 +24,9 @@ export interface UserType {
   is_active: boolean;
   email_verified: boolean;
   is_verified: boolean;
+  user_categories: any[];
+  id_card_info: any;
+  favorites: any[];
 }
 
 export interface UserRegistrationRequest {
@@ -34,9 +37,15 @@ export interface UserRegistrationRequest {
   last_name?: string;
   phone?: string;
   city?: string;
-  user_type: 'producer' | 'consumer';
+  user_type?: 'producer' | 'consumer';
   terms_accepted?: boolean;
   profile_picture?: File;
+  country?: string;
+  address?: string;
+  description?: string;
+  categories?: number[];
+  recto_id?: File;
+  verso_id?: File;
 }
 
 export interface LoginRequest {
@@ -75,6 +84,7 @@ class ApiClient {
 
   constructor() {
     this.baseURL = API_BASE_URL;
+    
     // Load tokens from localStorage on initialization
     this.loadTokensFromStorage();
   }
@@ -104,11 +114,15 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     
-    const defaultHeaders: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
+    // Don't set Content-Type for FormData - let browser set it automatically with boundary
+    const defaultHeaders: HeadersInit = {};
+    
+    // Only set JSON content type if we're not sending FormData
+    if (!(options.body instanceof FormData)) {
+      defaultHeaders['Content-Type'] = 'application/json';
+    }
 
-    // Add authorization header if token exists
+    // Add authentication header if available
     if (this.accessToken) {
       defaultHeaders['Authorization'] = `Bearer ${this.accessToken}`;
     }
@@ -123,24 +137,8 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
-      // Handle token refresh for 401 errors
-      if (response.status === 401 && this.refreshToken && endpoint !== '/api/auth/token/refresh/') {
-        const refreshed = await this.refreshAccessToken();
-        if (refreshed) {
-          // Retry the original request with new token
-          config.headers = {
-            ...config.headers,
-            'Authorization': `Bearer ${this.accessToken}`,
-          };
-          const retryResponse = await fetch(url, config);
-          return this.handleResponse<T>(retryResponse);
-        }
-      }
-
       return this.handleResponse<T>(response);
     } catch (error) {
-      console.error('API Request failed:', error);
       throw new Error('Network error occurred');
     }
   }
@@ -149,23 +147,23 @@ class ApiClient {
     const contentType = response.headers.get('content-type');
     const isJson = contentType && contentType.includes('application/json');
 
-    if (!response.ok) {
-      let errorData: Record<string, unknown> = {};
-      if (isJson) {
-        errorData = await response.json();
-      } else {
-        errorData = { detail: `HTTP ${response.status}: ${response.statusText}` };
+    let data: any;
+    if (isJson) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text };
       }
-      
-      const apiError: ApiError = errorData;
-      throw apiError;
     }
 
-    if (isJson) {
-      return response.json();
-    } else {
-      return response.text() as unknown as T;
+    if (!response.ok) {
+      throw data;
     }
+
+    return data;
   }
 
   private async refreshAccessToken(): Promise<boolean> {
@@ -194,7 +192,6 @@ class ApiClient {
         return false;
       }
     } catch {
-      console.error('Token refresh failed');
       this.clearTokensFromStorage();
       return false;
     }
@@ -204,20 +201,26 @@ class ApiClient {
   async register(userData: UserRegistrationRequest): Promise<RegisterResponse> {
     const formData = new FormData();
     
-    // Add all text fields
+    // Add each field to FormData
     Object.entries(userData).forEach(([key, value]) => {
-      if (key === 'profile_picture' && value instanceof File) {
+      if (value instanceof File) {
         formData.append(key, value);
-      } else if (value !== undefined && value !== null && typeof value !== 'object') {
+      } else if (Array.isArray(value)) {
+        // For categories array, append each category as a separate field
+        value.forEach((item, index) => {
+          formData.append(`${key}`, item.toString());
+        });
+      } else if (value !== undefined && value !== null) {
         formData.append(key, String(value));
       }
     });
-
-    return this.makeRequest<RegisterResponse>('/api/auth/register/', {
+    
+    const result = await this.makeRequest<RegisterResponse>('/api/auth/register/', {
       method: 'POST',
-      headers: {}, // Let browser set Content-Type for FormData
       body: formData,
     });
+    
+    return result;
   }
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {

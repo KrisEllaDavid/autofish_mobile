@@ -85,11 +85,16 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isFormValid) {
-      updateUserData({
+      const signupData = {
         name: formData.name,
         email: formData.email,
         avatar: formData.avatar,
-      });
+        password: formData.password, // Store password for API registration
+      };
+      
+      
+      
+      updateUserData(signupData);
       setShowModal(true);
     }
   };

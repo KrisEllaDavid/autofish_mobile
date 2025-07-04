@@ -1,4 +1,5 @@
 import React from "react";
+import { IonTabBar, IonTabButton } from "@ionic/react";
 
 interface BottomNavBarProps {
   activeTab: "home" | "messages" | "connections" | "profile";
@@ -18,7 +19,55 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
   activeTab,
   onTabChange,
 }) => {
-  // Order: connections, like, home, messages, profile
+  // You can choose between custom design or Ionic standard design
+  const useIonicDesign = false; // Set to true to use standard Ionic tab bar
+
+  if (useIonicDesign) {
+    return (
+      <IonTabBar slot="bottom" className="custom-tab-bar">
+        <IonTabButton 
+          tab="connections" 
+          onClick={() => onTabChange("connections")}
+          className={activeTab === "connections" ? "tab-selected" : ""}
+        >
+          <img src={icons.connections} alt="connections" style={{ width: 24, height: 24 }} />
+        </IonTabButton>
+        
+        <IonTabButton 
+          tab="like" 
+          onClick={() => console.log("Like button clicked")}
+        >
+          <img src={icons.like} alt="like" style={{ width: 24, height: 24 }} />
+        </IonTabButton>
+        
+        <IonTabButton 
+          tab="home" 
+          onClick={() => onTabChange("home")}
+          className={activeTab === "home" ? "tab-selected" : ""}
+        >
+          <img src={icons.home} alt="home" style={{ width: 24, height: 24 }} />
+        </IonTabButton>
+        
+        <IonTabButton 
+          tab="messages" 
+          onClick={() => onTabChange("messages")}
+          className={activeTab === "messages" ? "tab-selected" : ""}
+        >
+          <img src={icons.messages} alt="messages" style={{ width: 24, height: 24 }} />
+        </IonTabButton>
+        
+        <IonTabButton 
+          tab="profile" 
+          onClick={() => onTabChange("profile")}
+          className={activeTab === "profile" ? "tab-selected" : ""}
+        >
+          <img src={icons.profile} alt="profile" style={{ width: 24, height: 24 }} />
+        </IonTabButton>
+      </IonTabBar>
+    );
+  }
+
+  // Keep your existing custom design
   const leftTabs = [
     { id: "connections", icon: icons.connections },
     { id: "like", icon: icons.like },
@@ -102,7 +151,6 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
                   onTabChange("connections");
                 } else if (tab.id === "like") {
                   // Handle like action - this could be a separate callback
-                  console.log("Like button clicked");
                 }
               }}
               style={{

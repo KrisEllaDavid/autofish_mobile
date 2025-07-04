@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { toast } from "react-toastify";
 import NavBar from "../components/NavBar";
 import PagePreviewPage from "./PagePreviewPage";
 import Modal from "../components/Modal";
 import HomePage from "./HomePage";
 import { useAuth } from "../context/AuthContext";
+import { parseUserDataForProducerRegistration, validateUserDataForRegistration } from "../utils/registrationUtils";
 
 const countries = [
   { name: "Cameroun", code: "+237" },
@@ -11,22 +13,29 @@ const countries = [
 ];
 
 const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { userData, updateUserData } = useAuth();
+  const { userData, updateUserData, register, clearError } = useAuth();
+  
+  // Business page information
   const [pageName, setPageName] = useState(userData?.page?.pageName || "");
-  const [country, setCountry] = useState(
-    userData?.page?.country || countries[0].name
-  );
-  const [countryCode, setCountryCode] = useState(
-    userData?.page?.code || countries[0].code
-  );
-  const [showCountryList, setShowCountryList] = useState(false);
+  const [country, setCountry] = useState(userData?.page?.country || countries[0].name);
+  const [countryCode, setCountryCode] = useState(userData?.page?.code || countries[0].code);
   const [address, setAddress] = useState(userData?.page?.address || "");
   const [phone, setPhone] = useState(userData?.page?.phone || "");
+  
+  // Personal contact information (required by API at root level)
+  const [personalCountry, setPersonalCountry] = useState(userData?.country || countries[0].name);
+  const [personalCountryCode, setPersonalCountryCode] = useState(userData?.code || countries[0].code);
+  const [personalAddress, setPersonalAddress] = useState(userData?.address || "");
+  const [personalPhone, setPersonalPhone] = useState(userData?.phone || "");
+  
+  const [showCountryList, setShowCountryList] = useState(false);
+  const [showPersonalCountryList, setShowPersonalCountryList] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showHomePage, setShowHomePage] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  const isValid = pageName && country && address && phone;
+  const isValid = pageName && country && address && phone && personalCountry && personalAddress && personalPhone;
 
   if (showHomePage) {
     return <HomePage />;
@@ -34,15 +43,103 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const handleShowPreview = () => {
     updateUserData({
+      // Personal contact info (required by API at root level)
+      country: personalCountry,
+      address: personalAddress,
+      phone: personalPhone,
+      code: personalCountryCode,
+      // Business page info
       page: {
         pageName,
-        country,
-        address,
-        phone,
+        country: country,
+        address: address,
+        phone: phone,
         code: countryCode,
       },
     });
     setShowPreview(true);
+  };
+
+  const handleProducerRegistration = async () => {
+    // Clear any previous errors
+    clearError();
+    
+    // Update both personal and business info
+    const updatedData = {
+      // Personal contact info (required by API at root level)
+      country: personalCountry,
+      address: personalAddress,
+      phone: personalPhone,
+      code: personalCountryCode,
+      // Business page info
+      page: {
+        pageName,
+        country: country,
+        address: address,
+        phone: phone,
+        code: countryCode,
+      },
+    };
+    
+    updateUserData(updatedData);
+    
+    // Wait a bit longer to ensure userData is updated from ContactInfoPage
+    setTimeout(async () => {
+      try {
+        // Get the complete user data (including both personal and page info just updated)
+        const completeUserData = { 
+          ...userData, 
+          ...updatedData,
+          // Ensure personal contact info is available at the root level for validation
+          phone: personalPhone,
+          code: personalCountryCode,
+          country: personalCountry,
+          address: personalAddress
+        };
+        
+        // Validate user data
+        const validation = validateUserDataForRegistration(completeUserData, completeUserData.password);
+        if (!validation.isValid) {
+          const missingFieldsMessage = validation.missingFields.length > 3 
+            ? `${validation.missingFields.slice(0, 3).join(', ')} et ${validation.missingFields.length - 3} autres champs`
+            : validation.missingFields.join(', ');
+          toast.error(`Données manquantes: ${missingFieldsMessage}`);
+          return;
+        }
+        
+        setIsRegistering(true);
+        
+        // Parse user data for API registration
+        const registrationData = parseUserDataForProducerRegistration(
+          completeUserData, 
+          completeUserData.password!
+        );
+        
+        // Call the API registration
+        await register(registrationData);
+        
+        toast.success('Compte producteur créé avec succès! Bienvenue sur AutoFish!');
+        
+        // Show success modal
+        setShowModal(true);
+        
+      } catch (error: any) {
+        // Handle different types of errors
+        if (error?.email) {
+          toast.error(`Email: ${error.email[0]}`);
+        } else if (error?.password) {
+          toast.error(`Mot de passe: ${error.password[0]}`);
+        } else if (error?.non_field_errors) {
+          toast.error(error.non_field_errors[0]);
+        } else if (error?.detail) {
+          toast.error(error.detail);
+        } else {
+          toast.error('Erreur lors de l\'inscription producteur. Veuillez réessayer.');
+        }
+      } finally {
+        setIsRegistering(false);
+      }
+    }, 300);
   };
 
   if (showPreview) {
@@ -166,6 +263,111 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             marginTop: 24,
           }}
         >
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#222", marginBottom: 24, textAlign: "center" }}>
+            Informations personnelles
+          </div>
+          
+          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
+            Quel est votre pays de résidence ?
+          </div>
+          <div
+            className={`categories-dropdown${showPersonalCountryList ? " open" : ""}`}
+            tabIndex={0}
+            style={{ marginBottom: 22 }}
+            onClick={() => setShowPersonalCountryList((open) => !open)}
+          >
+            <div
+              className="categories-dropdown-header"
+              style={{ cursor: "pointer" }}
+            >
+              <span style={{ color: personalCountry ? "#222" : "#b0b0b0" }}>
+                {personalCountry || "Sélectionnez votre pays"}
+              </span>
+              <span className="categories-dropdown-arrow">
+                <img
+                  src="/icons/chevron.svg"
+                  alt="chevron"
+                  style={{ width: 24, height: 24 }}
+                />
+              </span>
+            </div>
+            {showPersonalCountryList && (
+              <div
+                className="categories-dropdown-list"
+                style={{ marginTop: 18, zIndex: 1000 }}
+              >
+                {countries.map((c) => (
+                  <div
+                    key={c.name}
+                    className="categories-dropdown-item"
+                    style={{
+                      fontSize: 16,
+                      color: "#222",
+                      cursor: "pointer",
+                      padding: "12px 24px",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPersonalCountry(c.name);
+                      setPersonalCountryCode(c.code);
+                      setShowPersonalCountryList(false);
+                    }}
+                  >
+                    {c.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
+            Quelle est votre adresse personnelle (Ville, Quartier)
+          </div>
+          <input
+            className="input-box"
+            placeholder="Entrez votre adresse personnelle"
+            value={personalAddress}
+            onChange={(e) => setPersonalAddress(e.target.value)}
+          />
+          
+          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
+            Quel est votre numéro de téléphone personnel?
+          </div>
+          <div
+            style={{ display: "flex", alignItems: "center", marginBottom: 32 }}
+          >
+            <div
+              style={{
+                minWidth: 64,
+                fontSize: 16,
+                color: "#222",
+                padding: "18px 10px 18px 18px",
+                marginRight: 8,
+                display: "flex",
+                alignItems: "center",
+                cursor: "pointer",
+                userSelect: "none",
+                position: "relative",
+              }}
+              onClick={() => setShowPersonalCountryList(true)}
+            >
+              {personalCountryCode}{" "}
+              <span style={{ fontSize: 16, color: "#b0b0b0" }}></span>
+            </div>
+            <input
+              className="input-box"
+              style={{ marginBottom: 0 }}
+              placeholder="Entrez votre numéro personnel"
+              value={personalPhone}
+              onChange={(e) => setPersonalPhone(e.target.value)}
+              type="tel"
+            />
+          </div>
+
+          <div style={{ fontSize: 20, fontWeight: 700, color: "#222", marginBottom: 24, textAlign: "center", marginTop: 32 }}>
+            Informations de votre page business
+          </div>
+
           <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
             Quel est le nom de votre page ?
           </div>
@@ -278,10 +480,10 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </button>
           <button
             className="continue-btn"
-            disabled={!isValid}
-            onClick={() => setShowModal(true)}
+            disabled={!isValid || isRegistering}
+            onClick={handleProducerRegistration}
           >
-            Terminer l'inscription
+            {isRegistering ? 'Inscription en cours...' : 'Terminer l\'inscription'}
           </button>
           {showModal && (
             <Modal isOpen={showModal} onClose={() => setShowModal(false)}>

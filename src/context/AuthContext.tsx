@@ -12,6 +12,7 @@ import { authService, UserRegistrationRequest, LoginRequest, ApiError, ApiClient
 export interface UserData {
   name?: string;
   email?: string;
+  password?: string; // Store password for API registration
   avatar?: string;
   userRole?: 'client' | 'producteur';
   description?: string;
@@ -81,7 +82,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const updateUserData = (data: Partial<UserData>) => {
     setUserDataState(prevData => {
       if (!prevData) {
-        return data as UserData;
+        const newUserData = data as UserData;
+        setIsAuthenticated(newUserData.email !== undefined);
+        return newUserData;
       }
       
       // Deep merge for nested objects like page
@@ -95,14 +98,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           updatedData.myPosts = data.myPosts;
         } else if (typedKey === 'selectedCategories' && data.selectedCategories) {
           updatedData.selectedCategories = data.selectedCategories;
-        } else if (data[typedKey] !== undefined) {
-          // Safe assignment for remaining properties
-          if (data[typedKey] !== undefined) {
-            (updatedData as Record<string, unknown>)[typedKey] = data[typedKey];
-          }
+        } else {
+          (updatedData as any)[typedKey] = (data as any)[typedKey];
         }
       });
-      
+
+      setIsAuthenticated(updatedData.email !== undefined);
       return updatedData;
     });
   };
@@ -118,12 +119,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const mappedUserData: UserData = {
         name: `${response.user.first_name} ${response.user.last_name}`.trim(),
         email: response.user.email,
-        avatar: response.user.profile_picture_url,
+        avatar: response.user.profile_picture_url || response.user.profile_picture || '',
         userRole: response.user.user_type === 'producer' ? 'producteur' : 'client',
-        description: response.user.description,
-        country: response.user.country,
-        address: response.user.address,
-        phone: response.user.phone,
+        description: response.user.description || '',
+        country: response.user.country || '',
+        code: '', // Country code is not stored in API user object
+        address: response.user.address || response.user.city || '',
+        phone: response.user.phone || '',
         // Initialize other fields as needed
         selectedCategories: [],
         myPosts: []
@@ -150,14 +152,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authService.register(registrationData);
       
-      // For producers, they need email verification, so don't auto-login
-      // For consumers, they can login immediately after registration
+      // Convert API UserType to our UserData format
+      const mappedUserData: UserData = {
+        name: `${response.user.first_name} ${response.user.last_name}`.trim(),
+        email: response.user.email,
+        avatar: response.user.profile_picture_url || response.user.profile_picture || '',
+        userRole: response.user.user_type === 'producer' ? 'producteur' : 'client',
+        description: response.user.description || '',
+        country: response.user.country || '',
+        code: '', // Country code is not returned by API, will be empty after registration
+        address: response.user.address || response.user.city || '',
+        phone: response.user.phone || '',
+        // Initialize other fields as needed
+        selectedCategories: [],
+        myPosts: []
+      };
+      
+      // Don't include password in the stored user data after registration
+      delete (mappedUserData as any).password;
+      
+      // For consumers, they can use the app immediately after registration
       if (registrationData.user_type === 'consumer' && response.user.is_active) {
-        // Auto-login after successful consumer registration
-        await login({
-          email: registrationData.email,
-          password: registrationData.password
-        });
+        setUserDataState(mappedUserData);
+        setIsAuthenticated(true);
       }
       
       // Note: Producers will need to verify email before they can login
@@ -216,9 +233,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     userData,
     updateUserData,
+    logout,
     login,
     register,
-    logout,
     isAuthenticated,
     isLoggingOut,
     isLoading,

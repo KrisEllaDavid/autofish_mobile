@@ -34,13 +34,15 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
   const [goToPageCreation, setGoToPageCreation] = useState(false);
 
   const handleSelect = (cat: string) => {
-    setSelectedCategories([...selectedCategories, cat]);
+    const newSelectedCategories = [...selectedCategories, cat];
+    
+    setSelectedCategories(newSelectedCategories);
     setAvailableCategories(availableCategories.filter((c) => c !== cat));
     setDropdownOpen(false);
 
     // Update userData with the selected categories
     updateUserData({
-      selectedCategories: [...selectedCategories, cat],
+      selectedCategories: newSelectedCategories,
     });
   };
 
@@ -55,10 +57,12 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
   };
 
   const handleContinue = () => {
+    
     if (profileType === "client") {
       setGoToContactInfo(true);
     } else if (profileType === "producer") {
-      setGoToPageCreation(true);
+      // For producers, go to description page first
+      setGoToDescription(true);
     }
   };
 
@@ -70,7 +74,6 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
     return (
       <ContactInfoPage
         onBack={() => setGoToContactInfo(false)}
-        onContinue={() => {}}
       />
     );
   }
@@ -79,9 +82,14 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
     return (
       <DescriptionPage
         onBack={() => setGoToDescription(false)}
-        onContinue={() => {
-          if (profileType === "producer") setGoToPageCreation(true);
-          else setGoToContactInfo(true);
+        onContinue={(_description) => {
+          // Producers go directly to page creation (which includes contact info)
+          if (profileType === "producer") {
+            setGoToPageCreation(true);
+          } else {
+            // Clients go to contact info page
+            setGoToContactInfo(true);
+          }
         }}
       />
     );

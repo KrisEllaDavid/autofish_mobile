@@ -93,15 +93,11 @@ const HomePage: React.FC = () => {
   };
 
   const handleComment = (postId: string) => {
-    // TODO: Implement comment functionality - navigate to comments page or open comment modal
-    // In a real app, you would open a comment dialog or navigate to a comments page
-    console.log("Comment on post:", postId);
+    // TODO: Implement comment functionality
   };
 
   const handleProducerClick = (producerId: string) => {
-    // TODO: Implement producer profile navigation
-    // In a real app, you would navigate to the producer's profile
-    console.log("Navigate to producer profile:", producerId);
+    // TODO: Navigate to producer profile
   };
 
   // --- Navigation Logic ---
