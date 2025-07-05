@@ -74,6 +74,14 @@ const ContactInfoPage: React.FC<{
         // Call the API registration
         await register(registrationData);
         
+        // Update user data with contact info after successful registration
+        updateUserData({
+          country,
+          code: countryCode,
+          address,
+          phone,
+        });
+        
         toast.success('Compte créé avec succès! Bienvenue sur AutoFish!');
         
         // Show success modal

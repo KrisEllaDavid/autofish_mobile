@@ -58,8 +58,9 @@ export const splitAddress = (fullAddress: string): { city: string; address: stri
   const parts = fullAddress.trim().split(',');
   
   if (parts.length === 1) {
-    // Only city provided
-    return { city: parts[0].trim(), address: '' };
+    // Only one part provided - use it as both city and address
+    const city = parts[0].trim();
+    return { city, address: city }; // Use the same value for both
   }
   
   // City is first part, address is the rest
@@ -107,11 +108,7 @@ export const parseUserDataForClientRegistration = (
   // Convert avatar to File if present
   let profilePicture: File | undefined;
   if (userData.avatar && userData.avatar.startsWith('data:image/')) {
-    try {
-      profilePicture = base64ToFile(userData.avatar, 'avatar.jpg');
-    } catch (error) {
-      console.error('Error converting avatar to File:', error);
-    }
+    profilePicture = base64ToFile(userData.avatar, 'profile_picture.jpg');
   }
   
   // Map user role to API format
@@ -152,7 +149,7 @@ export const parseUserDataForClientRegistration = (
     city: city,
     user_type: userType,
     terms_accepted: true, // User already accepted terms in signup flow
-    profile_picture: profilePicture,
+    profile_picture: profilePicture, // Send as File
     country: userData.country || '',
     address: address,
     description: userData.description || '',
@@ -166,6 +163,9 @@ export const parseUserDataForClientRegistration = (
     console.warn('Phone number too long, truncating:', registrationData.phone);
     registrationData.phone = registrationData.phone.substring(0, 15);
   }
+  
+  // Debug: Log the registration data being sent
+  console.log('Client registration data:', registrationData);
   
   return registrationData;
 };
@@ -184,11 +184,7 @@ export const parseUserDataForProducerRegistration = (
   // Convert avatar to File if present
   let profilePicture: File | undefined;
   if (userData.avatar && userData.avatar.startsWith('data:image/')) {
-    try {
-      profilePicture = base64ToFile(userData.avatar, 'avatar.jpg');
-    } catch (error) {
-      console.error('Error converting avatar to File:', error);
-    }
+    profilePicture = base64ToFile(userData.avatar, 'profile_picture.jpg');
   }
   
   // Format phone number with country code
@@ -225,27 +221,41 @@ export const parseUserDataForProducerRegistration = (
   let versoIdFile: File | undefined;
   
   if (userData.idRecto && userData.idRecto.startsWith('data:image/')) {
-    try {
-      rectoIdFile = base64ToFile(userData.idRecto, 'id_recto.jpg');
-    } catch (error) {
-      console.error('Error converting ID Recto to File:', error);
-    }
+    rectoIdFile = base64ToFile(userData.idRecto, 'recto_id.jpg');
   }
   
   if (userData.idVerso && userData.idVerso.startsWith('data:image/')) {
-    try {
-      versoIdFile = base64ToFile(userData.idVerso, 'id_verso.jpg');
-    } catch (error) {
-      console.error('Error converting ID Verso to File:', error);
-    }
+    versoIdFile = base64ToFile(userData.idVerso, 'verso_id.jpg');
   }
   
   // Get phone and country from page data if available, otherwise use main data
-  const finalPhone = (pageData.phone && pageData.code) 
+  let finalPhone = (pageData.phone && pageData.code) 
     ? `${pageData.code}${pageData.phone.replace(/\D/g, '')}` 
     : formattedPhone;
   
+  // Ensure phone number is properly formatted
+  if (finalPhone) {
+    // Remove any non-digit characters except +
+    finalPhone = finalPhone.replace(/[^\d+]/g, '');
+    
+    // Ensure it starts with +
+    if (!finalPhone.startsWith('+')) {
+      finalPhone = `+${finalPhone}`;
+    }
+    
+    // Limit to 15 characters (API limit)
+    if (finalPhone.length > 15) {
+      finalPhone = finalPhone.substring(0, 15);
+    }
+  }
+  
   const finalCountry = pageData.country || userData.country || '';
+  
+  // Ensure description is not empty for producers
+  const finalDescription = userData.description || 'Producteur sur AutoFish';
+  
+  // Ensure categories is always an array
+  const finalCategories = categoryIndices && categoryIndices.length > 0 ? categoryIndices : [0];
   
   const registrationData: UserRegistrationRequest = {
     email: userData.email || '',
@@ -257,20 +267,29 @@ export const parseUserDataForProducerRegistration = (
     city: city,
     user_type: 'producer', // Always producer for this function
     terms_accepted: true, // User already accepted terms in signup flow
-    profile_picture: profilePicture,
+    profile_picture: profilePicture, // Send as File
     country: finalCountry,
     address: address,
-    description: userData.description || '', // Required for producers
-    categories: categoryIndices,
-    recto_id: rectoIdFile, // Required for producers
-    verso_id: versoIdFile  // Required for producers
+    description: finalDescription, // Required for producers
+    categories: finalCategories,
+    recto_id: rectoIdFile, // Send as File
+    verso_id: versoIdFile  // Send as File
   };
   
-  // Validate phone number length (API limit is 15 characters)
-  if (registrationData.phone && registrationData.phone.length > 15) {
-    console.warn('Phone number too long, truncating:', registrationData.phone);
-    registrationData.phone = registrationData.phone.substring(0, 15);
+  // Ensure all required fields are present and not empty
+  const requiredFields = ['email', 'password', 'password2', 'first_name', 'last_name', 'phone', 'city', 'user_type', 'terms_accepted', 'country', 'address', 'description', 'recto_id', 'verso_id'];
+  const missingFields = requiredFields.filter(field => {
+    const value = registrationData[field as keyof UserRegistrationRequest];
+    return !value || (typeof value === 'string' && value.trim() === '');
+  });
+  
+  if (missingFields.length > 0) {
+    console.error('Missing or empty required fields for producer registration:', missingFields);
+    throw new Error(`Missing or empty required fields: ${missingFields.join(', ')}`);
   }
+  
+  // Debug: Log the registration data being sent
+  console.log('Producer registration data:', registrationData);
   
   return registrationData;
 };

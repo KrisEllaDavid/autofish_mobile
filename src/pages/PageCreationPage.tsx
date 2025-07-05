@@ -13,7 +13,7 @@ const countries = [
 ];
 
 const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-  const { userData, updateUserData, register, clearError } = useAuth();
+  const { userData, updateUserData, register, clearError, completeRegistration } = useAuth();
   
   // Business page information
   const [pageName, setPageName] = useState(userData?.page?.pageName || "");
@@ -97,6 +97,9 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           address: personalAddress
         };
         
+        // Debug: Log the complete user data
+        console.log('Complete user data for producer registration:', completeUserData);
+        
         // Validate user data
         const validation = validateUserDataForRegistration(completeUserData, completeUserData.password);
         if (!validation.isValid) {
@@ -117,6 +120,9 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         
         // Call the API registration
         await register(registrationData);
+        
+        // Mark registration as complete for producers
+        completeRegistration();
         
         toast.success('Compte producteur créé avec succès! Bienvenue sur AutoFish!');
         

@@ -138,6 +138,7 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({ onBack }) => {
             <button
               onClick={() => {
                 updateUserData({ userRole: "client" });
+                setProfileType("client");
                 setGoToIDVerification(false);
                 setGoToCategories(true);
               }}
@@ -180,6 +181,7 @@ const ProfileChoicePage: React.FC<ProfileChoicePageProps> = ({ onBack }) => {
             <button
               onClick={() => {
                 updateUserData({ userRole: "producteur" });
+                setProfileType("producer");
                 setGoToIDVerification(true);
               }}
               style={{

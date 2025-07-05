@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SignupPage from "./pages/SignupPage";
+import HomePage from "./pages/HomePage";
 import { animations, fontFaces } from "./components/styles";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -53,7 +54,7 @@ function AppContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showResetPasswordPage, setShowResetPasswordPage] = useState(false);
   const [showSignupPage, setShowSignupPage] = useState(false);
-  const { isLoggingOut } = useAuth();
+  const { isLoggingOut, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -91,6 +92,28 @@ function AppContent() {
       <IonContent>
         <GlobalStyle />
         <SplashScreen />
+      </IonContent>
+    );
+  }
+
+  // If user is authenticated, show HomePage
+  if (isAuthenticated) {
+    return (
+      <IonContent>
+        <GlobalStyle />
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+        <HomePage />
       </IonContent>
     );
   }

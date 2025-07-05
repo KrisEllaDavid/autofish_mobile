@@ -39,13 +39,13 @@ export interface UserRegistrationRequest {
   city?: string;
   user_type?: 'producer' | 'consumer';
   terms_accepted?: boolean;
-  profile_picture?: File;
+  profile_picture?: string | File;
   country?: string;
   address?: string;
   description?: string;
   categories?: number[];
-  recto_id?: File;
-  verso_id?: File;
+  recto_id?: string | File;
+  verso_id?: string | File;
 }
 
 export interface LoginRequest {
@@ -122,8 +122,8 @@ class ApiClient {
       defaultHeaders['Content-Type'] = 'application/json';
     }
 
-    // Add authentication header if available
-    if (this.accessToken) {
+    // Add authentication header if available and not for registration endpoint
+    if (this.accessToken && !endpoint.includes('/api/auth/register/')) {
       defaultHeaders['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
@@ -144,26 +144,54 @@ class ApiClient {
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
-    const contentType = response.headers.get('content-type');
-    const isJson = contentType && contentType.includes('application/json');
-
-    let data: any;
-    if (isJson) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { message: text };
-      }
-    }
-
     if (!response.ok) {
-      throw data;
+      let errorData: any = {};
+      
+      try {
+        // Try to parse the error response as JSON
+        errorData = await response.json();
+        console.error('API Error Response Data:', errorData);
+      } catch (parseError) {
+        // If JSON parsing fails, try to get text
+        try {
+          const errorText = await response.text();
+          console.error('API Error Response Text:', errorText);
+          errorData = { detail: errorText };
+        } catch (textError) {
+          console.error('Could not read error response:', textError);
+          errorData = { detail: 'Unknown error occurred' };
+        }
+      }
+      
+      console.error('API Error Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries()),
+        data: errorData
+      });
+      
+      console.error('Request details:', {
+        method: response.url.includes('register') ? 'POST' : 'GET',
+        url: response.url,
+        status: response.status
+      });
+      
+      throw errorData;
     }
-
-    return data;
+    
+    // Parse successful response
+    const responseData = await response.json();
+    
+    // Log successful responses for debugging
+    console.log('API Success Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
+      data: responseData
+    });
+    
+    return responseData;
   }
 
   private async refreshAccessToken(): Promise<boolean> {
@@ -197,23 +225,44 @@ class ApiClient {
     }
   }
 
+  private async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  }
+
   // Authentication Methods
   async register(userData: UserRegistrationRequest): Promise<RegisterResponse> {
+    // Create FormData for file uploads
     const formData = new FormData();
     
-    // Add each field to FormData
+    // Add all fields to FormData
     Object.entries(userData).forEach(([key, value]) => {
       if (value instanceof File) {
+        // Add files directly
         formData.append(key, value);
       } else if (Array.isArray(value)) {
-        // For categories array, append each category as a separate field
-        value.forEach((item, index) => {
-          formData.append(`${key}`, item.toString());
+        // For categories array, append each category
+        value.forEach((item) => {
+          formData.append(key, item.toString());
         });
       } else if (value !== undefined && value !== null) {
+        // For all other values, convert to string
         formData.append(key, String(value));
       }
     });
+    
+    // Debug: Log the FormData being sent
+    console.log('Sending registration data as FormData');
+    console.log('API URL:', `${this.baseURL}/api/auth/register/`);
+    
+    // Log FormData contents for debugging
+    for (let [key, value] of formData.entries()) {
+      console.log(`FormData ${key}:`, value);
+    }
     
     const result = await this.makeRequest<RegisterResponse>('/api/auth/register/', {
       method: 'POST',

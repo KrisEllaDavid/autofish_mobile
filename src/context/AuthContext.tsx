@@ -23,6 +23,7 @@ export interface UserData {
   idRecto?: string | null;
   idVerso?: string | null;
   selectedCategories?: string[];
+  registrationComplete?: boolean; // Track if registration is complete
   page?: {
     pageName?: string;
     banner?: string;
@@ -54,6 +55,7 @@ interface AuthContextType {
   logout: () => void;
   login: (credentials: LoginRequest) => Promise<void>;
   register: (userData: UserRegistrationRequest) => Promise<void>;
+  completeRegistration: () => void; // Mark registration as complete
   isAuthenticated: boolean;
   isLoggingOut: boolean;
   isLoading: boolean;
@@ -75,15 +77,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is authenticated based on userData presence
-    setIsAuthenticated(userData !== null && userData.email !== undefined);
+    // Check if user is authenticated based on userData presence and registration completion
+    setIsAuthenticated(userData !== null && userData.email !== undefined && userData.registrationComplete === true);
   }, [userData]);
 
   const updateUserData = (data: Partial<UserData>) => {
     setUserDataState(prevData => {
       if (!prevData) {
         const newUserData = data as UserData;
-        setIsAuthenticated(newUserData.email !== undefined);
+        // Don't authenticate during registration - only when registrationComplete is true
+        if (newUserData.registrationComplete) {
+          setIsAuthenticated(newUserData.email !== undefined);
+        }
         return newUserData;
       }
       
@@ -103,7 +108,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       });
 
-      setIsAuthenticated(updatedData.email !== undefined);
+      // Only authenticate if registration is complete
+      if (updatedData.registrationComplete) {
+        setIsAuthenticated(updatedData.email !== undefined);
+      }
       return updatedData;
     });
   };
@@ -126,6 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         code: '', // Country code is not stored in API user object
         address: response.user.address || response.user.city || '',
         phone: response.user.phone || '',
+        registrationComplete: true, // User is authenticated via login
         // Initialize other fields as needed
         selectedCategories: [],
         myPosts: []
@@ -172,7 +181,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       delete (mappedUserData as any).password;
       
       // For consumers, they can use the app immediately after registration
-      if (registrationData.user_type === 'consumer' && response.user.is_active) {
+      if (registrationData.user_type === 'consumer') {
+        mappedUserData.registrationComplete = true; // Mark registration as complete
         setUserDataState(mappedUserData);
         setIsAuthenticated(true);
       }
@@ -230,12 +240,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
   };
 
+  const completeRegistration = () => {
+    setUserDataState(prevData => {
+      if (prevData) {
+        const updatedData = { ...prevData, registrationComplete: true };
+        setIsAuthenticated(true);
+        return updatedData;
+      }
+      return prevData;
+    });
+  };
+
   const value: AuthContextType = {
     userData,
     updateUserData,
     logout,
     login,
     register,
+    completeRegistration,
     isAuthenticated,
     isLoggingOut,
     isLoading,
