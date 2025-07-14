@@ -751,7 +751,7 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         .modal-form-textarea { min-height: 80px; resize: vertical; }
         .modal-form-img-preview { width: 100%; max-width: 220px; border-radius: 12px; margin-bottom: 16px; }
         .modal-btn-row { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
-        .modal-btn { padding: 15px 26px; border-radius: 10px; border: none; font-weight: 600; font-size: 16px; cursor: pointer; width: 50%;}
+        .modal-btn { padding: 15px 26px; border-radius: 10px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; width: 50%;}
         .modal-btn.save { background: #009cb7; color: #fff; }
         .modal-btn.cancel { background: #eee; color: #222; }
         .modal-btn.delete {

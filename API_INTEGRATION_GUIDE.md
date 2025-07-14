@@ -31,7 +31,7 @@ Create a `.env` file in your project root with:
 
 ```env
 # API Configuration
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=http://31.97.178.131
 
 # Development settings
 VITE_NODE_ENV=development

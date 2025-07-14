@@ -3,6 +3,8 @@ import Webcam from "react-webcam";
 import NavBar from "../components/NavBar";
 import CategoriesPage from "./CategoriesPage/CategoriesPage";
 import { useAuth } from "../context/AuthContext";
+import CameraPermissionRequest from "../components/CameraPermissionRequest";
+import { checkCameraSupport, getAvailableCameras } from "../utils/cameraUtils";
 
 const cameraIcon = "/icons/camera_icon.svg";
 
@@ -24,9 +26,27 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [goToCategories, setGoToCategories] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
+  const [showPermissionRequest, setShowPermissionRequest] = useState(false);
   const webcamRef = useRef<Webcam>(null);
 
-  const handleOpenCamera = (side: Side) => {
+  const handleOpenCamera = async (side: Side) => {
+    console.log('Opening camera for:', side);
+    
+    // Check camera support
+    const support = checkCameraSupport();
+    if (!support.getUserMedia) {
+      setCameraError("Votre navigateur ne supporte pas l'accès à la caméra");
+      return;
+    }
+
+    // Get available cameras for debugging
+    const cameras = await getAvailableCameras();
+    if (cameras.length === 0) {
+      setCameraError("Aucune caméra trouvée sur cet appareil");
+      return;
+    }
+
+    setShowPermissionRequest(true);
     setIsCameraOpen(side);
     setCameraError(null);
   };
@@ -53,10 +73,36 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
     setCameraError(null);
   };
 
-  const handleCameraError = () => {
-    setCameraError(
-      "Impossible d'accéder à la caméra. Veuillez autoriser l'accès à la caméra dans votre navigateur."
-    );
+  const handleCameraError = (error: string | DOMException) => {
+    console.error('Camera error:', error);
+    
+    let errorMessage = "Impossible d'accéder à la caméra. Veuillez autoriser l'accès à la caméra dans votre navigateur.";
+    
+    if (error instanceof DOMException) {
+      if (error.name === 'NotAllowedError') {
+        errorMessage = "Accès à la caméra refusé. Veuillez autoriser l'accès dans les paramètres de votre navigateur.";
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = "Aucune caméra trouvée sur cet appareil.";
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = "Votre navigateur ne supporte pas l'accès à la caméra.";
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = "La caméra ne supporte pas les paramètres demandés. Tentative avec des paramètres de base...";
+        // Try with basic constraints
+        return;
+      }
+    }
+    
+    setCameraError(errorMessage);
+  };
+
+  const handlePermissionGranted = () => {
+    setShowPermissionRequest(false);
+  };
+
+  const handlePermissionDenied = () => {
+    setShowPermissionRequest(false);
+    setIsCameraOpen(false);
+    setCameraError("Accès à la caméra refusé");
   };
 
   if (goToCategories) {
@@ -310,9 +356,15 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
                       audio={false}
                       ref={webcamRef}
                       screenshotFormat="image/jpeg"
-                      videoConstraints={{ facingMode: "environment" }}
+                      videoConstraints={{
+                        facingMode: "environment",
+                        width: { ideal: 1920, min: 1280 },
+                        height: { ideal: 1080, min: 720 },
+                        aspectRatio: { ideal: 16/9 }
+                      }}
                       style={{ width: "100%", maxWidth: 400, borderRadius: 16 }}
                       onUserMediaError={handleCameraError}
+                      mirrored={false}
                     />
                     <div className="id-frame" />
                   </>
@@ -348,6 +400,12 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
               </div>
             </div>
           </>
+        )}
+        {showPermissionRequest && (
+          <CameraPermissionRequest
+            onPermissionGranted={handlePermissionGranted}
+            onPermissionDenied={handlePermissionDenied}
+          />
         )}
       </div>
     </>

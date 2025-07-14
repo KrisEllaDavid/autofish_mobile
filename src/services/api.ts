@@ -2,7 +2,7 @@
 // Based on AutoFish API.yaml specification
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://31.97.178.131';
 
 // Types based on API schema
 export interface UserType {
