@@ -46,7 +46,7 @@ const NotificationsPage: React.FC<{
       {/* Bottom Navigation */}
       <BottomNavBar
         activeTab="home"
-        onTabChange={(tab: "home" | "messages" | "connections" | "profile") => {
+        onTabChange={(tab: "home" | "messages" | "producers" | "profile") => {
           if (tab === "home") onBackToHome();
         }}
       />

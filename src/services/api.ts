@@ -414,6 +414,38 @@ class ApiClient {
     }
   }
 
+  private async makePublicRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    // Don't set Content-Type for FormData - let browser set it automatically with boundary
+    const defaultHeaders: HeadersInit = {};
+    
+    // Only set JSON content type if we're not sending FormData
+    if (!(options.body instanceof FormData)) {
+      defaultHeaders['Content-Type'] = 'application/json';
+    }
+
+    // No authentication headers for public requests
+
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        ...defaultHeaders,
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      throw new Error('Network error occurred');
+    }
+  }
+
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
       let errorData: any = {};
@@ -421,32 +453,43 @@ class ApiClient {
       try {
         // Try to parse the error response as JSON
         errorData = await response.json();
-        console.error('API Error Response Data:', errorData);
+        
+        // Only log detailed error info in development or for non-auth errors
+        if (import.meta.env.DEV || response.status !== 401) {
+          console.error('API Error Response Data:', errorData);
+        }
       } catch (parseError) {
         // If JSON parsing fails, try to get text
         try {
           const errorText = await response.text();
-          console.error('API Error Response Text:', errorText);
+          if (import.meta.env.DEV || response.status !== 401) {
+            console.error('API Error Response Text:', errorText);
+          }
           errorData = { detail: errorText };
         } catch (textError) {
-          console.error('Could not read error response:', textError);
+          if (import.meta.env.DEV) {
+            console.error('Could not read error response:', textError);
+          }
           errorData = { detail: 'Unknown error occurred' };
         }
       }
       
-      console.error('API Error Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: response.url,
-        headers: Object.fromEntries(response.headers.entries()),
-        data: errorData
-      });
-      
-      console.error('Request details:', {
-        method: response.url.includes('register') ? 'POST' : 'GET',
-        url: response.url,
-        status: response.status
-      });
+      // Only log detailed response info in development or for non-auth errors
+      if (import.meta.env.DEV || response.status !== 401) {
+        console.error('API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          headers: Object.fromEntries(response.headers.entries()),
+          data: errorData
+        });
+        
+        console.error('Request details:', {
+          method: response.url.includes('register') ? 'POST' : 'GET',
+          url: response.url,
+          status: response.status
+        });
+      }
       
       throw errorData;
     }
@@ -454,13 +497,15 @@ class ApiClient {
     // Parse successful response
     const responseData = await response.json();
     
-    // Log successful responses for debugging
-    console.log('API Success Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.url,
-      data: responseData
-    });
+    // Log successful responses for debugging (only in development)
+    if (import.meta.env.DEV) {
+      console.log('API Success Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        data: responseData
+      });
+    }
     
     return responseData;
   }
@@ -618,15 +663,15 @@ class ApiClient {
   // ================================
 
   async getCategories(): Promise<Category[]> {
-    return this.makeRequest<Category[]>('/api/producers/categories/');
+    return this.makePublicRequest<Category[]>('/api/producers/categories/');
   }
 
   async getProducerPages(): Promise<ProducerPage[]> {
-    return this.makeRequest<ProducerPage[]>('/api/producers/pages/');
+    return this.makePublicRequest<ProducerPage[]>('/api/producers/pages/');
   }
 
   async getProducerPage(slug: string): Promise<ProducerPage> {
-    return this.makeRequest<ProducerPage>(`/api/producers/pages/${slug}/`);
+    return this.makePublicRequest<ProducerPage>(`/api/producers/pages/${slug}/`);
   }
 
   async createProducerPage(pageData: Partial<ProducerPage>): Promise<ProducerPage> {
@@ -680,11 +725,11 @@ class ApiClient {
   // ================================
 
   async getPublications(): Promise<Publication[]> {
-    return this.makeRequest<Publication[]>('/api/producers/publications/');
+    return this.makePublicRequest<Publication[]>('/api/producers/publications/');
   }
 
   async getPublication(id: number): Promise<Publication> {
-    return this.makeRequest<Publication>(`/api/producers/publications/${id}/`);
+    return this.makePublicRequest<Publication>(`/api/producers/publications/${id}/`);
   }
 
   async createPublication(publicationData: CreatePublicationRequest): Promise<Publication> {
@@ -732,7 +777,7 @@ class ApiClient {
   }
 
   async getPublicFeed(): Promise<Publication[]> {
-    return this.makeRequest<Publication[]>('/api/producers/publications/public_feed/');
+    return this.makePublicRequest<Publication[]>('/api/producers/publications/public_feed/');
   }
 
   async toggleLikePublication(id: number): Promise<{ status: string }> {
@@ -752,11 +797,11 @@ class ApiClient {
   // ================================
 
   async getProducts(): Promise<Product[]> {
-    return this.makeRequest<Product[]>('/api/products/');
+    return this.makePublicRequest<Product[]>('/api/products/');
   }
 
   async getProduct(id: number): Promise<Product> {
-    return this.makeRequest<Product>(`/api/products/${id}/`);
+    return this.makePublicRequest<Product>(`/api/products/${id}/`);
   }
 
   async createProduct(productData: CreateProductRequest): Promise<Product> {
@@ -784,7 +829,7 @@ class ApiClient {
   }
 
   async getProductsByCategory(categoryId: number): Promise<Product[]> {
-    return this.makeRequest<Product[]>(`/api/products/par_categorie/?category=${categoryId}`);
+    return this.makePublicRequest<Product[]>(`/api/products/par_categorie/?category=${categoryId}`);
   }
 
   async validateProduct(id: number): Promise<Product> {
@@ -812,15 +857,15 @@ class ApiClient {
       }
     });
 
-    return this.makeRequest<SearchResult>(`/api/search/?${params.toString()}`);
+    return this.makePublicRequest<SearchResult>(`/api/search/?${params.toString()}`);
   }
 
   async getSearchSuggestions(query: string): Promise<SearchSuggestion[]> {
-    return this.makeRequest<SearchSuggestion[]>(`/api/search/suggestions/?query=${encodeURIComponent(query)}`);
+    return this.makePublicRequest<SearchSuggestion[]>(`/api/search/suggestions/?query=${encodeURIComponent(query)}`);
   }
 
   async getAvailableCities(): Promise<string[]> {
-    return this.makeRequest<string[]>('/api/search/villes/');
+    return this.makePublicRequest<string[]>('/api/search/villes/');
   }
 
   // ================================
