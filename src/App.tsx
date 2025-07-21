@@ -13,6 +13,8 @@ import SignupPage from "./pages/SignupPage";
 import HomePage from "./pages/HomePage";
 import { animations, fontFaces } from "./components/styles";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { LoadingProvider, useLoading } from "./context/LoadingContext";
+import LoadingOverlay from "./components/LoadingOverlay";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 const GlobalStyle = createGlobalStyle`
@@ -55,6 +57,7 @@ function AppContent() {
   const [showResetPasswordPage, setShowResetPasswordPage] = useState(false);
   const [showSignupPage, setShowSignupPage] = useState(false);
   const { isLoggingOut, isAuthenticated } = useAuth();
+  const { isLoading } = useLoading();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -92,6 +95,7 @@ function AppContent() {
       <IonContent>
         <GlobalStyle />
         <SplashScreen />
+        <LoadingOverlay isVisible={isLoading} />
       </IonContent>
     );
   }
@@ -114,6 +118,7 @@ function AppContent() {
           theme="light"
         />
         <HomePage />
+        <LoadingOverlay isVisible={isLoading} />
       </IonContent>
     );
   }
@@ -185,6 +190,7 @@ function AppContent() {
             <ResetPasswordPage onBack={() => setShowResetPasswordPage(false)} />
           </div>
         )}
+        <LoadingOverlay isVisible={isLoading} />
     </IonContent>
   );
 }
@@ -195,7 +201,9 @@ function App() {
     <IonApp>
       <ErrorBoundary>
         <AuthProvider>
-          <AppContent />
+          <LoadingProvider>
+            <AppContent />
+          </LoadingProvider>
         </AuthProvider>
       </ErrorBoundary>
     </IonApp>

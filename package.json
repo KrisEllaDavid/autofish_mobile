@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "build:mobile": "tsc -b && vite build && cap sync",
+    "generate-icons": "node generate-icons.cjs",
+    "build-apk": "npm run generate-icons && npm run build && cap sync && cd android && gradlew.bat assembleDebug && cd ..",
+    "build-apk-full": "node -e \"require('child_process').execSync(process.platform === 'win32' ? 'build-apk.bat' : './build-apk.sh', {stdio: 'inherit'})\"",
     "android": "cap open android",
     "ios": "cap open ios",
     "sync": "cap sync"
@@ -47,6 +50,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "sharp": "^0.33.5",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",
     "vite": "^6.3.1"

@@ -2,12 +2,13 @@ import React from "react";
 import { IonTabBar, IonTabButton } from "@ionic/react";
 
 interface BottomNavBarProps {
-  activeTab: "home" | "messages" | "connections" | "profile";
-  onTabChange: (tab: "home" | "messages" | "connections" | "profile") => void;
+  activeTab: "home" | "messages" | "producers" | "profile";
+  onTabChange: (tab: "home" | "messages" | "producers" | "profile") => void;
 }
 
 const icons = {
-  connections: "/icons/profile-2user-bottom-nav.svg",
+  producers: "/icons/profile-2user-bottom-nav.svg",
+  producersActive: "/icons/profile-2user.svg",
   like: "/icons/dark_heart_outline_like.svg",
   home: "/icons/home-2-bottom-nav.svg",
   messages: "/icons/messages-bottom-nav.svg",
@@ -26,11 +27,11 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
     return (
       <IonTabBar slot="bottom" className="custom-tab-bar">
         <IonTabButton 
-          tab="connections" 
-          onClick={() => onTabChange("connections")}
-          className={activeTab === "connections" ? "tab-selected" : ""}
+          tab="producers" 
+          onClick={() => onTabChange("producers")}
+          className={activeTab === "producers" ? "tab-selected" : ""}
         >
-          <img src={icons.connections} alt="connections" style={{ width: 24, height: 24 }} />
+          <img src={activeTab === "producers" ? icons.producersActive : icons.producers} alt="producers" style={{ width: 24, height: 24 }} />
         </IonTabButton>
         
         <IonTabButton 
@@ -69,7 +70,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
   // Keep your existing custom design
   const leftTabs = [
-    { id: "connections", icon: icons.connections },
+    { id: "producers", icon: activeTab === "producers" ? icons.producersActive : icons.producers },
     { id: "like", icon: icons.like },
   ];
   const rightTabs = [
@@ -147,30 +148,38 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
             <button
               key={tab.id}
               onClick={() => {
-                if (tab.id === "connections") {
-                  onTabChange("connections");
+                if (tab.id === "producers") {
+                  onTabChange("producers");
                 } else if (tab.id === "like") {
                   // Handle like action - this could be a separate callback
                 }
               }}
               style={{
-                background: "none",
+                background: tab.id === "producers" && activeTab === "producers" 
+                  ? "rgba(0, 178, 214, 0.1)" 
+                  : "none",
                 border: "none",
                 outline: "none",
                 cursor: "pointer",
-                padding: 0,
+                padding: tab.id === "producers" && activeTab === "producers" ? "0px" : 0,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: 0.85,
+                opacity: tab.id === "producers" && activeTab === "producers" ? 1 : 0.85,
                 width: 36,
                 height: 80,
+                borderRadius: tab.id === "producers" && activeTab === "producers" ? "12px" : "0",
+                transition: "all 0.2s ease",
               }}
             >
               <img
                 src={tab.icon}
                 alt={tab.id}
-                style={{ width: 28, height: 28 }}
+                style={{ 
+                  width: 28, 
+                  height: 28,
+                  objectFit: 'contain' // Ensures consistent sizing
+                }}
               />
             </button>
           ))}
@@ -199,7 +208,11 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
               <img
                 src={tab.icon}
                 alt={tab.id}
-                style={{ width: 28, height: 28 }}
+                style={{ 
+                  width: 28, 
+                  height: 28,
+                  objectFit: 'contain' // Ensures consistent sizing
+                }}
               />
             </button>
           ))}

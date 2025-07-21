@@ -2,14 +2,16 @@ import React, { useState, useEffect, useMemo } from "react";
 import TopNavBar from "../components/TopNavBar";
 import BottomNavBar from "../components/BottomNavBar";
 import PostCard from "../components/PostCard";
-import { mockPosts, Post } from "../mock/posts";
 import useLocalStorage from "../hooks/useLocalStorage";
 import "./HomePage.css";
 import NotificationsPage from "./Notifications/NotificationsPage";
 import MyPage from "./MyPage";
+import TopProducersPage from "./TopProducersPage/TopProducersPage";
 import { useAuth } from "../context/AuthContext";
+import { useApiWithLoading } from "../services/apiWithLoading";
+import { Publication } from "../services/api";
 
-type MainTab = "home" | "messages" | "connections" | "profile" | "myPage";
+type MainTab = "home" | "messages" | "producers" | "profile" | "myPage";
 
 enum Overlay {
   None = "none",
@@ -18,9 +20,12 @@ enum Overlay {
 
 const HomePage: React.FC = () => {
   const { userData } = useAuth();
+  const api = useApiWithLoading();
   const [activeTab, setActiveTab] = useState<MainTab>("home");
   const [overlay, setOverlay] = useState<Overlay>(Overlay.None);
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [publications, setPublications] = useState<Publication[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [likedPosts, setLikedPosts] = useLocalStorage<string[]>(
     "likedPosts",
     []
@@ -33,21 +38,42 @@ const HomePage: React.FC = () => {
     // TODO: Add bottom navigation visibility tracking
   }, [userData]);
 
-  // Load and sort posts, prioritizing user's selected categories
+  // Load publications from API
   useEffect(() => {
-    // Clone the posts array to avoid mutating the original
-    const sortedPosts = [...mockPosts];
+    const fetchPublications = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Get public feed (all validated publications)
+        const data = await api.getPublicFeed();
+        setPublications(data);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load publications';
+        setError(errorMessage);
+        console.error('Failed to load publications:', errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPublications();
+  }, []);
+
+  // Sort publications, prioritizing user's selected categories
+  const sortedPublications = useMemo(() => {
+    const sorted = [...publications];
 
     // If user has selected categories, prioritize them
     if (
       userData?.selectedCategories &&
       userData.selectedCategories.length > 0
     ) {
-      sortedPosts.sort((a, b) => {
+      sorted.sort((a, b) => {
         const aMatch =
-          userData.selectedCategories?.includes(a.category) || false;
+          userData.selectedCategories?.includes(a.category.name) || false;
         const bMatch =
-          userData.selectedCategories?.includes(b.category) || false;
+          userData.selectedCategories?.includes(b.category.name) || false;
 
         if (aMatch && !bMatch) return -1;
         if (!aMatch && bMatch) return 1;
@@ -55,49 +81,59 @@ const HomePage: React.FC = () => {
       });
     }
 
-    setPosts(sortedPosts);
-  }, [userData?.selectedCategories]);
+    return sorted;
+  }, [publications, userData?.selectedCategories]);
 
-  // Filter posts by search
-  const filteredPosts = useMemo(() => {
-    if (!search.trim()) return posts;
+  // Filter publications by search
+  const filteredPublications = useMemo(() => {
+    if (!search.trim()) return sortedPublications;
     const q = search.trim().toLowerCase();
-    return posts.filter(
-      (post) =>
-        post.producerName.toLowerCase().includes(q) ||
-        post.category.toLowerCase().includes(q) ||
-        post.description.toLowerCase().includes(q)
+    return sortedPublications.filter(
+      (pub) =>
+        pub.title.toLowerCase().includes(q) ||
+        pub.category.name.toLowerCase().includes(q) ||
+        pub.description.toLowerCase().includes(q) ||
+        pub.location.toLowerCase().includes(q)
     );
-  }, [search, posts]);
+  }, [search, sortedPublications]);
 
-  const handleLike = (postId: string) => {
-    if (likedPosts.includes(postId)) {
-      setLikedPosts(likedPosts.filter((id) => id !== postId));
-    } else {
-      setLikedPosts([...likedPosts, postId]);
+  const handleLike = async (publicationId: number) => {
+    try {
+      const result = await api.toggleLikePublication(publicationId);
+      
+      // Update the publication in the list
+      setPublications(prev => prev.map(pub => {
+        if (pub.id === publicationId) {
+          return {
+            ...pub,
+            likes: result.status === 'added to favorites' ? pub.likes + 1 : pub.likes - 1
+          };
+        }
+        return pub;
+      }));
+
+      // Update local storage for liked posts
+      if (result.status === 'added to favorites') {
+        setLikedPosts([...likedPosts, publicationId.toString()]);
+      } else {
+        setLikedPosts(likedPosts.filter((id) => id !== publicationId.toString()));
+      }
+
+      console.log(result.status === 'added to favorites' ? 'Added to favorites!' : 'Removed from favorites');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update like';
+      console.error('Failed to update like:', errorMessage);
     }
-
-    // Update UI immediately
-    setPosts((currentPosts) =>
-      currentPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              likes: likedPosts.includes(postId)
-                ? post.likes - 1
-                : post.likes + 1,
-            }
-          : post
-      )
-    );
   };
 
-  const handleComment = (postId: string) => {
+  const handleComment = (publicationId: number) => {
     // TODO: Implement comment functionality
+    console.log('Comment on publication:', publicationId);
   };
 
-  const handleProducerClick = (producerId: string) => {
+  const handleProducerClick = (producerId: number) => {
     // TODO: Navigate to producer profile
+    console.log('Navigate to producer:', producerId);
   };
 
   // --- Navigation Logic ---
@@ -134,7 +170,7 @@ const HomePage: React.FC = () => {
   //   // Simulate feed refresh
   //   setTimeout(() => {
   //     // Refresh logic here
-  //     // setPosts([...newPosts]);
+  //     // setPublications([...newPublications]);
   //     setIsRefreshing(false);
   //   }, 1500);
   // };
@@ -175,6 +211,25 @@ const HomePage: React.FC = () => {
     );
   }
 
+  // Show producers page
+  if (activeTab === "producers") {
+    return (
+      <div className="home-container">
+        <TopProducersPage
+          onBackToHome={goHome}
+          onNotificationClick={handleNotificationClick}
+          onMyPageClick={handleMyPageClick}
+          activeTab="producers"
+          userAvatar={userData?.avatar}
+          userName={userData?.name}
+          userEmail={userData?.email}
+          userRole={userData?.userRole}
+        />
+        <BottomNavBar activeTab="producers" onTabChange={handleTabChange} />
+      </div>
+    );
+  }
+
   return (
     <div className="home-container">
       {/* Top Navigation */}
@@ -196,70 +251,89 @@ const HomePage: React.FC = () => {
           justifyContent: "center",
           alignItems: "center",
           margin: "80px 0 16px 0",
-          background: "white",
+          backgroundColor: "white !important",
           height: "80px",
+          padding: "0 16px",
         }}
       >
         <div
           style={{
-            width: "90%",
-            maxWidth: 700,
-            background: "#f7f7f7",
-            borderRadius: 32,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 20px",
-            height: 56,
-            boxShadow: "0 2px 8px rgba(0,0,0,0.03)",
+            width: "100%",
+            maxWidth: "400px",
+            position: "relative",
           }}
         >
-          <img
-            src="/icons/Search.svg"
-            alt="search"
-            style={{ width: 24, height: 24, opacity: 0.5, marginRight: 12 }}
-          />
           <input
             type="text"
+            placeholder="Rechercher des produits..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Rechercher un producteur..."
             style={{
-              border: "none",
-              outline: "none",
-              background: "transparent",
-              fontSize: 18,
               width: "100%",
-              color: "#222",
+              padding: "12px 16px",
+              border: "1px solid #e0e0e0",
+              borderRadius: "8px",
+              fontSize: "16px",
+              outline: "none",
+              backgroundColor: "white",
             }}
           />
         </div>
       </div>
-      {/* Posts Feed - Only this part should be scrollable */}
-      <div className="posts-feed">
-        {/* Pull to refresh indicator */}
-        {/* {isRefreshing && (
-          <div className="refresh-indicator">
-            <span className="refresh-spinner">⟳</span>
-            Chargement...
-          </div>
-        )} */}
 
-        {/* Posts list */}
-        {filteredPosts.map((post) => (
-          <div key={post.id} className="post-animation">
-            <PostCard
-              post={post}
-              isLiked={likedPosts.includes(post.id)}
-              onLike={handleLike}
-              onComment={handleComment}
-              onProducerClick={handleProducerClick}
-            />
+      {/* Content */}
+      <div className="content">
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <p>Chargement des publications...</p>
           </div>
-        ))}
-
-        {/* Add extra space at the bottom to ensure content doesn't hide behind bottom nav */}
-        <div style={{ height: "70px" }}></div>
+        ) : error ? (
+          <div style={{ textAlign: "center", padding: "20px", color: "red" }}>
+            <p>Erreur: {error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#00B2D6",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer"
+              }}
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : filteredPublications.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            <p>Aucune publication trouvée</p>
+          </div>
+        ) : (
+          <div className="posts-container">
+            {filteredPublications.map((publication) => (
+              <PostCard
+                key={publication.id}
+                id={publication.id.toString()}
+                producerName={publication.page.toString()} // TODO: Get actual producer name
+                producerAvatar="https://randomuser.me/api/portraits/men/1.jpg" // TODO: Get actual avatar
+                postImage={publication.picture || "https://via.placeholder.com/400x300"}
+                description={publication.description}
+                date={publication.date_posted}
+                likes={publication.likes}
+                comments={0} // TODO: Implement comments
+                category={publication.category.name}
+                location={publication.location}
+                price={publication.price}
+                onLike={() => handleLike(publication.id)}
+                onComment={() => handleComment(publication.id)}
+                onProducerClick={() => handleProducerClick(publication.producer || 0)}
+                isLiked={likedPosts.includes(publication.id.toString())}
+              />
+            ))}
+          </div>
+        )}
       </div>
+
       {/* Bottom Navigation */}
       <BottomNavBar activeTab={activeTab} onTabChange={handleTabChange} />
     </div>

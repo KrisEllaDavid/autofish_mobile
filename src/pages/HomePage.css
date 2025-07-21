@@ -138,3 +138,12 @@
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+/* Content and posts container spacing */
+.content {
+  padding-bottom: 100px;
+}
+
+.posts-container {
+  padding-bottom: 100px;
+}

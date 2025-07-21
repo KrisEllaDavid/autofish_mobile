@@ -1,8 +1,17 @@
 import React from "react";
-import { Post } from "../mock/posts";
 
 interface PostCardProps {
-  post: Post;
+  id: string;
+  producerName: string;
+  producerAvatar: string;
+  postImage: string;
+  description: string;
+  date: string;
+  likes: number;
+  comments: number;
+  category: string;
+  location: string;
+  price: number;
   isLiked?: boolean;
   onLike?: (postId: string) => void;
   onComment?: (postId: string) => void;
@@ -34,7 +43,17 @@ const formatDate = (dateString: string): string => {
 
 const PostCard: React.FC<PostCardProps> = React.memo(
   ({
-    post,
+    id,
+    producerName,
+    producerAvatar,
+    postImage,
+    description,
+    date,
+    likes,
+    comments,
+    category,
+    location,
+    price,
     isLiked = false,
     onLike,
     onComment,
@@ -76,20 +95,20 @@ const PostCard: React.FC<PostCardProps> = React.memo(
               marginRight: 12,
               cursor: "pointer",
             }}
-            onClick={() => onProducerClick?.(post.id)}
+            onClick={() => onProducerClick?.(id)}
             role="button"
             tabIndex={0}
-            aria-label={`Voir le profil de ${post.producerName}`}
+            aria-label={`Voir le profil de ${producerName}`}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                onProducerClick?.(post.id);
+                onProducerClick?.(id);
               }
             }}
           >
             <img
-              src={post.producerAvatar}
-              alt={`Photo de profil de ${post.producerName}`}
+              src={producerAvatar}
+              alt={`Photo de profil de ${producerName}`}
               style={{
                 width: "100%",
                 height: "100%",
@@ -107,9 +126,9 @@ const PostCard: React.FC<PostCardProps> = React.memo(
                   color: "#222",
                   cursor: "pointer",
                 }}
-                onClick={() => onProducerClick?.(post.id)}
+                onClick={() => onProducerClick?.(id)}
               >
-                {post.producerName}
+                {producerName}
               </h3>
             </div>
             <div
@@ -121,7 +140,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(
                 marginTop: 2,
               }}
             >
-              <span>{formatDate(post.date)}</span>
+              <span>{formatDate(date)}</span>
               <span style={{ margin: "0 6px" }}>•</span>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <img
@@ -134,7 +153,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(
                     opacity: 0.7,
                   }}
                 />
-                <span>{post.location}</span>
+                <span>{location}</span>
               </div>
             </div>
           </div>
@@ -150,14 +169,14 @@ const PostCard: React.FC<PostCardProps> = React.memo(
               color: "#222",
             }}
           >
-            {post.description}
+            {description}
           </p>
         </div>
 
         {/* Post image with category pill overlay */}
         <div style={{ width: "100%", position: "relative", marginTop: 12 }}>
           <img
-            src={post.postImage}
+            src={postImage}
             alt="Post"
             style={{
               width: "100%",
@@ -180,7 +199,23 @@ const PostCard: React.FC<PostCardProps> = React.memo(
               boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
             }}
           >
-            {post.category}
+            {category}
+          </div>
+          {/* Price overlay */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 12,
+              left: 12,
+              background: "rgba(0, 0, 0, 0.8)",
+              color: "white",
+              fontWeight: 600,
+              fontSize: 16,
+              borderRadius: 8,
+              padding: "6px 12px",
+            }}
+          >
+            {price.toLocaleString()} FCFA
           </div>
         </div>
 
@@ -194,7 +229,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(
           }}
         >
           <button
-            onClick={() => onLike?.(post.id)}
+            onClick={() => onLike?.(id)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -202,96 +237,81 @@ const PostCard: React.FC<PostCardProps> = React.memo(
               border: "none",
               cursor: "pointer",
               padding: 0,
-              marginRight: 8,
+              color: "#666",
+              fontSize: 14,
             }}
           >
             <img
               src={favouriteIcon}
               alt="like"
-              style={{ width: 22, height: 22, marginRight: 4 }}
-            />
-            <span
               style={{
-                color: isLiked ? "#F87171" : "#F87171",
-                fontWeight: 600,
-                fontSize: 16,
-                marginRight: 4,
+                width: 20,
+                height: 20,
+                marginRight: 6,
               }}
-            >
-              {post.likes}
-            </span>
+            />
+            <span>{likes}</span>
           </button>
-          <span
-            style={{
-              color: "#222",
-              fontWeight: 800,
-              fontSize: 18,
-              fontFamily: "Arial Rounded MT Bold, Arial, sans-serif",
-            }}
-          >
-            {post.price.toLocaleString()} FCFA
-          </span>
-        </div>
 
-        {/* Bottom action bar */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderTop: "1px solid #F2F2F2",
-            marginTop: 12,
-            padding: "0 8px",
-            height: 48,
-            background: "#fff",
-          }}
-        >
           <button
-            onClick={() => onLike?.(post.id)}
+            onClick={() => onComment?.(id)}
             style={{
               display: "flex",
               alignItems: "center",
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: isLiked ? "#F87171" : "#222",
-              fontWeight: 500,
-              fontSize: 15,
+              padding: 0,
+              color: "#666",
+              fontSize: 14,
             }}
           >
             <img
-              src={favouriteIcon}
-              alt="like"
-              style={{ width: 22, height: 22, marginRight: 6 }}
-            />
-            J'aime
-          </button>
-          {!hideContactButton && (
-            <button
-              onClick={() => onComment?.(post.id)}
+              src={commentIcon}
+              alt="comment"
               style={{
-                display: "flex",
-                alignItems: "center",
-                background: "none",
+                width: 20,
+                height: 20,
+                marginRight: 6,
+                opacity: 0.7,
+              }}
+            />
+            <span>{comments}</span>
+          </button>
+        </div>
+
+        {/* Contact button */}
+        {!hideContactButton && (
+          <div style={{ padding: "12px 16px 16px 16px" }}>
+            <button
+              style={{
+                width: "100%",
+                background: "#00B2D6",
+                color: "white",
                 border: "none",
+                borderRadius: 8,
+                padding: "12px",
+                fontSize: 16,
+                fontWeight: 600,
                 cursor: "pointer",
-                color: "#222",
-                fontWeight: 500,
-                fontSize: 15,
+                transition: "background-color 0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#0099B8";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#00B2D6";
               }}
             >
-              <img
-                src={commentIcon}
-                alt="comment"
-                style={{ width: 22, height: 22, marginRight: 6 }}
-              />
-              Contacter
+              Contacter le producteur
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
 );
+
+PostCard.displayName = "PostCard";
 
 export default PostCard;

@@ -6,7 +6,7 @@ import React, {
   ReactNode 
 } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
-import { authService, UserRegistrationRequest, LoginRequest, ApiError, ApiClient } from '../services/api';
+import { apiClient, UserRegistrationRequest, LoginRequest, ApiError, ApiClient } from '../services/api';
 
 // Define the user data structure based on usage patterns in the app
 export interface UserData {
@@ -24,6 +24,10 @@ export interface UserData {
   idVerso?: string | null;
   selectedCategories?: string[];
   registrationComplete?: boolean; // Track if registration is complete
+  // Verification fields from API
+  is_verified?: boolean;
+  email_verified?: boolean;
+  is_active?: boolean;
   page?: {
     pageName?: string;
     banner?: string;
@@ -121,7 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      const response = await authService.login(credentials);
+      const response = await apiClient.login(credentials);
       
       // Convert API UserType to our UserData format
       const mappedUserData: UserData = {
@@ -135,6 +139,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         address: response.user.address || response.user.city || '',
         phone: response.user.phone || '',
         registrationComplete: true, // User is authenticated via login
+        // Map verification fields from API
+        is_verified: response.user.is_verified,
+        email_verified: response.user.email_verified,
+        is_active: response.user.is_active,
         // Initialize other fields as needed
         selectedCategories: [],
         myPosts: []
@@ -159,7 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      const response = await authService.register(registrationData);
+      const response = await apiClient.register(registrationData);
       
       // Convert API UserType to our UserData format
       const mappedUserData: UserData = {
@@ -206,7 +214,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       // Call API logout to invalidate tokens
-      await authService.logout();
+      await apiClient.logout();
     } catch {
       console.warn('API logout failed, but continuing with local cleanup');
     }

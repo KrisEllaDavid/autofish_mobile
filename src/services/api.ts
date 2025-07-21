@@ -2,9 +2,12 @@
 // Based on AutoFish API.yaml specification
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://31.97.178.131';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Types based on API schema
+// ================================
+// AUTHENTICATION TYPES
+// ================================
+
 export interface UserType {
   id: number;
   email: string;
@@ -76,7 +79,256 @@ export interface ApiError {
   [key: string]: any;
 }
 
-// API Client Class
+// ================================
+// PRODUCER PAGE TYPES
+// ================================
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProducerPage {
+  id: number;
+  producer: number;
+  name: string;
+  slug: string;
+  logo?: string;
+  background_image?: string;
+  country: string;
+  address: string;
+  telephone: string;
+  categories: Category[];
+  city: string;
+  description: string;
+  is_validated: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Publication {
+  id: number;
+  producer?: number;
+  page: number;
+  title: string;
+  description: string;
+  price: number;
+  category: Category;
+  likes: number;
+  picture?: string;
+  location: string;
+  date_posted: string;
+  is_valid: boolean;
+  discussion_link?: string;
+  is_reported: boolean;
+  report_count: number;
+  is_blocked: boolean;
+  blocked_at?: string;
+  blocked_by?: number;
+}
+
+export interface CreatePublicationRequest {
+  page: number;
+  title?: string;
+  description: string;
+  price: number;
+  category: number;
+  picture?: File;
+  location: string;
+  discussion_link?: string;
+}
+
+export interface UpdatePublicationRequest {
+  title?: string;
+  description?: string;
+  price?: number;
+  category?: number;
+  picture?: File;
+  location?: string;
+  discussion_link?: string;
+}
+
+// ================================
+// PRODUCT TYPES
+// ================================
+
+export interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  producer_page: number;
+  category: Category;
+  is_available: boolean;
+  is_validated: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateProductRequest {
+  name: string;
+  description: string;
+  price: number;
+  producer_page: number;
+  category: number;
+  is_available?: boolean;
+}
+
+// ================================
+// SEARCH TYPES
+// ================================
+
+export interface SearchRequest {
+  query: string;
+  category?: number;
+  city?: string;
+  min_price?: number;
+  max_price?: number;
+  user_type?: 'producer' | 'consumer';
+}
+
+export interface SearchResult {
+  publications: Publication[];
+  producers: ProducerPage[];
+  products: Product[];
+  total_count: number;
+}
+
+export interface SearchSuggestion {
+  text: string;
+  type: 'category' | 'city' | 'producer';
+}
+
+// ================================
+// NOTIFICATION TYPES
+// ================================
+
+export interface Notification {
+  id: number;
+  user: number;
+  title: string;
+  message: string;
+  notification_type: string;
+  is_read: boolean;
+  created_at: string;
+  related_object_id?: number;
+  related_object_type?: string;
+}
+
+// ================================
+// CHAT TYPES
+// ================================
+
+export interface Chat {
+  id: number;
+  participants: UserType[];
+  last_message?: Message;
+  unread_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Message {
+  id: number;
+  chat: number;
+  sender: number;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface SendMessageRequest {
+  chat: number;
+  content: string;
+}
+
+// ================================
+// EVALUATION TYPES
+// ================================
+
+export interface Evaluation {
+  id: number;
+  evaluator: number;
+  evaluated: number;
+  rating: number;
+  comment?: string;
+  created_at: string;
+}
+
+export interface CreateEvaluationRequest {
+  evaluated: number;
+  rating: number;
+  comment?: string;
+}
+
+// ================================
+// FAVORITE TYPES
+// ================================
+
+export interface Favorite {
+  id: number;
+  consumer: number;
+  producer: number;
+  created_at: string;
+}
+
+// ================================
+// ORDER TYPES
+// ================================
+
+export interface CartItem {
+  id: number;
+  cart: number;
+  product: Product;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
+export interface Cart {
+  id: number;
+  user: number;
+  items: CartItem[];
+  total_items: number;
+  total_amount: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Order {
+  id: number;
+  user: number;
+  items: OrderItem[];
+  total_amount: number;
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  shipping_address: string;
+  contact_phone: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderItem {
+  id: number;
+  order: number;
+  product: Product;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
+export interface CheckoutRequest {
+  shipping_address: string;
+  contact_phone: string;
+}
+
+// ================================
+// API CLIENT CLASS
+// ================================
+
 class ApiClient {
   private baseURL: string;
   private accessToken: string | null = null;
@@ -137,6 +389,25 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
+      
+      // Handle 401 Unauthorized by attempting token refresh
+      if (response.status === 401 && this.refreshToken && !endpoint.includes('/api/auth/')) {
+        const refreshSuccess = await this.refreshAccessToken();
+        if (refreshSuccess) {
+          // Retry the request with the new token
+          const retryConfig: RequestInit = {
+            ...config,
+            headers: {
+              ...defaultHeaders,
+              ...options.headers,
+              'Authorization': `Bearer ${this.accessToken}`,
+            },
+          };
+          const retryResponse = await fetch(url, retryConfig);
+          return this.handleResponse<T>(retryResponse);
+        }
+      }
+      
       return this.handleResponse<T>(response);
     } catch (error) {
       throw new Error('Network error occurred');
@@ -225,16 +496,12 @@ class ApiClient {
     }
   }
 
-  private async fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
-  }
 
-  // Authentication Methods
+
+  // ================================
+  // AUTHENTICATION METHODS
+  // ================================
+
   async register(userData: UserRegistrationRequest): Promise<RegisterResponse> {
     // Create FormData for file uploads
     const formData = new FormData();
@@ -306,6 +573,403 @@ class ApiClient {
     return this.makeRequest<UserType>('/api/users/me/');
   }
 
+  async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<{ detail: string }> {
+    return this.makeRequest<{ detail: string }>('/api/auth/change-password/', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      }),
+    });
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    return this.makeRequest<{ message: string }>('/api/auth/forgot-password/', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string, confirmPassword: string): Promise<{ message: string }> {
+    return this.makeRequest<{ message: string }>('/api/auth/reset-password/', {
+      method: 'POST',
+      body: JSON.stringify({
+        token,
+        new_password: newPassword,
+        new_password2: confirmPassword,
+      }),
+    });
+  }
+
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    return this.makeRequest<{ message: string }>(`/api/verify-email/${token}/`);
+  }
+
+  async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    return this.makeRequest<{ message: string }>('/api/resend-verification-email/', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  // ================================
+  // PRODUCER PAGE METHODS
+  // ================================
+
+  async getCategories(): Promise<Category[]> {
+    return this.makeRequest<Category[]>('/api/producers/categories/');
+  }
+
+  async getProducerPages(): Promise<ProducerPage[]> {
+    return this.makeRequest<ProducerPage[]>('/api/producers/pages/');
+  }
+
+  async getProducerPage(slug: string): Promise<ProducerPage> {
+    return this.makeRequest<ProducerPage>(`/api/producers/pages/${slug}/`);
+  }
+
+  async createProducerPage(pageData: Partial<ProducerPage>): Promise<ProducerPage> {
+    const formData = new FormData();
+    
+    Object.entries(pageData).forEach(([key, value]) => {
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else if (Array.isArray(value)) {
+        value.forEach((item) => {
+          formData.append(key, item.toString());
+        });
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<ProducerPage>('/api/producers/pages/', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  async updateProducerPage(slug: string, pageData: Partial<ProducerPage>): Promise<ProducerPage> {
+    const formData = new FormData();
+    
+    Object.entries(pageData).forEach(([key, value]) => {
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else if (Array.isArray(value)) {
+        value.forEach((item) => {
+          formData.append(key, item.toString());
+        });
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<ProducerPage>(`/api/producers/pages/${slug}/`, {
+      method: 'PATCH',
+      body: formData,
+    });
+  }
+
+  async getMyProducerPage(): Promise<ProducerPage> {
+    return this.makeRequest<ProducerPage>('/api/producers/pages/my_page/');
+  }
+
+  // ================================
+  // PUBLICATION METHODS
+  // ================================
+
+  async getPublications(): Promise<Publication[]> {
+    return this.makeRequest<Publication[]>('/api/producers/publications/');
+  }
+
+  async getPublication(id: number): Promise<Publication> {
+    return this.makeRequest<Publication>(`/api/producers/publications/${id}/`);
+  }
+
+  async createPublication(publicationData: CreatePublicationRequest): Promise<Publication> {
+    const formData = new FormData();
+    
+    Object.entries(publicationData).forEach(([key, value]) => {
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<Publication>('/api/producers/publications/', {
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  async updatePublication(id: number, publicationData: UpdatePublicationRequest): Promise<Publication> {
+    const formData = new FormData();
+    
+    Object.entries(publicationData).forEach(([key, value]) => {
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<Publication>(`/api/producers/publications/${id}/`, {
+      method: 'PATCH',
+      body: formData,
+    });
+  }
+
+  async deletePublication(id: number): Promise<void> {
+    return this.makeRequest<void>(`/api/producers/publications/${id}/`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getMyPublications(): Promise<Publication[]> {
+    return this.makeRequest<Publication[]>('/api/producers/publications/my_publications/');
+  }
+
+  async getPublicFeed(): Promise<Publication[]> {
+    return this.makeRequest<Publication[]>('/api/producers/publications/public_feed/');
+  }
+
+  async toggleLikePublication(id: number): Promise<{ status: string }> {
+    return this.makeRequest<{ status: string }>(`/api/producers/publications/${id}/toggle_like/`, {
+      method: 'POST',
+    });
+  }
+
+  async validatePublication(id: number): Promise<Publication> {
+    return this.makeRequest<Publication>(`/api/producers/publications/${id}/validate_publication/`, {
+      method: 'POST',
+    });
+  }
+
+  // ================================
+  // PRODUCT METHODS
+  // ================================
+
+  async getProducts(): Promise<Product[]> {
+    return this.makeRequest<Product[]>('/api/products/');
+  }
+
+  async getProduct(id: number): Promise<Product> {
+    return this.makeRequest<Product>(`/api/products/${id}/`);
+  }
+
+  async createProduct(productData: CreateProductRequest): Promise<Product> {
+    return this.makeRequest<Product>('/api/products/', {
+      method: 'POST',
+      body: JSON.stringify(productData),
+    });
+  }
+
+  async updateProduct(id: number, productData: Partial<CreateProductRequest>): Promise<Product> {
+    return this.makeRequest<Product>(`/api/products/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(productData),
+    });
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    return this.makeRequest<void>(`/api/products/${id}/`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getMyProducts(): Promise<Product[]> {
+    return this.makeRequest<Product[]>('/api/products/mes_produits/');
+  }
+
+  async getProductsByCategory(categoryId: number): Promise<Product[]> {
+    return this.makeRequest<Product[]>(`/api/products/par_categorie/?category=${categoryId}`);
+  }
+
+  async validateProduct(id: number): Promise<Product> {
+    return this.makeRequest<Product>(`/api/products/${id}/valider_produit/`, {
+      method: 'POST',
+    });
+  }
+
+  async toggleProductAvailability(id: number): Promise<Product> {
+    return this.makeRequest<Product>(`/api/products/${id}/basculer_disponibilite/`, {
+      method: 'POST',
+    });
+  }
+
+  // ================================
+  // SEARCH METHODS
+  // ================================
+
+  async search(request: SearchRequest): Promise<SearchResult> {
+    const params = new URLSearchParams();
+    
+    Object.entries(request).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        params.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<SearchResult>(`/api/search/?${params.toString()}`);
+  }
+
+  async getSearchSuggestions(query: string): Promise<SearchSuggestion[]> {
+    return this.makeRequest<SearchSuggestion[]>(`/api/search/suggestions/?query=${encodeURIComponent(query)}`);
+  }
+
+  async getAvailableCities(): Promise<string[]> {
+    return this.makeRequest<string[]>('/api/search/villes/');
+  }
+
+  // ================================
+  // NOTIFICATION METHODS
+  // ================================
+
+  async getNotifications(): Promise<Notification[]> {
+    return this.makeRequest<Notification[]>('/api/notifications/');
+  }
+
+  async markNotificationAsRead(id: number): Promise<Notification> {
+    return this.makeRequest<Notification>(`/api/notifications/${id}/mark_read/`, {
+      method: 'POST',
+    });
+  }
+
+  async markAllNotificationsAsRead(): Promise<{ message: string }> {
+    return this.makeRequest<{ message: string }>('/api/notifications/mark_all_read/', {
+      method: 'POST',
+    });
+  }
+
+  async deleteNotification(id: number): Promise<void> {
+    return this.makeRequest<void>(`/api/notifications/${id}/`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ================================
+  // CHAT METHODS
+  // ================================
+
+  async getChats(): Promise<Chat[]> {
+    return this.makeRequest<Chat[]>('/api/chats/');
+  }
+
+  async getChat(id: number): Promise<Chat> {
+    return this.makeRequest<Chat>(`/api/chats/${id}/`);
+  }
+
+  async getChatMessages(chatId: number): Promise<Message[]> {
+    return this.makeRequest<Message[]>(`/api/chats/${chatId}/messages/`);
+  }
+
+  async sendMessage(request: SendMessageRequest): Promise<Message> {
+    return this.makeRequest<Message>('/api/chats/messages/', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async markMessageAsRead(messageId: number): Promise<Message> {
+    return this.makeRequest<Message>(`/api/chats/messages/${messageId}/mark_read/`, {
+      method: 'POST',
+    });
+  }
+
+  // ================================
+  // EVALUATION METHODS
+  // ================================
+
+  async getEvaluations(): Promise<Evaluation[]> {
+    return this.makeRequest<Evaluation[]>('/api/evaluations/');
+  }
+
+  async createEvaluation(request: CreateEvaluationRequest): Promise<Evaluation> {
+    return this.makeRequest<Evaluation>('/api/evaluations/', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async updateEvaluation(id: number, request: CreateEvaluationRequest): Promise<Evaluation> {
+    return this.makeRequest<Evaluation>(`/api/evaluations/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async deleteEvaluation(id: number): Promise<void> {
+    return this.makeRequest<void>(`/api/evaluations/${id}/`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ================================
+  // FAVORITE METHODS
+  // ================================
+
+  async getFavorites(): Promise<Favorite[]> {
+    return this.makeRequest<Favorite[]>('/api/favorites/');
+  }
+
+  async toggleFavorite(producerId: number): Promise<{ status: string }> {
+    return this.makeRequest<{ status: string }>(`/api/users/${producerId}/toggle_favorite/`, {
+      method: 'POST',
+    });
+  }
+
+  // ================================
+  // ORDER METHODS
+  // ================================
+
+  async getCart(): Promise<Cart> {
+    return this.makeRequest<Cart>('/api/orders/cart/');
+  }
+
+  async addToCart(productId: number, quantity: number): Promise<CartItem> {
+    return this.makeRequest<CartItem>('/api/orders/cart/items/', {
+      method: 'POST',
+      body: JSON.stringify({
+        product: productId,
+        quantity: quantity,
+      }),
+    });
+  }
+
+  async updateCartItem(itemId: number, quantity: number): Promise<CartItem> {
+    return this.makeRequest<CartItem>(`/api/orders/cart/items/${itemId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ quantity }),
+    });
+  }
+
+  async removeFromCart(itemId: number): Promise<void> {
+    return this.makeRequest<void>(`/api/orders/cart/items/${itemId}/`, {
+      method: 'DELETE',
+    });
+  }
+
+  async checkout(request: CheckoutRequest): Promise<Order> {
+    return this.makeRequest<Order>('/api/orders/checkout/', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async getOrders(): Promise<Order[]> {
+    return this.makeRequest<Order[]>('/api/orders/');
+  }
+
+  async getOrder(id: number): Promise<Order> {
+    return this.makeRequest<Order>(`/api/orders/${id}/`);
+  }
+
+  // ================================
+  // UTILITY METHODS
+  // ================================
+
   // Token management
   getAccessToken(): string | null {
     return this.accessToken;
@@ -347,13 +1011,109 @@ export const apiClient = new ApiClient();
 // Export the class for static method access
 export { ApiClient };
 
-// Export individual service functions for convenience
+// ================================
+// SERVICE EXPORTS
+// ================================
+
+// Authentication service
 export const authService = {
   register: (userData: UserRegistrationRequest) => apiClient.register(userData),
   login: (credentials: LoginRequest) => apiClient.login(credentials),
   logout: () => apiClient.logout(),
   getCurrentUser: () => apiClient.getCurrentUser(),
   isAuthenticated: () => apiClient.isAuthenticated(),
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) => 
+    apiClient.changePassword(currentPassword, newPassword, confirmPassword),
+  forgotPassword: (email: string) => apiClient.forgotPassword(email),
+  resetPassword: (token: string, newPassword: string, confirmPassword: string) => 
+    apiClient.resetPassword(token, newPassword, confirmPassword),
+  verifyEmail: (token: string) => apiClient.verifyEmail(token),
+  resendVerificationEmail: (email: string) => apiClient.resendVerificationEmail(email),
+};
+
+// Producer page service
+export const producerService = {
+  getCategories: () => apiClient.getCategories(),
+  getProducerPages: () => apiClient.getProducerPages(),
+  getProducerPage: (slug: string) => apiClient.getProducerPage(slug),
+  createProducerPage: (pageData: Partial<ProducerPage>) => apiClient.createProducerPage(pageData),
+  updateProducerPage: (slug: string, pageData: Partial<ProducerPage>) => apiClient.updateProducerPage(slug, pageData),
+  getMyProducerPage: () => apiClient.getMyProducerPage(),
+};
+
+// Publication service
+export const publicationService = {
+  getPublications: () => apiClient.getPublications(),
+  getPublication: (id: number) => apiClient.getPublication(id),
+  createPublication: (publicationData: CreatePublicationRequest) => apiClient.createPublication(publicationData),
+  updatePublication: (id: number, publicationData: UpdatePublicationRequest) => apiClient.updatePublication(id, publicationData),
+  deletePublication: (id: number) => apiClient.deletePublication(id),
+  getMyPublications: () => apiClient.getMyPublications(),
+  getPublicFeed: () => apiClient.getPublicFeed(),
+  toggleLike: (id: number) => apiClient.toggleLikePublication(id),
+  validatePublication: (id: number) => apiClient.validatePublication(id),
+};
+
+// Product service
+export const productService = {
+  getProducts: () => apiClient.getProducts(),
+  getProduct: (id: number) => apiClient.getProduct(id),
+  createProduct: (productData: CreateProductRequest) => apiClient.createProduct(productData),
+  updateProduct: (id: number, productData: Partial<CreateProductRequest>) => apiClient.updateProduct(id, productData),
+  deleteProduct: (id: number) => apiClient.deleteProduct(id),
+  getMyProducts: () => apiClient.getMyProducts(),
+  getProductsByCategory: (categoryId: number) => apiClient.getProductsByCategory(categoryId),
+  validateProduct: (id: number) => apiClient.validateProduct(id),
+  toggleAvailability: (id: number) => apiClient.toggleProductAvailability(id),
+};
+
+// Search service
+export const searchService = {
+  search: (request: SearchRequest) => apiClient.search(request),
+  getSuggestions: (query: string) => apiClient.getSearchSuggestions(query),
+  getAvailableCities: () => apiClient.getAvailableCities(),
+};
+
+// Notification service
+export const notificationService = {
+  getNotifications: () => apiClient.getNotifications(),
+  markAsRead: (id: number) => apiClient.markNotificationAsRead(id),
+  markAllAsRead: () => apiClient.markAllNotificationsAsRead(),
+  deleteNotification: (id: number) => apiClient.deleteNotification(id),
+};
+
+// Chat service
+export const chatService = {
+  getChats: () => apiClient.getChats(),
+  getChat: (id: number) => apiClient.getChat(id),
+  getMessages: (chatId: number) => apiClient.getChatMessages(chatId),
+  sendMessage: (request: SendMessageRequest) => apiClient.sendMessage(request),
+  markMessageAsRead: (messageId: number) => apiClient.markMessageAsRead(messageId),
+};
+
+// Evaluation service
+export const evaluationService = {
+  getEvaluations: () => apiClient.getEvaluations(),
+  createEvaluation: (request: CreateEvaluationRequest) => apiClient.createEvaluation(request),
+  updateEvaluation: (id: number, request: CreateEvaluationRequest) => apiClient.updateEvaluation(id, request),
+  deleteEvaluation: (id: number) => apiClient.deleteEvaluation(id),
+};
+
+// Favorite service
+export const favoriteService = {
+  getFavorites: () => apiClient.getFavorites(),
+  toggleFavorite: (producerId: number) => apiClient.toggleFavorite(producerId),
+};
+
+// Order service
+export const orderService = {
+  getCart: () => apiClient.getCart(),
+  addToCart: (productId: number, quantity: number) => apiClient.addToCart(productId, quantity),
+  updateCartItem: (itemId: number, quantity: number) => apiClient.updateCartItem(itemId, quantity),
+  removeFromCart: (itemId: number) => apiClient.removeFromCart(itemId),
+  checkout: (request: CheckoutRequest) => apiClient.checkout(request),
+  getOrders: () => apiClient.getOrders(),
+  getOrder: (id: number) => apiClient.getOrder(id),
 };
 
 export default apiClient; 

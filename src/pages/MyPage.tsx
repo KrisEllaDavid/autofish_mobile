@@ -136,6 +136,12 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   // Post modal logic
   const openCreatePostModal = () => {
+    // Check if user is verified before allowing publication creation
+    if (!userData?.is_verified) {
+      toast.error("Votre compte doit être vérifié par l'administrateur pour publier");
+      return;
+    }
+    
     setEditingPost(null);
     setPostImage("");
     setPostDescription("");
@@ -217,6 +223,12 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       parseFloat(postPrice) <= 0
     ) {
       toast.error("Veuillez entrer un prix valide");
+      return;
+    }
+
+    // Additional verification check for producers
+    if (userData?.userRole === 'producteur' && !userData?.is_verified) {
+      toast.error("Votre compte doit être vérifié par l'administrateur pour publier");
       return;
     }
 
@@ -745,6 +757,15 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           justify-content: center; 
           cursor: pointer; 
           font-weight: 700; 
+          transition: all 0.2s ease;
+        }
+        .publications-add.disabled {
+          background: #ccc;
+          cursor: not-allowed;
+        }
+        .publications-add:hover:not(.disabled) {
+          background: #007a8f;
+          transform: scale(1.05);
         }
         .modal-form-label { font-weight: 600; margin-bottom: 6px; color: #222; }
         .modal-form-input, .modal-form-select, .modal-form-textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1.2px solid #e0e0e0; background: #fff; font-size: 16px; color: #222; margin-bottom: 16px; box-sizing: border-box; }
@@ -827,14 +848,51 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <img src={editIconWhite} alt="edit" />
               </span>
             </div>
+            {userData?.userRole === 'producteur' && (
+              <div className="banner-info-row">
+                <span className="banner-info-label" style={{ fontSize: '14px' }}>
+                  {userData?.is_verified ? (
+                    <span style={{ color: '#4CAF50' }}>
+                      ✅ Compte vérifié
+                    </span>
+                  ) : (
+                    <span style={{ color: '#FF6B35' }}>
+                      ⏳ En attente de vérification
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
           </div>
         </div>
         <div className="publications-section">
           <div className="publications-title">
             Publications
-            <span className="publications-add" onClick={openCreatePostModal}>
+            {userData?.userRole === 'producteur' && (
+              <>
+                {!userData?.is_verified && (
+                  <div style={{ 
+                    fontSize: '12px', 
+                    color: '#FF6B35', 
+                    fontWeight: '500',
+                    marginRight: '10px',
+                    textAlign: 'right'
+                  }}>
+                    ⚠️ Compte en attente de vérification
+                  </div>
+                )}
+                <span 
+                  className={`publications-add ${!userData?.is_verified ? 'disabled' : ''}`} 
+                  onClick={openCreatePostModal}
+                  style={{
+                    opacity: userData?.is_verified ? 1 : 0.5,
+                    cursor: userData?.is_verified ? 'pointer' : 'not-allowed'
+                  }}
+                >
               +
             </span>
+              </>
+            )}
           </div>
           {isLoading ? (
             <div className="loading-spinner" />
@@ -849,7 +907,17 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             posts.map((post) => (
               <div key={post.id} className="post-card-container">
                 <PostCard
-                  post={post}
+                  id={post.id}
+                  producerName={post.producerName}
+                  producerAvatar={post.producerAvatar}
+                  postImage={post.postImage}
+                  description={post.description}
+                  date={post.date}
+                  likes={post.likes}
+                  comments={post.comments}
+                  category={post.category}
+                  location={post.location}
+                  price={post.price}
                   isLiked={post.isLiked}
                   onLike={() => {}}
                   onComment={() => {}}
