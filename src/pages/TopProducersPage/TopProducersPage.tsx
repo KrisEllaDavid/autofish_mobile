@@ -91,7 +91,6 @@ const mockProducers: Producer[] = [
 ];
 
 const TopProducersPage: React.FC<TopProducersPageProps> = ({
-  onBackToHome,
   onNotificationClick,
   onMyPageClick,
   activeTab = "producers",

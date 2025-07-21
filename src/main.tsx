@@ -26,6 +26,22 @@ import "./index.css";
 import App from "./App.tsx";
 import { setupIonicReact } from '@ionic/react';
 
+// Suppress browser extension runtime errors
+const originalError = console.error;
+console.error = (...args) => {
+  const errorMessage = args[0];
+  if (
+    typeof errorMessage === 'string' &&
+    (errorMessage.includes('runtime.lastError') ||
+     errorMessage.includes('message port closed') ||
+     errorMessage.includes('Could not establish connection'))
+  ) {
+    // Suppress these harmless browser extension errors
+    return;
+  }
+  originalError.apply(console, args);
+};
+
 setupIonicReact();
 
 createRoot(document.getElementById("root")!).render(

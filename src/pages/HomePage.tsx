@@ -49,9 +49,25 @@ const HomePage: React.FC = () => {
         const data = await api.getPublicFeed();
         setPublications(data);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load publications';
+        // Handle different types of errors more gracefully
+        let errorMessage = 'Failed to load publications';
+        
+        if (err && typeof err === 'object') {
+          // Handle API error responses
+          if ('detail' in err && typeof err.detail === 'string') {
+            errorMessage = err.detail;
+          } else if ('message' in err && typeof err.message === 'string') {
+            errorMessage = err.message;
+          }
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+        
         setError(errorMessage);
-        console.error('Failed to load publications:', errorMessage);
+        console.error('Failed to load publications:', err);
+        
+        // Set empty array so the UI can still render
+        setPublications([]);
       } finally {
         setLoading(false);
       }
