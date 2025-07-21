@@ -377,6 +377,16 @@ class ApiClient {
     // Add authentication header if available and not for registration endpoint
     if (this.accessToken && !endpoint.includes('/api/auth/register/')) {
       defaultHeaders['Authorization'] = `Bearer ${this.accessToken}`;
+      
+      // Log authentication status in development
+      if (import.meta.env.DEV) {
+        console.log(`🔑 Making authenticated request to ${endpoint} with token: ${this.accessToken.substring(0, 20)}...`);
+      }
+    } else if (!endpoint.includes('/api/auth/register/') && !endpoint.includes('/api/auth/login/')) {
+      // Log when making potentially protected requests without tokens
+      if (import.meta.env.DEV) {
+        console.log(`⚠️  Making request to ${endpoint} without authentication token`);
+      }
     }
 
     const config: RequestInit = {
@@ -392,8 +402,16 @@ class ApiClient {
       
       // Handle 401 Unauthorized by attempting token refresh
       if (response.status === 401 && this.refreshToken && !endpoint.includes('/api/auth/')) {
+        if (import.meta.env.DEV) {
+          console.log('🔄 Got 401, attempting token refresh...');
+        }
+        
         const refreshSuccess = await this.refreshAccessToken();
         if (refreshSuccess) {
+          if (import.meta.env.DEV) {
+            console.log('✅ Token refreshed successfully, retrying request...');
+          }
+          
           // Retry the request with the new token
           const retryConfig: RequestInit = {
             ...config,
@@ -405,11 +423,18 @@ class ApiClient {
           };
           const retryResponse = await fetch(url, retryConfig);
           return this.handleResponse<T>(retryResponse);
+        } else {
+          if (import.meta.env.DEV) {
+            console.log('❌ Token refresh failed');
+          }
         }
       }
       
       return this.handleResponse<T>(response);
     } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error('🔥 Network error on request to:', url, error);
+      }
       throw new Error('Network error occurred');
     }
   }
@@ -725,7 +750,7 @@ class ApiClient {
   // ================================
 
   async getPublications(): Promise<Publication[]> {
-    return this.makePublicRequest<Publication[]>('/api/producers/publications/');
+    return this.makeRequest<Publication[]>('/api/producers/publications/');
   }
 
   async getPublication(id: number): Promise<Publication> {
@@ -777,7 +802,7 @@ class ApiClient {
   }
 
   async getPublicFeed(): Promise<Publication[]> {
-    return this.makePublicRequest<Publication[]>('/api/producers/publications/public_feed/');
+    return this.makeRequest<Publication[]>('/api/producers/publications/public_feed/');
   }
 
   async toggleLikePublication(id: number): Promise<{ status: string }> {

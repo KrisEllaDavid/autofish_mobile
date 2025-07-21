@@ -1,8 +1,8 @@
-import { ApiClient } from './api';
+import { apiClient } from './api';
 import { useLoading } from '../context/LoadingContext';
 
-// Create a singleton instance of the API client
-const apiClient = new ApiClient();
+// Use the singleton instance from api.ts instead of creating a new one
+// This ensures we're using the same token-managed instance
 
 // Hook to use API with loading state
 export const useApiWithLoading = () => {

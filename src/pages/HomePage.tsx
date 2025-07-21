@@ -114,6 +114,14 @@ const HomePage: React.FC = () => {
   }, [search, sortedPublications]);
 
   const handleLike = async (publicationId: number) => {
+    // Check if user is authenticated before attempting to like
+    if (!userData || !userData.registrationComplete) {
+      // TODO: Show login modal or redirect to login
+      console.log('User must be logged in to like posts');
+      alert('Veuillez vous connecter pour aimer cette publication.');
+      return;
+    }
+
     try {
       const result = await api.toggleLikePublication(publicationId);
       
@@ -137,8 +145,28 @@ const HomePage: React.FC = () => {
 
       console.log(result.status === 'added to favorites' ? 'Added to favorites!' : 'Removed from favorites');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update like';
+      let errorMessage = 'Failed to update like';
+      
+      // Handle authentication errors specifically
+      if (err && typeof err === 'object') {
+        if ('detail' in err) {
+          errorMessage = err.detail as string;
+          
+          // If it's an authentication error, inform the user
+          if (errorMessage.toLowerCase().includes('authentication') || 
+              errorMessage.toLowerCase().includes('token') ||
+              errorMessage.toLowerCase().includes('unauthorized')) {
+            alert('Votre session a expiré. Veuillez vous reconnecter.');
+            // TODO: Redirect to login or refresh token
+            return;
+          }
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
       console.error('Failed to update like:', errorMessage);
+      alert('Erreur lors de la mise à jour du like: ' + errorMessage);
     }
   };
 

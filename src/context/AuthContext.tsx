@@ -65,6 +65,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   clearError: () => void;
+  getAccessToken: () => string | null; // Add method to get current access token
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -81,9 +82,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is authenticated based on userData presence and registration completion
-    setIsAuthenticated(userData !== null && userData.email !== undefined && userData.registrationComplete === true);
+    // Check if user is authenticated based on both userData and stored tokens
+    const hasValidTokens = apiClient.isAuthenticated();
+    const hasUserData = userData !== null && userData.email !== undefined && userData.registrationComplete === true;
+    setIsAuthenticated(hasValidTokens && hasUserData);
   }, [userData]);
+
+  // Load tokens from localStorage on initialization
+  useEffect(() => {
+    // Check if we have tokens but no user data - this can happen after app refresh
+    if (apiClient.isAuthenticated() && !userData) {
+      // Try to fetch current user data if we have valid tokens
+      const fetchCurrentUser = async () => {
+        try {
+          const currentUser = await apiClient.getCurrentUser();
+          const mappedUserData: UserData = {
+            name: `${currentUser.first_name} ${currentUser.last_name}`.trim(),
+            email: currentUser.email,
+            avatar: currentUser.profile_picture_url || currentUser.profile_picture || '',
+            userRole: currentUser.user_type === 'producer' ? 'producteur' : 'client',
+            description: currentUser.description || '',
+            country: currentUser.country || '',
+            code: '',
+            address: currentUser.address || currentUser.city || '',
+            phone: currentUser.phone || '',
+            registrationComplete: true,
+            is_verified: currentUser.is_verified,
+            email_verified: currentUser.email_verified,
+            is_active: currentUser.is_active,
+            selectedCategories: [],
+            myPosts: []
+          };
+          setUserDataState(mappedUserData);
+        } catch (error) {
+          // If we can't fetch user data, clear the invalid tokens
+          apiClient.logout();
+        }
+      };
+      
+      fetchCurrentUser();
+    }
+  }, []);
 
   const updateUserData = (data: Partial<UserData>) => {
     setUserDataState(prevData => {
@@ -91,7 +130,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const newUserData = data as UserData;
         // Don't authenticate during registration - only when registrationComplete is true
         if (newUserData.registrationComplete) {
-          setIsAuthenticated(newUserData.email !== undefined);
+          setIsAuthenticated(newUserData.email !== undefined && apiClient.isAuthenticated());
         }
         return newUserData;
       }
@@ -112,9 +151,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       });
 
-      // Only authenticate if registration is complete
+      // Only authenticate if registration is complete and we have valid tokens
       if (updatedData.registrationComplete) {
-        setIsAuthenticated(updatedData.email !== undefined);
+        setIsAuthenticated(updatedData.email !== undefined && apiClient.isAuthenticated());
       }
       return updatedData;
     });
@@ -126,6 +165,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       const response = await apiClient.login(credentials);
+      
+      // The apiClient.login() already saves tokens internally, 
+      // so we don't need to manually handle token storage here
       
       // Convert API UserType to our UserData format
       const mappedUserData: UserData = {
@@ -193,6 +235,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         mappedUserData.registrationComplete = true; // Mark registration as complete
         setUserDataState(mappedUserData);
         setIsAuthenticated(true);
+      } else {
+        // For producers, they need email verification first
+        mappedUserData.registrationComplete = false;
+        setUserDataState(mappedUserData);
+        setIsAuthenticated(false);
       }
       
       // Note: Producers will need to verify email before they can login
@@ -213,7 +260,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     
     try {
-      // Call API logout to invalidate tokens
+      // Call API logout to invalidate tokens (this also clears tokens from apiClient)
       await apiClient.logout();
     } catch {
       console.warn('API logout failed, but continuing with local cleanup');
@@ -252,11 +299,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUserDataState(prevData => {
       if (prevData) {
         const updatedData = { ...prevData, registrationComplete: true };
-        setIsAuthenticated(true);
+        setIsAuthenticated(apiClient.isAuthenticated());
         return updatedData;
       }
       return prevData;
     });
+  };
+
+  const getAccessToken = () => {
+    return apiClient.getAccessToken();
   };
 
   const value: AuthContextType = {
@@ -270,7 +321,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoggingOut,
     isLoading,
     error,
-    clearError
+    clearError,
+    getAccessToken
   };
 
   return (
