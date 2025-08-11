@@ -155,20 +155,20 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
                 }
               }}
               style={{
-                background: tab.id === "producers" && activeTab === "producers" 
-                  ? "rgba(0, 178, 214, 0.1)" 
-                  : "none",
-                border: "none",
+                background: "none",
+                border: tab.id === "producers" && activeTab === "producers" 
+                  ? "" 
+                  : "2px solid transparent",
                 outline: "none",
                 cursor: "pointer",
-                padding: tab.id === "producers" && activeTab === "producers" ? "0px" : 0,
+                padding: "8px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 opacity: tab.id === "producers" && activeTab === "producers" ? 1 : 0.85,
-                width: 36,
+                width: 44,
                 height: 80,
-                borderRadius: tab.id === "producers" && activeTab === "producers" ? "12px" : "0",
+                borderRadius: "40px 40px 0px 0px", // Make it circular
                 transition: "all 0.2s ease",
               }}
             >
@@ -193,16 +193,22 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
               onClick={() => onTabChange(tab.id as "messages" | "profile")}
               style={{
                 background: "none",
-                border: "none",
+                border: (tab.id === "messages" && activeTab === "messages") || 
+                        (tab.id === "profile" && activeTab === "profile")
+                  ? "2px solid #00B2D6" 
+                  : "2px solid transparent",
                 outline: "none",
                 cursor: "pointer",
-                padding: 0,
+                padding: "8px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: 0.85,
-                width: 36,
-                height: 80,
+                opacity: ((tab.id === "messages" && activeTab === "messages") || 
+                         (tab.id === "profile" && activeTab === "profile")) ? 1 : 0.85,
+                width: 44,
+                height: 44,
+                borderRadius: "50%", // Make it circular
+                transition: "all 0.2s ease",
               }}
             >
               <img

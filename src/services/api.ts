@@ -1,8 +1,21 @@
 // AutoFish API Service
 // Based on AutoFish API.yaml specification
 
-// API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Import Capacitor HTTP plugin for mobile
+import { CapacitorHttp } from '@capacitor/core';
+
+// API Configuration - Smart handling for web development vs mobile production
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.autofish.store';
+
+// Use proxy for web development to avoid CORS, direct calls for mobile and production
+const isDev = import.meta.env.DEV;
+const isMobile = typeof window !== 'undefined' && window.location.protocol === 'capacitor:';
+
+// Smart URL selection:
+// - Web development: Use proxy (relative URLs)
+// - Mobile: Always use full URL (CapacitorHttp bypasses CORS)
+// - Web production: Use full URL
+const baseURL = (isDev && !isMobile) ? '' : API_BASE_URL;
 
 // ================================
 // AUTHENTICATION TYPES
@@ -11,8 +24,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export interface UserType {
   id: number;
   email: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
   phone?: string;
   city?: string;
   country?: string;
@@ -335,7 +348,7 @@ class ApiClient {
   private refreshToken: string | null = null;
 
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.baseURL = baseURL;
     
     // Load tokens from localStorage on initialization
     this.loadTokensFromStorage();
@@ -367,7 +380,7 @@ class ApiClient {
     const url = `${this.baseURL}${endpoint}`;
     
     // Don't set Content-Type for FormData - let browser set it automatically with boundary
-    const defaultHeaders: HeadersInit = {};
+    const defaultHeaders: Record<string, string> = {};
     
     // Only set JSON content type if we're not sending FormData
     if (!(options.body instanceof FormData)) {
@@ -389,16 +402,67 @@ class ApiClient {
       }
     }
 
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options.headers,
-      },
+    const headers = {
+      ...defaultHeaders,
+      ...options.headers,
     };
 
     try {
-      const response = await fetch(url, config);
+      let response: Response;
+      
+      // Unified request handling - prefer CapacitorHttp when available for consistency
+      // This ensures the same request mechanism is used regardless of platform
+      if (isMobile && typeof CapacitorHttp !== 'undefined') {
+        const capacitorOptions = {
+          url,
+          method: (options.method || 'GET') as any,
+          headers,
+          data: options.body instanceof FormData ? undefined : (typeof options.body === 'string' ? options.body : JSON.stringify(options.body)),
+        };
+        
+        if (import.meta.env.DEV) {
+          console.log('📱 Using CapacitorHttp for unified request:', capacitorOptions);
+        }
+        
+        const capacitorResponse = await CapacitorHttp.request(capacitorOptions);
+        
+        if (import.meta.env.DEV) {
+          console.log('📱 CapacitorHttp response:', {
+            status: capacitorResponse.status,
+            headers: capacitorResponse.headers,
+            data: capacitorResponse.data
+          });
+        }
+        
+        // Convert Capacitor response to fetch-like Response
+        response = {
+          ok: capacitorResponse.status >= 200 && capacitorResponse.status < 300,
+          status: capacitorResponse.status,
+          statusText: '',
+          headers: new Headers(capacitorResponse.headers || {}),
+          json: async () => {
+            // CapacitorHttp already parses JSON responses
+            return capacitorResponse.data;
+          },
+          text: async () => {
+            // Handle different data types from CapacitorHttp
+            if (typeof capacitorResponse.data === 'string') {
+              return capacitorResponse.data;
+            } else if (capacitorResponse.data && typeof capacitorResponse.data === 'object') {
+              return JSON.stringify(capacitorResponse.data);
+            } else {
+              return String(capacitorResponse.data || '');
+            }
+          },
+        } as Response;
+      } else {
+        // Use regular fetch for web - same configuration as mobile would use
+        const config: RequestInit = {
+          ...options,
+          headers,
+        };
+        response = await fetch(url, config);
+      }
       
       // Handle 401 Unauthorized by attempting token refresh
       if (response.status === 401 && this.refreshToken && !endpoint.includes('/api/auth/')) {
@@ -413,16 +477,43 @@ class ApiClient {
           }
           
           // Retry the request with the new token
-          const retryConfig: RequestInit = {
-            ...config,
-            headers: {
-              ...defaultHeaders,
-              ...options.headers,
-              'Authorization': `Bearer ${this.accessToken}`,
-            },
+          const retryHeaders = {
+            ...headers,
+            'Authorization': `Bearer ${this.accessToken}`,
           };
-          const retryResponse = await fetch(url, retryConfig);
-          return this.handleResponse<T>(retryResponse);
+          
+          // Use the same unified approach for retry requests
+          if (isMobile && typeof CapacitorHttp !== 'undefined') {
+            const retryCapacitorOptions = {
+              url,
+              method: (options.method || 'GET') as any,
+              headers: retryHeaders,
+              data: options.body instanceof FormData ? undefined : (typeof options.body === 'string' ? options.body : JSON.stringify(options.body)),
+            };
+            const retryCapacitorResponse = await CapacitorHttp.request(retryCapacitorOptions);
+            response = {
+              ok: retryCapacitorResponse.status >= 200 && retryCapacitorResponse.status < 300,
+              status: retryCapacitorResponse.status,
+              statusText: '',
+              headers: new Headers(retryCapacitorResponse.headers || {}),
+              json: async () => retryCapacitorResponse.data,
+              text: async () => {
+                if (typeof retryCapacitorResponse.data === 'string') {
+                  return retryCapacitorResponse.data;
+                } else if (retryCapacitorResponse.data && typeof retryCapacitorResponse.data === 'object') {
+                  return JSON.stringify(retryCapacitorResponse.data);
+                } else {
+                  return String(retryCapacitorResponse.data || '');
+                }
+              },
+            } as Response;
+          } else {
+            const retryConfig: RequestInit = {
+              ...options,
+              headers: retryHeaders,
+            };
+            response = await fetch(url, retryConfig);
+          }
         } else {
           if (import.meta.env.DEV) {
             console.log('❌ Token refresh failed');
@@ -434,7 +525,21 @@ class ApiClient {
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('🔥 Network error on request to:', url, error);
+        
+        // Check if it's a CORS error
+        if (error instanceof TypeError && error.message.includes('CORS')) {
+          console.error('🚫 CORS Error detected. This usually means:');
+          console.error('1. The API server needs to allow your origin');
+          console.error('2. You need to use a proxy for development');
+          console.error('3. The request needs proper headers');
+        }
       }
+      
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network connection failed. Please check your internet connection and API server status.');
+      }
+      
       throw new Error('Network error occurred');
     }
   }
@@ -472,67 +577,95 @@ class ApiClient {
   }
 
   private async handleResponse<T>(response: Response): Promise<T> {
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    
     if (!response.ok) {
       let errorData: any = {};
       
       try {
-        // Try to parse the error response as JSON
-        errorData = await response.json();
+        if (isJson) {
+          // Try to parse the error response as JSON
+          errorData = await response.json();
+        } else {
+          // Get text response (likely HTML error page)
+          const errorText = await response.text();
+          
+          // Check if it's an HTML error page
+          if (errorText.includes('<html') || errorText.includes('<!DOCTYPE')) {
+            errorData = { 
+              detail: `Server returned HTML error page (${response.status}). Backend may not be properly configured for JSON API responses.`,
+              html_response: errorText.substring(0, 500) + '...' // Truncate for logging
+            };
+          } else {
+            errorData = { detail: errorText };
+          }
+        }
         
         // Only log detailed error info in development or for non-auth errors
         if (import.meta.env.DEV || response.status !== 401) {
-          console.error('API Error Response Data:', errorData);
+          console.error('API Error Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url,
+            contentType,
+            isJson,
+            data: errorData
+          });
         }
       } catch (parseError) {
-        // If JSON parsing fails, try to get text
-        try {
-          const errorText = await response.text();
-          if (import.meta.env.DEV || response.status !== 401) {
-            console.error('API Error Response Text:', errorText);
-          }
-          errorData = { detail: errorText };
-        } catch (textError) {
-          if (import.meta.env.DEV) {
-            console.error('Could not read error response:', textError);
-          }
-          errorData = { detail: 'Unknown error occurred' };
+        if (import.meta.env.DEV) {
+          console.error('Could not parse error response:', parseError);
         }
-      }
-      
-      // Only log detailed response info in development or for non-auth errors
-      if (import.meta.env.DEV || response.status !== 401) {
-        console.error('API Error Response:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url,
-          headers: Object.fromEntries(response.headers.entries()),
-          data: errorData
-        });
-        
-        console.error('Request details:', {
-          method: response.url.includes('register') ? 'POST' : 'GET',
-          url: response.url,
-          status: response.status
-        });
+        errorData = { 
+          detail: `Failed to parse error response (${response.status})`,
+          parse_error: parseError instanceof Error ? parseError.message : String(parseError)
+        };
       }
       
       throw errorData;
     }
     
     // Parse successful response
-    const responseData = await response.json();
-    
-    // Log successful responses for debugging (only in development)
-    if (import.meta.env.DEV) {
-      console.log('API Success Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        url: response.url,
-        data: responseData
-      });
+    try {
+      if (isJson) {
+        const responseData = await response.json();
+        
+        // Log successful responses for debugging (only in development)
+        if (import.meta.env.DEV) {
+          console.log('API Success Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url,
+            data: responseData
+          });
+        }
+        
+        return responseData;
+      } else {
+        // Handle non-JSON successful responses
+        const textData = await response.text();
+        if (import.meta.env.DEV) {
+          console.warn('API returned non-JSON successful response:', {
+            status: response.status,
+            contentType,
+            text: textData.substring(0, 200) + '...'
+          });
+        }
+        
+        // Try to parse as JSON anyway, fallback to text
+        try {
+          return JSON.parse(textData);
+        } catch {
+          return textData as any;
+        }
+      }
+    } catch (parseError) {
+      if (import.meta.env.DEV) {
+        console.error('Could not parse successful response:', parseError);
+      }
+      throw new Error(`Failed to parse API response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
     }
-    
-    return responseData;
   }
 
   private async refreshAccessToken(): Promise<boolean> {
@@ -692,7 +825,7 @@ class ApiClient {
   }
 
   async getProducerPages(): Promise<ProducerPage[]> {
-    return this.makePublicRequest<ProducerPage[]>('/api/producers/pages/');
+    return this.makeRequest<ProducerPage[]>('/api/producers/pages/');
   }
 
   async getProducerPage(slug: string): Promise<ProducerPage> {

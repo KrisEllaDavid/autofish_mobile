@@ -96,25 +96,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const fetchCurrentUser = async () => {
         try {
           const currentUser = await apiClient.getCurrentUser();
+          
+          // Debug logging for mobile
+          if (import.meta.env.DEV) {
+            console.log('📱 Fetched current user:', currentUser);
+          }
+          
+          // Safely access user properties with comprehensive fallbacks
           const mappedUserData: UserData = {
-            name: `${currentUser.first_name} ${currentUser.last_name}`.trim(),
-            email: currentUser.email,
-            avatar: currentUser.profile_picture_url || currentUser.profile_picture || '',
-            userRole: currentUser.user_type === 'producer' ? 'producteur' : 'client',
-            description: currentUser.description || '',
-            country: currentUser.country || '',
+            name: currentUser ? 
+              `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 
+              currentUser.email || 'User' : 'User',
+            email: currentUser?.email || '',
+            avatar: currentUser?.profile_picture_url || currentUser?.profile_picture || '',
+            userRole: currentUser?.user_type === 'producer' ? 'producteur' : 'client',
+            description: currentUser?.description || '',
+            country: currentUser?.country || '',
             code: '',
-            address: currentUser.address || currentUser.city || '',
-            phone: currentUser.phone || '',
+            address: currentUser?.address || currentUser?.city || '',
+            phone: currentUser?.phone || '',
             registrationComplete: true,
-            is_verified: currentUser.is_verified,
-            email_verified: currentUser.email_verified,
-            is_active: currentUser.is_active,
+            is_verified: currentUser?.is_verified || false,
+            email_verified: currentUser?.email_verified || false,
+            is_active: currentUser?.is_active || false,
             selectedCategories: [],
             myPosts: []
           };
           setUserDataState(mappedUserData);
         } catch (error) {
+          if (import.meta.env.DEV) {
+            console.error('📱 Error fetching current user:', error);
+          }
           // If we can't fetch user data, clear the invalid tokens
           apiClient.logout();
         }
@@ -166,29 +178,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await apiClient.login(credentials);
       
+      // Debug logging for mobile
+      if (import.meta.env.DEV) {
+        console.log('📱 Login response:', response);
+        console.log('📱 Login user data:', response?.user);
+      }
+      
       // The apiClient.login() already saves tokens internally, 
       // so we don't need to manually handle token storage here
       
-      // Convert API UserType to our UserData format
+      // Convert API UserType to our UserData format with comprehensive null safety
+      const user = response?.user;
+      if (!user) {
+        throw new Error('Invalid login response: missing user data');
+      }
+      
       const mappedUserData: UserData = {
-        name: `${response.user.first_name} ${response.user.last_name}`.trim(),
-        email: response.user.email,
-        avatar: response.user.profile_picture_url || response.user.profile_picture || '',
-        userRole: response.user.user_type === 'producer' ? 'producteur' : 'client',
-        description: response.user.description || '',
-        country: response.user.country || '',
+        name: user ? 
+          `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
+          user.email || 'User' : 'User',
+        email: user?.email || '',
+        avatar: user?.profile_picture_url || user?.profile_picture || '',
+        userRole: user?.user_type === 'producer' ? 'producteur' : 'client',
+        description: user?.description || '',
+        country: user?.country || '',
         code: '', // Country code is not stored in API user object
-        address: response.user.address || response.user.city || '',
-        phone: response.user.phone || '',
+        address: user?.address || user?.city || '',
+        phone: user?.phone || '',
         registrationComplete: true, // User is authenticated via login
         // Map verification fields from API
-        is_verified: response.user.is_verified,
-        email_verified: response.user.email_verified,
-        is_active: response.user.is_active,
+        is_verified: user?.is_verified || false,
+        email_verified: user?.email_verified || false,
+        is_active: user?.is_active || true,
         // Initialize other fields as needed
         selectedCategories: [],
         myPosts: []
       };
+      
+      if (import.meta.env.DEV) {
+        console.log('📱 Mapped user data:', mappedUserData);
+      }
       
       setUserDataState(mappedUserData);
       setIsAuthenticated(true);
@@ -211,17 +240,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await apiClient.register(registrationData);
       
-      // Convert API UserType to our UserData format
+      // Debug logging for mobile
+      if (import.meta.env.DEV) {
+        console.log('📱 Register response:', response);
+        console.log('📱 Register user data:', response?.user);
+      }
+      
+      // Convert API UserType to our UserData format with comprehensive null safety
+      const user = response?.user;
+      if (!user) {
+        throw new Error('Invalid registration response: missing user data');
+      }
+      
       const mappedUserData: UserData = {
-        name: `${response.user.first_name} ${response.user.last_name}`.trim(),
-        email: response.user.email,
-        avatar: response.user.profile_picture_url || response.user.profile_picture || '',
-        userRole: response.user.user_type === 'producer' ? 'producteur' : 'client',
-        description: response.user.description || '',
-        country: response.user.country || '',
+        name: user ? 
+          `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
+          user.email || 'User' : 'User',
+        email: user?.email || '',
+        avatar: user?.profile_picture_url || user?.profile_picture || '',
+        userRole: user?.user_type === 'producer' ? 'producteur' : 'client',
+        description: user?.description || '',
+        country: user?.country || '',
         code: '', // Country code is not returned by API, will be empty after registration
-        address: response.user.address || response.user.city || '',
-        phone: response.user.phone || '',
+        address: user?.address || user?.city || '',
+        phone: user?.phone || '',
         // Initialize other fields as needed
         selectedCategories: [],
         myPosts: []

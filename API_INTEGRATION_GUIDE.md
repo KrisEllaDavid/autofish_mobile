@@ -23,6 +23,12 @@
    - AuthContext with API calls
    - Enhanced error handling
 
+4. **Unified Web and Mobile Implementation**
+   - Both web and mobile use the same API endpoint
+   - Identical request handling for consistency
+   - No proxy differences between platforms
+   - Unified error handling and retry logic
+
 ## 🔧 Setup Instructions
 
 ### 1. Environment Configuration
@@ -30,11 +36,11 @@
 Create a `.env` file in your project root with:
 
 ```env
-# API Configuration
-VITE_API_BASE_URL=http://31.97.178.131
+# API Configuration - Unified for Web and Mobile
+VITE_API_BASE_URL=https://api.autofish.store
 
 # Development settings
-VITE_NODE_ENV=development
+VITE_NODE_ENV=production
 ```
 
 ### 2. API Endpoints Integrated

@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./TopProducersPage.css";
 import TopNavBar from "../../components/TopNavBar";
+import { useApiWithLoading } from "../../services/apiWithLoading";
+import { ProducerPage } from "../../services/api";
+import { imageService } from "../../services/imageService";
 
 interface Producer {
   id: number;
@@ -23,72 +26,16 @@ interface TopProducersPageProps {
   userRole?: string;
 }
 
-// Mock data for producers (replace with API call)
-const mockProducers: Producer[] = [
-  {
-    id: 1,
-    name: "Rosio AutoFish-Store",
-    avatar: "/images/producer-avatar-1.jpg",
-    specialty: "Poissons frais",
-    location: "Dakar, Sénégal",
-    rating: 4.8,
-    isVerified: true,
-  },
-  {
-    id: 2,
-    name: "Rosio AutoFish-Store",
-    avatar: "/images/producer-avatar-2.jpg",
-    specialty: "Fruits de mer",
-    location: "Dakar, Sénégal",
-    rating: 4.5,
-    isVerified: true,
-  },
-  {
-    id: 3,
-    name: "Rosio AutoFish-Store",
-    avatar: "/images/producer-avatar-3.jpg",
-    specialty: "Poissons d'élevage",
-    location: "Dakar, Sénégal",
-    rating: 4.9,
-    isVerified: true,
-  },
-  {
-    id: 4,
-    name: "Rosio AutoFish-Store",
-    avatar: "/images/producer-avatar-4.jpg",
-    specialty: "Poissons exotiques",
-    location: "Dakar, Sénégal",
-    rating: 4.7,
-    isVerified: true,
-  },
-  {
-    id: 5,
-    name: "Rosio AutoFish-Store",
-    avatar: "/images/producer-avatar-5.jpg",
-    specialty: "Poissons frais",
-    location: "Dakar, Sénégal",
-    rating: 4.6,
-    isVerified: true,
-  },
-  {
-    id: 6,
-    name: "Rosio AutoFish-Store",
-    avatar: "/images/producer-avatar-6.jpg",
-    specialty: "Fruits de mer",
-    location: "Dakar, Sénégal",
-    rating: 4.4,
-    isVerified: true,
-  },
-  {
-    id: 7,
-    name: "Rosio AutoFish-Store",
-    avatar: "/images/producer-avatar-7.jpg",
-    specialty: "Poissons d'élevage",
-    location: "Dakar, Sénégal",
-    rating: 4.8,
-    isVerified: true,
-  },
-];
+// Convert ProducerPage to Producer interface for component compatibility
+const convertProducerPageToProducer = (producerPage: ProducerPage): Producer => ({
+  id: producerPage.id,
+  name: producerPage.name,
+  avatar: producerPage.logo || imageService.getFallbackImageUrl('logos'),
+  specialty: producerPage.categories.map(cat => cat.name).join(', ') || 'Producteur',
+  location: `${producerPage.city}, ${producerPage.country}`,
+  rating: 4.5, // TODO: Implement actual rating system
+  isVerified: producerPage.is_validated,
+});
 
 const TopProducersPage: React.FC<TopProducersPageProps> = ({
   onNotificationClick,
@@ -99,18 +46,62 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
   userEmail,
   userRole,
 }) => {
+  const api = useApiWithLoading();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Toutes les catégories");
+  const [producers, setProducers] = useState<Producer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Fetch real producer data from API
+  useEffect(() => {
+    const fetchProducers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Check if user is authenticated before making authenticated requests
+        if (!api.isAuthenticated()) {
+          setError('Vous devez être connecté pour voir les producteurs');
+          setProducers([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Get all producer pages from API (requires authentication)
+        const producerPagesData = await api.getProducerPages();
+        
+        // Convert to Producer interface and filter only validated producers
+        const producersData = producerPagesData
+          .filter(page => page.is_validated) // Only show validated producers
+          .map(convertProducerPageToProducer);
+        
+        setProducers(producersData);
+        
+        if (import.meta.env.DEV) {
+          console.log('✅ Loaded producers:', producersData.length);
+        }
+        
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load producers';
+        setError(errorMessage);
+        console.error('❌ Failed to load producers:', err);
+        setProducers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducers();
+  }, []);
+
+  // Get unique categories from loaded producers
   const categories = [
     "Toutes les catégories",
-    "Poissons frais",
-    "Fruits de mer",
-    "Poissons d'élevage",
-    "Poissons exotiques",
+    ...Array.from(new Set(producers.flatMap(p => p.specialty.split(', '))))
   ];
 
-  const filteredProducers = mockProducers.filter((producer) => {
+  const filteredProducers = producers.filter((producer) => {
     const matchesSearch = producer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          producer.specialty.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === "Toutes les catégories" || 
@@ -171,9 +162,38 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
           </select>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <p>Chargement des producteurs...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div style={{ textAlign: "center", padding: "40px", color: "red" }}>
+            <p>Erreur: {error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "#00B2D6",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                marginTop: "10px"
+              }}
+            >
+              Réessayer
+            </button>
+          </div>
+        )}
+
         {/* Producers List */}
-        <div className="producers-list">
-          {filteredProducers.map((producer, index) => (
+        {!loading && !error && (
+          <div className="producers-list">
+            {filteredProducers.map((producer, index) => (
             <div
               key={producer.id}
               className="producer-card"
@@ -187,7 +207,7 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
                   src={producer.avatar}
                   alt={producer.name}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/60x60/00B2D6/ffffff?text=P";
+                    (e.target as HTMLImageElement).src = imageService.getFallbackImageUrl('logos');
                   }}
                 />
                 {producer.isVerified && (
@@ -221,11 +241,12 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
               </button>
             </div>
           ))}
-        </div>
-
-        {filteredProducers.length === 0 && (
-          <div className="no-results">
-            <p>Aucun producteur trouvé</p>
+          
+            {filteredProducers.length === 0 && (
+              <div className="no-results">
+                <p>Aucun producteur trouvé</p>
+              </div>
+            )}
           </div>
         )}
       </div>

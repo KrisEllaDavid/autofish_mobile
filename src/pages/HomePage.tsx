@@ -9,7 +9,7 @@ import MyPage from "./MyPage";
 import TopProducersPage from "./TopProducersPage/TopProducersPage";
 import { useAuth } from "../context/AuthContext";
 import { useApiWithLoading } from "../services/apiWithLoading";
-import { Publication } from "../services/api";
+import { Publication, ProducerPage } from "../services/api";
 
 type MainTab = "home" | "messages" | "producers" | "profile" | "myPage";
 
@@ -24,6 +24,7 @@ const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MainTab>("home");
   const [overlay, setOverlay] = useState<Overlay>(Overlay.None);
   const [publications, setPublications] = useState<Publication[]>([]);
+  const [producerPages, setProducerPages] = useState<{[key: number]: ProducerPage}>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [likedPosts, setLikedPosts] = useLocalStorage<string[]>(
@@ -38,16 +39,86 @@ const HomePage: React.FC = () => {
     // TODO: Add bottom navigation visibility tracking
   }, [userData]);
 
-  // Load publications from API
+  // Load publications and producer data from API
   useEffect(() => {
-    const fetchPublications = async () => {
+    // Wait for auth context to be ready before making any requests
+    if (userData === undefined) {
+      if (import.meta.env.DEV) {
+        console.log('⏳ Waiting for auth context to initialize...');
+      }
+      return;
+    }
+    
+    const fetchPublicationsAndProducers = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // Get public feed (all validated publications)
-        const data = await api.getPublicFeed();
-        setPublications(data);
+        // Get public feed (all validated publications) - this is always public
+        const publicationsData = await api.getPublicFeed();
+        setPublications(publicationsData);
+        
+        // Try to fetch producer page data if user is authenticated
+        const producerPagesData: {[key: number]: ProducerPage} = {};
+        
+        try {
+          // Check if user is authenticated before making authenticated requests
+          if (import.meta.env.DEV) {
+            console.log('🔍 Authentication check:', {
+              userData: !!userData,
+              isAuthenticated: api.isAuthenticated(),
+              hasToken: !!api.getAccessToken()
+            });
+          }
+          
+          if (userData && api.isAuthenticated()) {
+            if (import.meta.env.DEV) {
+              console.log('🔑 User authenticated, fetching producer pages...');
+            }
+            const allProducerPages = await api.getProducerPages();
+            
+            // Create a lookup map of page ID to producer page data
+            allProducerPages.forEach(page => {
+              producerPagesData[page.id] = page;
+            });
+            
+            if (import.meta.env.DEV) {
+              console.log('✅ Loaded producer pages with authentication:', allProducerPages.length);
+            }
+          } else {
+            if (import.meta.env.DEV) {
+              console.log('⚠️ User not authenticated, creating minimal producer data from publications');
+            }
+            
+            // Create minimal producer data from publication page IDs when not authenticated
+            const uniquePageIds = [...new Set(publicationsData.map(pub => pub.page))];
+            uniquePageIds.forEach(pageId => {
+              producerPagesData[pageId] = {
+                id: pageId,
+                producer: 0,
+                name: `Producteur #${pageId}`,
+                slug: `producer-${pageId}`,
+                country: '',
+                address: '',
+                telephone: '',
+                categories: [],
+                city: '',
+                description: '',
+                is_validated: true,
+                created_at: '',
+                updated_at: '',
+              };
+            });
+          }
+        } catch (producerError) {
+          // If producer pages fail to load, continue with publications only
+          if (import.meta.env.DEV) {
+            console.warn('⚠️ Failed to load producer pages, continuing with publications only:', producerError);
+          }
+        }
+        
+        setProducerPages(producerPagesData);
+        
       } catch (err) {
         // Handle different types of errors more gracefully
         let errorMessage = 'Failed to load publications';
@@ -66,15 +137,16 @@ const HomePage: React.FC = () => {
         setError(errorMessage);
         console.error('Failed to load publications:', err);
         
-        // Set empty array so the UI can still render
+        // Set empty arrays so the UI can still render
         setPublications([]);
+        setProducerPages({});
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPublications();
-  }, []);
+    fetchPublicationsAndProducers();
+  }, [userData]); // Add userData as dependency so it refetches when user logs in
 
   // Sort publications, prioritizing user's selected categories
   const sortedPublications = useMemo(() => {
@@ -295,9 +367,10 @@ const HomePage: React.FC = () => {
           justifyContent: "center",
           alignItems: "center",
           margin: "80px 0 16px 0",
-          backgroundColor: "white !important",
+          backgroundColor: "white",
           height: "80px",
           padding: "0 16px",
+          flexShrink: 0, // Prevent shrinking
         }}
       >
         <div
@@ -327,57 +400,63 @@ const HomePage: React.FC = () => {
 
       {/* Content */}
       <div className="content">
-        {loading ? (
-          <div style={{ textAlign: "center", padding: "20px" }}>
-            <p>Chargement des publications...</p>
-          </div>
-        ) : error ? (
-          <div style={{ textAlign: "center", padding: "20px", color: "red" }}>
-            <p>Erreur: {error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#00B2D6",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer"
-              }}
-            >
-              Réessayer
-            </button>
-          </div>
-        ) : filteredPublications.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "20px" }}>
-            <p>Aucune publication trouvée</p>
-          </div>
-        ) : (
-          <div className="posts-container">
-            {filteredPublications.map((publication) => (
-              <PostCard
-                key={publication.id}
-                id={publication.id.toString()}
-                producerName={publication.page.toString()} // TODO: Get actual producer name
-                producerAvatar="https://randomuser.me/api/portraits/men/1.jpg" // TODO: Get actual avatar
-                postImage={publication.picture || "https://via.placeholder.com/400x300"}
-                description={publication.description}
-                date={publication.date_posted}
-                likes={publication.likes}
-                comments={0} // TODO: Implement comments
-                category={publication.category.name}
-                location={publication.location}
-                price={publication.price}
-                onLike={() => handleLike(publication.id)}
-                onComment={() => handleComment(publication.id)}
-                onProducerClick={() => handleProducerClick(publication.producer || 0)}
-                isLiked={likedPosts.includes(publication.id.toString())}
-              />
-            ))}
-          </div>
-        )}
+        <div className="posts-feed">
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "20px" }}>
+              <p>Chargement des publications...</p>
+            </div>
+          ) : error ? (
+            <div style={{ textAlign: "center", padding: "20px", color: "red" }}>
+              <p>Erreur: {error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#00B2D6",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: "pointer"
+                }}
+              >
+                Réessayer
+              </button>
+            </div>
+          ) : filteredPublications.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "20px" }}>
+              <p>Aucune publication trouvée</p>
+            </div>
+          ) : (
+            <div className="posts-container">
+              {filteredPublications.map((publication) => {
+                const producerPage = producerPages[publication.page];
+                return (
+                  <PostCard
+                    key={publication.id}
+                    id={publication.id.toString()}
+                    producerName={producerPage?.name || 'Producteur inconnu'}
+                    producerAvatar={producerPage?.logo || '/icons/account_icon.svg'}
+                    postImage={publication.picture || '/icons/autofish_blue_logo.svg'}
+                    description={publication.description}
+                    date={publication.date_posted}
+                    likes={publication.likes}
+                    comments={0} // TODO: Implement comments system
+                    category={publication.category.name}
+                    location={publication.location}
+                    price={publication.price}
+                    onLike={() => handleLike(publication.id)}
+                    onComment={() => handleComment(publication.id)}
+                    onProducerClick={() => handleProducerClick(publication.producer || 0)}
+                    isLiked={likedPosts.includes(publication.id.toString())}
+                  />
+                );
+              })}
+              {/* Spacer element to add 100px after the last post */}
+              <div style={{ height: '100px', width: '100%' }} aria-hidden="true" />
+            </div>
+          )}
+        </div>
       </div>
-
       {/* Bottom Navigation */}
       <BottomNavBar activeTab={activeTab} onTabChange={handleTabChange} />
     </div>
