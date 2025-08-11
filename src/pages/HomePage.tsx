@@ -2,16 +2,21 @@ import React, { useState, useEffect, useMemo } from "react";
 import TopNavBar from "../components/TopNavBar";
 import BottomNavBar from "../components/BottomNavBar";
 import PostCard from "../components/PostCard";
+import PullToRefreshIndicator from "../components/PullToRefresh";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 import useLocalStorage from "../hooks/useLocalStorage";
 import "./HomePage.css";
 import NotificationsPage from "./Notifications/NotificationsPage";
 import MyPage from "./MyPage";
 import TopProducersPage from "./TopProducersPage/TopProducersPage";
+import FavoritePostsPage from "./FavoritePostsPage/FavoritePostsPage";
+import MessagesPage from "./MessagesPage/MessagesPage";
+import MyAccountPage from "./MyAccountPage/MyAccountPage";
 import { useAuth } from "../context/AuthContext";
 import { useApiWithLoading } from "../services/apiWithLoading";
 import { Publication, ProducerPage } from "../services/api";
 
-type MainTab = "home" | "messages" | "producers" | "profile" | "myPage";
+type MainTab = "home" | "messages" | "producers" | "profile" | "myPage" | "favorites";
 
 enum Overlay {
   None = "none",
@@ -27,6 +32,7 @@ const HomePage: React.FC = () => {
   const [producerPages, setProducerPages] = useState<{[key: number]: ProducerPage}>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [likedPosts, setLikedPosts] = useLocalStorage<string[]>(
     "likedPosts",
     []
@@ -51,7 +57,9 @@ const HomePage: React.FC = () => {
     
     const fetchPublicationsAndProducers = async () => {
       try {
-        setLoading(true);
+        if (initialLoad) {
+          setLoading(true);
+        }
         setError(null);
         
         // Get public feed (all validated publications) - this is always public
@@ -141,12 +149,87 @@ const HomePage: React.FC = () => {
         setPublications([]);
         setProducerPages({});
       } finally {
-        setLoading(false);
+        if (initialLoad) {
+          setLoading(false);
+          setInitialLoad(false);
+        }
       }
     };
 
     fetchPublicationsAndProducers();
   }, [userData]); // Add userData as dependency so it refetches when user logs in
+
+  // Pull to refresh callback
+  const handleRefresh = async () => {
+    if (initialLoad) {
+      setLoading(true);
+    }
+    setError(null);
+    
+    try {
+      // Get public feed (all validated publications) - this is always public
+      const publicationsData = await api.getPublicFeed();
+      setPublications(publicationsData);
+      
+      // Try to fetch producer page data if user is authenticated
+      const producerPagesData: {[key: number]: ProducerPage} = {};
+      
+      try {
+        if (userData && api.isAuthenticated()) {
+          const allProducerPages = await api.getProducerPages();
+          allProducerPages.forEach(page => {
+            producerPagesData[page.id] = page;
+          });
+        } else {
+          // Create minimal producer data from publication page IDs when not authenticated
+          const uniquePageIds = [...new Set(publicationsData.map(pub => pub.page))];
+          uniquePageIds.forEach(pageId => {
+            producerPagesData[pageId] = {
+              id: pageId,
+              producer: 0,
+              name: `Producteur #${pageId}`,
+              slug: `producer-${pageId}`,
+              country: '',
+              address: '',
+              telephone: '',
+              categories: [],
+              city: '',
+              description: '',
+              is_validated: true,
+              created_at: '',
+              updated_at: '',
+            };
+          });
+        }
+      } catch (producerError) {
+        if (import.meta.env.DEV) {
+          console.warn('⚠️ Failed to load producer pages during refresh:', producerError);
+        }
+      }
+      
+      setProducerPages(producerPagesData);
+    } catch (err) {
+      let errorMessage = 'Failed to load publications';
+      if (err && typeof err === 'object') {
+        if ('detail' in err && typeof err.detail === 'string') {
+          errorMessage = err.detail;
+        } else if ('message' in err && typeof err.message === 'string') {
+          errorMessage = err.message;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
+      setPublications([]);
+      setProducerPages({});
+    }
+  };
+
+  // Pull to refresh hook
+  const pullToRefresh = usePullToRefresh({
+    onRefresh: handleRefresh,
+    threshold: 80,
+  });
 
   // Sort publications, prioritizing user's selected categories
   const sortedPublications = useMemo(() => {
@@ -298,6 +381,7 @@ const HomePage: React.FC = () => {
         onBackToHome={goHome}
         onNotificationClick={handleNotificationClick}
         onMyPageClick={handleMyPageClick}
+        onTabChange={handleTabChange}
         activeTab="notifications"
         userAvatar={userData?.avatar}
         userName={userData?.name}
@@ -310,18 +394,69 @@ const HomePage: React.FC = () => {
   // Show my page
   if (activeTab === "myPage") {
     return (
+      <MyPage 
+        onBack={goHome}
+        onNotificationClick={handleNotificationClick}
+        onMyPageClick={handleMyPageClick}
+        onTabChange={handleTabChange}
+        activeTab="myPage"
+        userAvatar={userData?.avatar}
+        userName={userData?.name}
+        userEmail={userData?.email}
+        userRole={userData?.userRole}
+      />
+    );
+  }
+
+  // Show favorites page
+  if (activeTab === "favorites") {
+    return (
       <div className="home-container">
-        <TopNavBar
-          title="Ma page"
+        <FavoritePostsPage
+          onNotificationClick={handleNotificationClick}
+          onMyPageClick={handleMyPageClick}
+          activeTab="favorites"
           userAvatar={userData?.avatar}
           userName={userData?.name}
           userEmail={userData?.email}
-          onNotificationClick={handleNotificationClick}
           userRole={userData?.userRole}
-          onMyPageClick={handleMyPageClick}
-          activeTab="myPage"
         />
-        <MyPage onBack={goHome} />
+        <BottomNavBar activeTab="favorites" onTabChange={handleTabChange} />
+      </div>
+    );
+  }
+
+  // Show messages page
+  if (activeTab === "messages") {
+    return (
+      <div className="home-container">
+        <MessagesPage
+          onNotificationClick={handleNotificationClick}
+          onMyPageClick={handleMyPageClick}
+          activeTab="messages"
+          userAvatar={userData?.avatar}
+          userName={userData?.name}
+          userEmail={userData?.email}
+          userRole={userData?.userRole}
+        />
+        <BottomNavBar activeTab="messages" onTabChange={handleTabChange} />
+      </div>
+    );
+  }
+
+  // Show profile/account page
+  if (activeTab === "profile") {
+    return (
+      <div className="home-container">
+        <MyAccountPage
+          onNotificationClick={handleNotificationClick}
+          onMyPageClick={handleMyPageClick}
+          activeTab="profile"
+          userAvatar={userData?.avatar}
+          userName={userData?.name}
+          userEmail={userData?.email}
+          userRole={userData?.userRole}
+        />
         <BottomNavBar activeTab="profile" onTabChange={handleTabChange} />
       </div>
     );
@@ -400,10 +535,35 @@ const HomePage: React.FC = () => {
 
       {/* Content */}
       <div className="content">
-        <div className="posts-feed">
-          {loading ? (
+        <div 
+          className="posts-feed" 
+          ref={pullToRefresh.containerRef}
+          style={{ position: 'relative' }}
+        >
+          <PullToRefreshIndicator
+            show={pullToRefresh.showIndicator}
+            text={pullToRefresh.indicatorText}
+            opacity={pullToRefresh.indicatorOpacity}
+            isRefreshing={pullToRefresh.isRefreshing}
+          />
+          {loading && initialLoad ? (
             <div style={{ textAlign: "center", padding: "20px" }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                border: '3px solid #f3f3f3',
+                borderTop: '3px solid #00B2D6',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '20px auto'
+              }} />
               <p>Chargement des publications...</p>
+              <style>{`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
             </div>
           ) : error ? (
             <div style={{ textAlign: "center", padding: "20px", color: "red" }}>
@@ -423,8 +583,12 @@ const HomePage: React.FC = () => {
               </button>
             </div>
           ) : filteredPublications.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "20px" }}>
-              <p>Aucune publication trouvée</p>
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                <img src="/icons/autofish_blue_logo.svg" alt="publications" />
+              </div>
+              <h2>Aucune publication disponible</h2>
+              <p>Il n'y a pas encore de publications à afficher. Revenez plus tard!</p>
             </div>
           ) : (
             <div className="posts-container">

@@ -1,11 +1,23 @@
-/* HomePage specific styles */
+.messages-page {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+}
 
-/* Empty State */
+.messages-content {
+  flex: 1;
+  padding: 20px;
+  padding-bottom: 120px; /* Account for bottom nav */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .empty-state {
   text-align: center;
   max-width: 300px;
-  margin: 60px auto;
-  padding: 40px 20px;
+  margin: 0 auto;
 }
 
 .empty-state-icon {
@@ -36,27 +48,4 @@
   font-size: 14px;
   color: #666;
   line-height: 1.5;
-  margin: 0;
-}
-
-/* Loading and content styles */
-.home-container {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: #F5F5F5;
-}
-
-.content {
-  flex: 1;
-  padding-bottom: 120px; /* Account for bottom nav */
-}
-
-.posts-feed {
-  width: 100%;
-  overflow-y: auto;
-}
-
-.posts-container {
-  padding: 0 16px;
 }

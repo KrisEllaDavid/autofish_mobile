@@ -2,17 +2,21 @@ import React from "react";
 import { IonTabBar, IonTabButton } from "@ionic/react";
 
 interface BottomNavBarProps {
-  activeTab: "home" | "messages" | "producers" | "profile";
-  onTabChange: (tab: "home" | "messages" | "producers" | "profile") => void;
+  activeTab: "home" | "messages" | "producers" | "profile" | "favorites";
+  onTabChange: (tab: "home" | "messages" | "producers" | "profile" | "favorites") => void;
 }
 
 const icons = {
   producers: "/icons/profile-2user-bottom-nav.svg",
   producersActive: "/icons/profile-2user.svg",
   like: "/icons/dark_heart_outline_like.svg",
+  likeActive: "/icons/red_heart_like.svg",
   home: "/icons/home-2-bottom-nav.svg",
+  homeActive: "/icons/home-2-bottom-nav.svg", // Using same for now, can be updated if blue version exists
   messages: "/icons/messages-bottom-nav.svg",
+  messagesActive: "/icons/messages-bottom-nav.svg", // Using same for now, can be updated if blue version exists
   profile: "/icons/profile-bottom-nav.svg",
+  profileActive: "/icons/profile-bottom-nav.svg", // Using same for now, can be updated if blue version exists
   comment: "/icons/comment.svg",
 };
 
@@ -35,10 +39,11 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
         </IonTabButton>
         
         <IonTabButton 
-          tab="like" 
-          onClick={() => console.log("Like button clicked")}
+          tab="favorites" 
+          onClick={() => onTabChange("favorites")}
+          className={activeTab === "favorites" ? "tab-selected" : ""}
         >
-          <img src={icons.like} alt="like" style={{ width: 24, height: 24 }} />
+          <img src={activeTab === "favorites" ? icons.likeActive : icons.like} alt="favorites" style={{ width: 24, height: 24 }} />
         </IonTabButton>
         
         <IonTabButton 
@@ -46,7 +51,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
           onClick={() => onTabChange("home")}
           className={activeTab === "home" ? "tab-selected" : ""}
         >
-          <img src={icons.home} alt="home" style={{ width: 24, height: 24 }} />
+          <img src={activeTab === "home" ? icons.homeActive : icons.home} alt="home" style={{ width: 24, height: 24 }} />
         </IonTabButton>
         
         <IonTabButton 
@@ -54,7 +59,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
           onClick={() => onTabChange("messages")}
           className={activeTab === "messages" ? "tab-selected" : ""}
         >
-          <img src={icons.messages} alt="messages" style={{ width: 24, height: 24 }} />
+          <img src={activeTab === "messages" ? icons.messagesActive : icons.messages} alt="messages" style={{ width: 24, height: 24 }} />
         </IonTabButton>
         
         <IonTabButton 
@@ -62,7 +67,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
           onClick={() => onTabChange("profile")}
           className={activeTab === "profile" ? "tab-selected" : ""}
         >
-          <img src={icons.profile} alt="profile" style={{ width: 24, height: 24 }} />
+          <img src={activeTab === "profile" ? icons.profileActive : icons.profile} alt="profile" style={{ width: 24, height: 24 }} />
         </IonTabButton>
       </IonTabBar>
     );
@@ -71,11 +76,11 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
   // Keep your existing custom design
   const leftTabs = [
     { id: "producers", icon: activeTab === "producers" ? icons.producersActive : icons.producers },
-    { id: "like", icon: icons.like },
+    { id: "favorites", icon: activeTab === "favorites" ? icons.likeActive : icons.like },
   ];
   const rightTabs = [
-    { id: "messages", icon: icons.messages },
-    { id: "profile", icon: icons.profile },
+    { id: "messages", icon: activeTab === "messages" ? icons.messagesActive : icons.messages },
+    { id: "profile", icon: activeTab === "profile" ? icons.profileActive : icons.profile },
   ];
 
   return (
@@ -150,25 +155,22 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
               onClick={() => {
                 if (tab.id === "producers") {
                   onTabChange("producers");
-                } else if (tab.id === "like") {
-                  // Handle like action - this could be a separate callback
+                } else if (tab.id === "favorites") {
+                  onTabChange("favorites");
                 }
               }}
               style={{
                 background: "none",
-                border: tab.id === "producers" && activeTab === "producers" 
-                  ? "" 
-                  : "2px solid transparent",
+                border: "none",
                 outline: "none",
                 cursor: "pointer",
                 padding: "8px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: tab.id === "producers" && activeTab === "producers" ? 1 : 0.85,
+                opacity: 1,
                 width: 44,
                 height: 80,
-                borderRadius: "40px 40px 0px 0px", // Make it circular
                 transition: "all 0.2s ease",
               }}
             >
@@ -193,21 +195,16 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
               onClick={() => onTabChange(tab.id as "messages" | "profile")}
               style={{
                 background: "none",
-                border: (tab.id === "messages" && activeTab === "messages") || 
-                        (tab.id === "profile" && activeTab === "profile")
-                  ? "2px solid #00B2D6" 
-                  : "2px solid transparent",
+                border: "none",
                 outline: "none",
                 cursor: "pointer",
                 padding: "8px",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                opacity: ((tab.id === "messages" && activeTab === "messages") || 
-                         (tab.id === "profile" && activeTab === "profile")) ? 1 : 0.85,
+                opacity: 1,
                 width: 44,
-                height: 44,
-                borderRadius: "50%", // Make it circular
+                height: 80,
                 transition: "all 0.2s ease",
               }}
             >
@@ -252,7 +249,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({
             outline: "none",
           }}
         >
-          <img src={icons.home} alt="home" style={{ width: 32, height: 32 }} />
+          <img src={activeTab === "home" ? icons.homeActive : icons.home} alt="home" style={{ width: 32, height: 32 }} />
         </button>
       </div>
     </div>

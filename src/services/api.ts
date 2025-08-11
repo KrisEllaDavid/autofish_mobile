@@ -1031,7 +1031,7 @@ class ApiClient {
   // ================================
 
   async getNotifications(): Promise<Notification[]> {
-    return this.makeRequest<Notification[]>('/api/notifications/');
+    return this.makeRequest<Notification[]>('/api/notificationsnotifications/');
   }
 
   async markNotificationAsRead(id: number): Promise<Notification> {

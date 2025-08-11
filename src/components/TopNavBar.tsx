@@ -12,7 +12,7 @@ interface TopNavBarProps {
   userName?: string;
 }
 
-const defaultAvatar = "/icons/account.svg";
+const defaultAvatar = "/icons/autofish_blue_logo.svg";
 const notificationIcon = "/icons/Notification.svg";
 const notificationIconWhite = "/icons/Notification_white.svg";
 const menuIcon = "/icons/3-dots-home-menu.svg";
@@ -23,6 +23,8 @@ const mainBlue = "#00B2D6";
 const TopNavBar: React.FC<TopNavBarProps> = ({
   title,
   userAvatar,
+  userName: _userName,
+  userEmail: _userEmail,
   userRole,
   onNotificationClick,
   onMyPageClick,
@@ -41,6 +43,9 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         justifyContent: "space-between",
         alignItems: "center",
         padding: "0 16px",
+        backgroundColor: "#ffffff",
+        zIndex: 1000,
+        position: "fixed",
       }}
     >
       <div

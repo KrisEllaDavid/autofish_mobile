@@ -285,7 +285,46 @@
   font-weight: 500;
 }
 
-/* No Results */
+/* Empty State */
+.empty-state {
+  text-align: center;
+  max-width: 300px;
+  margin: 60px auto;
+  padding: 40px 20px;
+}
+
+.empty-state-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 178, 214, 0.1);
+  border-radius: 50%;
+}
+
+.empty-state-icon img {
+  width: 40px;
+  height: 40px;
+  opacity: 0.6;
+}
+
+.empty-state h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* No Results (legacy support) */
 .no-results {
   text-align: center;
   padding: 40px 16px;

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "./TopProducersPage.css";
 import TopNavBar from "../../components/TopNavBar";
+import PullToRefreshIndicator from "../../components/PullToRefresh";
+import { usePullToRefresh } from "../../hooks/usePullToRefresh";
 import { useApiWithLoading } from "../../services/apiWithLoading";
 import { ProducerPage } from "../../services/api";
 import { imageService } from "../../services/imageService";
@@ -52,19 +54,23 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
   const [producers, setProducers] = useState<Producer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   // Fetch real producer data from API
-  useEffect(() => {
-    const fetchProducers = async () => {
-      try {
+  const fetchProducers = async () => {
+    try {
+      if (initialLoad) {
         setLoading(true);
-        setError(null);
+      }
+      setError(null);
         
         // Check if user is authenticated before making authenticated requests
         if (!api.isAuthenticated()) {
           setError('Vous devez être connecté pour voir les producteurs');
           setProducers([]);
-          setLoading(false);
+          if (initialLoad) {
+            setLoading(false);
+          }
           return;
         }
         
@@ -88,10 +94,20 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
         console.error('❌ Failed to load producers:', err);
         setProducers([]);
       } finally {
-        setLoading(false);
+        if (initialLoad) {
+          setLoading(false);
+          setInitialLoad(false);
+        }
       }
     };
 
+  // Pull to refresh hook
+  const pullToRefresh = usePullToRefresh({
+    onRefresh: fetchProducers,
+    threshold: 80,
+  });
+
+  useEffect(() => {
     fetchProducers();
   }, []);
 
@@ -132,7 +148,17 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
         activeTab={activeTab}
       />
 
-      <div className="producers-content">
+      <div 
+        className="producers-content" 
+        ref={pullToRefresh.containerRef}
+        style={{ position: 'relative' }}
+      >
+        <PullToRefreshIndicator
+          show={pullToRefresh.showIndicator}
+          text={pullToRefresh.indicatorText}
+          opacity={pullToRefresh.indicatorOpacity}
+          isRefreshing={pullToRefresh.isRefreshing}
+        />
         {/* Search Section */}
         <div className="search-section">
           <div className="search-input-container">
@@ -162,10 +188,25 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
           </select>
         </div>
 
-        {/* Loading State */}
-        {loading && (
+        {/* Hidden Loading State - only show on initial load */}
+        {loading && initialLoad && (
           <div style={{ textAlign: "center", padding: "40px" }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '3px solid #f3f3f3',
+              borderTop: '3px solid #00B2D6',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '20px auto'
+            }} />
             <p>Chargement des producteurs...</p>
+            <style>{`
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `}</style>
           </div>
         )}
 
@@ -191,7 +232,7 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
         )}
 
         {/* Producers List */}
-        {!loading && !error && (
+        {(!loading || !initialLoad) && !error && (
           <div className="producers-list">
             {filteredProducers.map((producer, index) => (
             <div
@@ -243,8 +284,12 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
           ))}
           
             {filteredProducers.length === 0 && (
-              <div className="no-results">
-                <p>Aucun producteur trouvé</p>
+              <div className="empty-state">
+                <div className="empty-state-icon">
+                  <img src="/icons/profile-2user.svg" alt="producers" />
+                </div>
+                <h2>Aucun producteur trouvé</h2>
+                <p>Il n'y a pas de producteurs correspondant à vos critères de recherche.</p>
               </div>
             )}
           </div>

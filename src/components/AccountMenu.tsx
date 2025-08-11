@@ -86,7 +86,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
               }}
             >
               <img
-                src={userData?.avatar || "/icons/account.svg"}
+                src={userData?.avatar || "/icons/autofish_blue_logo.svg"}
                 alt={userData?.name}
                 style={{
                   width: 54,
@@ -97,7 +97,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                 }}
               />
               <div>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>
+                <div style={{ fontWeight: 600, fontSize: 15, color: "black" }}>
                   {userData?.name}
                 </div>
                 <div style={{ color: "#888", fontSize: 13 }}>

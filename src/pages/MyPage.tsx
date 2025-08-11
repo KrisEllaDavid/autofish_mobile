@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import ReactDOM from "react-dom";
-import NavBar from "../components/NavBar";
+import TopNavBar from "../components/TopNavBar";
+import BottomNavBar from "../components/BottomNavBar";
 import { compressImage, validateImage } from "../utils/imageCompression";
 import { useAuth } from "../context/AuthContext";
 import Modal from "../components/Modal";
@@ -34,7 +35,29 @@ const cameraIcon = "/icons/camera_icon_white.svg";
 const editIconWhite = "/icons/edit-white.svg";
 const editIconBlack = "/icons/edit-black.svg";
 
-const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+interface MyPageProps {
+  onBack: () => void;
+  onNotificationClick?: () => void;
+  onMyPageClick?: () => void;
+  onTabChange: (tab: "home" | "messages" | "producers" | "profile" | "favorites") => void;
+  activeTab?: string;
+  userAvatar?: string;
+  userName?: string;
+  userEmail?: string;
+  userRole?: string;
+}
+
+const MyPage: React.FC<MyPageProps> = ({ 
+  onBack: _onBack, 
+  onNotificationClick, 
+  onMyPageClick, 
+  onTabChange,
+  activeTab,
+  userAvatar,
+  userName,
+  userEmail,
+  userRole
+}) => {
   const { userData, updateUserData } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [banner, setBanner] = useState<string>(
@@ -574,12 +597,19 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   return (
     <>
       <style>{`
+        .my-page-container {
+          min-height: 100vh;
+          background-color: #f8f9fa;
+          display: flex;
+          flex-direction: column;
+        }
         .fade-in-page { 
           opacity: 0; 
           animation: fadeInPage 0.5s ease-in forwards;
-          height: 100vh;
+          flex: 1;
           overflow-y: auto;
           position: relative;
+          padding-bottom: 120px; /* Account for bottom nav */
         }
         @keyframes fadeInPage { to { opacity: 1; } }
         .banner { 
@@ -781,8 +811,18 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         }
         .modal-buttons { width : 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
       `}</style>
-      <div className="fade-in-page" style={{ marginBottom: "500px" }}>
-        <NavBar title="Aperçu de la page" onBack={onBack} />
+      <div className="my-page-container">
+        <TopNavBar
+          title="Ma page"
+          userAvatar={userAvatar}
+          userName={userName}
+          userEmail={userEmail}
+          onNotificationClick={onNotificationClick}
+          userRole={userRole}
+          onMyPageClick={onMyPageClick}
+          activeTab={activeTab}
+        />
+        <div className="fade-in-page">
         <div
           style={{
             position: "relative",
@@ -954,6 +994,8 @@ const MyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         {renderPageNameModal()}
         {renderLocationModal()}
         {renderDeleteModal()}
+        </div>
+        <BottomNavBar activeTab="profile" onTabChange={onTabChange} />
       </div>
     </>
   );
