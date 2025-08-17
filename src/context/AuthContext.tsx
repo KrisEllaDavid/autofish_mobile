@@ -14,11 +14,13 @@ export interface UserData {
   email?: string;
   password?: string; // Store password for API registration
   avatar?: string;
+  profile_picture?: File | string;
   userRole?: 'client' | 'producteur';
   description?: string;
   country?: string;
   code?: string;
   address?: string;
+  city?: string; // Add city field for registration
   phone?: string;
   idRecto?: string | null;
   idVerso?: string | null;
@@ -81,6 +83,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Normalize image URL to HTTPS to avoid mixed content
+  const normalizeImageUrl = (url?: string): string => {
+    if (!url) return '';
+    try {
+      if (url.startsWith('http://31.97.178.131:3001')) {
+        return url.replace('http://31.97.178.131:3001', 'https://31.97.178.131:3443');
+      }
+      return url;
+    } catch {
+      return url;
+    }
+  };
+
   useEffect(() => {
     // Check if user is authenticated based on both userData and stored tokens
     const hasValidTokens = apiClient.isAuthenticated();
@@ -108,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 
               currentUser.email || 'User' : 'User',
             email: currentUser?.email || '',
-            avatar: currentUser?.profile_picture_url || currentUser?.profile_picture || '',
+            avatar: normalizeImageUrl(currentUser?.profile_picture_url || currentUser?.profile_picture || ''),
             userRole: currentUser?.user_type === 'producer' ? 'producteur' : 'client',
             description: currentUser?.description || '',
             country: currentUser?.country || '',
@@ -198,7 +213,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
           user.email || 'User' : 'User',
         email: user?.email || '',
-        avatar: user?.profile_picture_url || user?.profile_picture || '',
+        avatar: normalizeImageUrl(user?.profile_picture_url || user?.profile_picture || ''),
         userRole: user?.user_type === 'producer' ? 'producteur' : 'client',
         description: user?.description || '',
         country: user?.country || '',
@@ -272,19 +287,69 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Don't include password in the stored user data after registration
       delete (mappedUserData as any).password;
       
-      // For consumers, they can use the app immediately after registration
-      if (registrationData.user_type === 'consumer') {
-        mappedUserData.registrationComplete = true; // Mark registration as complete
+      // Auto-login handling
+      const hasTokens = (response as any)?.tokens?.access && (response as any)?.tokens?.refresh;
+      if (hasTokens) {
+        // Tokens present in registration response
+        mappedUserData.registrationComplete = true;
         setUserDataState(mappedUserData);
         setIsAuthenticated(true);
       } else {
-        // For producers, they need email verification first
-        mappedUserData.registrationComplete = false;
-        setUserDataState(mappedUserData);
-        setIsAuthenticated(false);
+        // Fallback: attempt login explicitly using submitted credentials
+        try {
+          if (registrationData.email && registrationData.password) {
+            const loginResponse = await apiClient.login({
+              email: registrationData.email,
+              password: registrationData.password,
+            });
+
+            const loggedInUser = loginResponse?.user;
+            const postLoginUserData: UserData = {
+              name: loggedInUser ?
+                `${loggedInUser.first_name || ''} ${loggedInUser.last_name || ''}`.trim() ||
+                loggedInUser.email || 'User' : 'User',
+              email: loggedInUser?.email || mappedUserData.email,
+              avatar: normalizeImageUrl(loggedInUser?.profile_picture_url || loggedInUser?.profile_picture || mappedUserData.avatar),
+              userRole: loggedInUser?.user_type === 'producer' ? 'producteur' : 'client',
+              description: loggedInUser?.description || mappedUserData.description,
+              country: loggedInUser?.country || mappedUserData.country,
+              code: '',
+              address: loggedInUser?.address || loggedInUser?.city || mappedUserData.address,
+              phone: loggedInUser?.phone || mappedUserData.phone,
+              registrationComplete: true,
+              selectedCategories: [],
+              myPosts: []
+            };
+
+            setUserDataState(postLoginUserData);
+            setIsAuthenticated(true);
+          } else {
+            // As a last resort, allow consumers immediately
+            if (registrationData.user_type === 'consumer') {
+              mappedUserData.registrationComplete = true;
+              setUserDataState(mappedUserData);
+              setIsAuthenticated(true);
+            } else {
+              mappedUserData.registrationComplete = false;
+              setUserDataState(mappedUserData);
+              setIsAuthenticated(false);
+            }
+          }
+        } catch {
+          // If explicit login fails, fall back to role-based behavior
+          if (registrationData.user_type === 'consumer') {
+            mappedUserData.registrationComplete = true;
+            setUserDataState(mappedUserData);
+            setIsAuthenticated(true);
+          } else {
+            mappedUserData.registrationComplete = false;
+            setUserDataState(mappedUserData);
+            setIsAuthenticated(false);
+          }
+        }
       }
       
-      // Note: Producers will need to verify email before they can login
+       // Note: Producers may still require email verification; auto-login occurs if tokens are provided
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 
         typeof err === 'object' && err !== null ? 

@@ -4,18 +4,20 @@
 // Import Capacitor HTTP plugin for mobile
 import { CapacitorHttp } from '@capacitor/core';
 
-// API Configuration - Smart handling for web development vs mobile production
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.autofish.store';
-
-// Use proxy for web development to avoid CORS, direct calls for mobile and production
-const isDev = import.meta.env.DEV;
+// Detect mobile runtime (kept for potential platform-specific handling)
 const isMobile = typeof window !== 'undefined' && window.location.protocol === 'capacitor:';
 
-// Smart URL selection:
-// - Web development: Use proxy (relative URLs)
-// - Mobile: Always use full URL (CapacitorHttp bypasses CORS)
-// - Web production: Use full URL
-const baseURL = (isDev && !isMobile) ? '' : API_BASE_URL;
+// API Configuration - Prefer explicit env override; else use same-origin during web dev (proxy handles CORS)
+const API_BASE_URL = (typeof import.meta.env.VITE_API_BASE_URL !== 'undefined')
+  ? import.meta.env.VITE_API_BASE_URL
+  : ((!isMobile && import.meta.env.DEV) ? '' : 'https://api.autofish.store');
+
+// Base URL resolved above depending on environment
+const baseURL = API_BASE_URL;
+
+if (import.meta.env.DEV) {
+  console.log('[API] Base URL set to:', baseURL);
+}
 
 // ================================
 // AUTHENTICATION TYPES
@@ -78,6 +80,10 @@ export interface LoginResponse {
 export interface RegisterResponse {
   message: string;
   user: UserType;
+  tokens?: {
+    access: string;
+    refresh: string;
+  };
 }
 
 export interface ApiError {
@@ -731,13 +737,27 @@ class ApiClient {
     
     // Log FormData contents for debugging
     for (let [key, value] of formData.entries()) {
-      console.log(`FormData ${key}:`, value);
+      if (value instanceof File) {
+        console.log(`FormData ${key}:`, {
+          name: value.name,
+          size: value.size,
+          type: value.type,
+          lastModified: value.lastModified
+        });
+      } else {
+        console.log(`FormData ${key}:`, value);
+      }
     }
     
     const result = await this.makeRequest<RegisterResponse>('/api/auth/register/', {
       method: 'POST',
       body: formData,
     });
+    
+    // Auto-login: save tokens if backend returned them
+    if ((result as any)?.tokens?.access && (result as any)?.tokens?.refresh) {
+      this.saveTokensToStorage((result as any).tokens.access, (result as any).tokens.refresh);
+    }
     
     return result;
   }

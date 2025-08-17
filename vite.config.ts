@@ -22,18 +22,27 @@ export default defineConfig({
       '/api': {
         target: 'https://api.autofish.store',
         changeOrigin: true,
-        secure: true,
-        headers: {
-          'Origin': 'https://api.autofish.store'
-        },
-        rewrite: (path) => path.replace(/^\/api/, '/api')
+        secure: false,
+        proxyTimeout: 30000,
+        timeout: 30000,
+        ws: false,
+        configure: (proxy) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.error('[vite-proxy:/api] error:', err.message);
+          });
+          proxy.on('proxyReq', (_proxyReq, req) => {
+            console.log('[vite-proxy:/api] ->', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req) => {
+            console.log('[vite-proxy:/api] <-', proxyRes.statusCode, req.url);
+          });
+        }
       },
       '/image-server': {
-        target: 'http://31.97.178.131:3001',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/image-server/, '')
-      }
+  target: 'https://31.97.178.131:3443',
+  changeOrigin: true,
+  secure: true,  // HTTP target
+}
     }
   },
 })

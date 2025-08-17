@@ -10,13 +10,13 @@ const icons = {
   producers: "/icons/profile-2user-bottom-nav.svg",
   producersActive: "/icons/profile-2user.svg",
   like: "/icons/dark_heart_outline_like.svg",
-  likeActive: "/icons/red_heart_like.svg",
+  likeActive: "/icons/favourite_blue.svg",
   home: "/icons/home-2-bottom-nav.svg",
   homeActive: "/icons/home-2-bottom-nav.svg", // Using same for now, can be updated if blue version exists
   messages: "/icons/messages-bottom-nav.svg",
-  messagesActive: "/icons/messages-bottom-nav.svg", // Using same for now, can be updated if blue version exists
+  messagesActive: "/icons/messages-bottom-nav-blue.svg", // Using same for now, can be updated if blue version exists
   profile: "/icons/profile-bottom-nav.svg",
-  profileActive: "/icons/profile-bottom-nav.svg", // Using same for now, can be updated if blue version exists
+  profileActive: "/icons/profile-2user-bottom-nav-blue.svg", // Using same for now, can be updated if blue version exists
   comment: "/icons/comment.svg",
 };
 

@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import NavBar from "../components/NavBar";
-import ProfileChoicePage from "./ProfileChoicePage";
-import Modal from "../components/Modal";
+import UnifiedDropdown from "../components/UnifiedDropdown";
+import "./CategoriesPage/CategoriesPage.css";
+// Modal removed from this page to simplify flow
+// ContactInfoPage removed from flow; collect all required client fields here
+import IDVerificationPage from "./IDVerificationPage";
+import CategoriesPage from "./CategoriesPage/CategoriesPage";
 import { useAuth } from "../context/AuthContext";
 import { compressImage, validateImage } from "../utils/imageCompression";
 const userIcon = "/icons/account.svg";
@@ -18,7 +22,7 @@ const emailIconBlue = "/icons/Email_blue.svg";
 const passwordIconBlue = "/icons/Password_blue.svg";
 const checkIcon = "/icons/Check.svg";
 const checkboxIcon = "/icons/Checkbox.svg";
-const bravoCheckIcon = "/icons/Check.svg";
+// const bravoCheckIcon = "/icons/Check.svg";
 const getInputStyle = (hasContent: boolean): React.CSSProperties => ({
   width: "100%",
   padding: "16px 48px 16px 55px",
@@ -62,40 +66,175 @@ const eyeIconStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 interface FormData {
-  name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
-  avatar: string;
+  password2: string;
+  phone: string;
+  city: string;
+  user_type: 'producer' | 'consumer';
+  terms_accepted: boolean;
+   // Country is required for both; address for producers; keep city as town
+   country: string;
+   address: string;
+  description: string;
+  categories: string[]; // Category IDs
+  recto_id: File | null;
+  verso_id: File | null;
+  profile_picture: File | null;
 }
 const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { updateUserData } = useAuth();
   const [formData, setFormData] = useState<FormData>({
-    name: "",
+    first_name: "",
+    last_name: "",
     email: "",
     password: "",
-    avatar: "",
+    password2: "",
+    phone: "",
+    city: "",
+    user_type: 'consumer',
+    terms_accepted: false,
+    // Producer-specific fields
+    country: "",
+    address: "",
+    description: "",
+    categories: [],
+    recto_id: null,
+    verso_id: null,
+    profile_picture: null,
   });
+  // Country dialing code (only Cameroun and Congo per requirements)
+  const [countryCode, setCountryCode] = useState<string>("+237");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [goToProfileChoice, setGoToProfileChoice] = useState(false);
+  // const [showModal, setShowModal] = useState(false);
+  // Removed contact info page navigation
+  const [goToIDVerification, setGoToIDVerification] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const isFormValid =
-    formData.name && formData.email && formData.password && acceptTerms;
+  const [goToCategories, setGoToCategories] = useState(false);
+  const [showCountryList, setShowCountryList] = useState(false);
+  const [showCodeList, setShowCodeList] = useState(false);
+
+  // Country and code options
+  const countryOptions = [
+    { value: 'Cameroun', label: 'Cameroun' },
+    { value: 'République du Congo', label: 'République du Congo' }
+  ];
+
+  const codeOptions = [
+    { value: '+237', label: '+237' },
+    { value: '+242', label: '+242' }
+  ];
+  
+  // Validation functions
+  const validateField = (field: string, value: string): string => {
+    switch (field) {
+      case 'first_name':
+        return value.trim() ? '' : 'Le prénom est requis';
+      case 'last_name':
+        return value.trim() ? '' : 'Le nom de famille est requis';
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return value.trim() ? (emailRegex.test(value) ? '' : 'Format d\'email invalide') : 'L\'email est requis';
+      case 'phone':
+        return value.trim() ? '' : 'Le numéro de téléphone est requis';
+      case 'city':
+        return value.trim() ? '' : 'La ville est requise';
+      case 'password':
+        if (!value.trim()) return 'Le mot de passe est requis';
+        if (value.length < 8) return 'Le mot de passe doit contenir au moins 8 caractères';
+        if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(value)) return 'Le mot de passe doit contenir des lettres et des chiffres';
+        return '';
+      case 'password2':
+        return value === formData.password ? '' : 'Les mots de passe ne correspondent pas';
+      default:
+        return '';
+    }
+  };
+
+  // Form validation for this step only (backend-specific fields collected later)
+  const isFormValid = (() => {
+    const basicFieldsValid = formData.first_name &&
+      formData.last_name &&
+      formData.email &&
+      formData.password &&
+      formData.password2 &&
+      formData.phone &&
+      formData.city &&
+      formData.country &&
+      acceptTerms;
+
+    const passwordsMatch = formData.password === formData.password2;
+
+    return !!(basicFieldsValid && passwordsMatch);
+  })();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all fields and collect errors
+    const errors: Record<string, string> = {};
+    const fieldsToValidate = ['first_name', 'last_name', 'email', 'phone', 'city', 'password', 'password2'];
+    
+    fieldsToValidate.forEach(field => {
+      const error = validateField(field, formData[field as keyof FormData] as string);
+      if (error) errors[field] = error;
+    });
+    
+    // Check terms acceptance
+    if (!acceptTerms) {
+      errors.terms = 'Vous devez accepter les conditions d\'utilisation';
+    }
+    
+    // Check user type selection
+    if (!formData.user_type) {
+      errors.user_type = 'Veuillez sélectionner un type de compte';
+    }
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      setShowValidationErrors(true);
+      return;
+    }
+    
+    // Clear validation errors if form is valid
+    setValidationErrors({});
+    setShowValidationErrors(false);
+    
     if (isFormValid) {
       const signupData = {
-        name: formData.name,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        // Also store combined name for downstream utils compatibility
+        name: `${formData.first_name} ${formData.last_name}`.trim(),
         email: formData.email,
-        avatar: formData.avatar,
-        password: formData.password, // Store password for API registration
-      };
-      
-      
-      
+        password: formData.password,
+        phone: formData.phone,
+        city: formData.city,
+        country: formData.country,
+        code: countryCode,
+        userRole: formData.user_type === 'producer' ? 'producteur' as const : 'client' as const,
+        terms_accepted: acceptTerms,
+        // Use city as address for now (will be collected later for producers)
+        address: formData.city,
+        description: formData.description,
+        selectedCategories: formData.categories,
+        recto_id: formData.recto_id,
+        verso_id: formData.verso_id,
+        profile_picture: formData.profile_picture,
+      } as any;
       updateUserData(signupData);
-      setShowModal(true);
+
+      // Navigate according to selected role, skipping redundant profile choice step
+      if (formData.user_type === 'producer') {
+        setGoToIDVerification(true);
+      } else {
+        // Consumers go to categories, then ContactInfoPage will register
+        setGoToCategories(true);
+      }
     }
   };
   const handleAvatarClick = () => {
@@ -113,22 +252,48 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           maxHeight: 800,
           quality: 0.8,
         });
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          setFormData((prev) => ({
-            ...prev,
-            avatar: ev.target?.result as string,
-          }));
-        };
-        reader.readAsDataURL(compressedFile);
+        // Store compressed file for preview and later upload
+        setFormData((prev) => ({
+          ...prev,
+          profile_picture: compressedFile,
+        }));
+        
+        // Log file information for debugging
+        console.log('Profile picture processed:', {
+          name: compressedFile.name,
+          size: compressedFile.size,
+          type: compressedFile.type
+        });
+        
+        // Also mirror to AuthContext for registration utils
+        updateUserData({ avatar: await (async () => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(compressedFile);
+          });
+        })(), profile_picture: compressedFile });
       } catch {
-        // Error processing image - show user-friendly message
         toast.error("Erreur lors du traitement de l'image");
       }
     }
   };
-  if (goToProfileChoice) {
-    return <ProfileChoicePage onBack={() => setGoToProfileChoice(false)} />;
+  // Contact info page removed
+  if (goToIDVerification) {
+    return (
+      <IDVerificationPage
+        onBack={() => setGoToIDVerification(false)}
+        profileType="producer"
+      />
+    );
+  }
+  if (goToCategories) {
+    return (
+      <CategoriesPage
+        onBack={() => setGoToCategories(false)}
+        profileType="client"
+      />
+    );
   }
   return (
     <>
@@ -153,11 +318,52 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 64,
+          paddingTop: 10,
+          paddingBottom: 40
         }}
       >
         <NavBar title="Inscription" onBack={onBack} />
         <div style={{ height: 16 }} />
+        
+        {/* Signup Progress Indicator */}
+        <div
+          style={{
+            width: "90vw",
+            maxWidth: 340,
+            marginBottom: 24,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 14,
+              color: "#666",
+              marginBottom: 8,
+              textAlign: "center",
+            }}
+          >
+            Création du compte - Informations de base
+          </div>
+          <div
+            style={{
+              width: "100%",
+              height: 4,
+              background: "#e0e0e0",
+              borderRadius: 2,
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: "16.67%",
+                height: "100%",
+                background: "#00A6C0",
+                borderRadius: 2,
+                transition: "width 0.3s ease",
+              }}
+            />
+          </div>
+        </div>
+        
         {/* Avatar upload */}
         <div
           style={{
@@ -192,9 +398,9 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                 overflow: "hidden",
               }}
             >
-              {formData.avatar ? (
+              {formData.profile_picture ? (
                 <img
-                  src={formData.avatar}
+                  src={URL.createObjectURL(formData.profile_picture)}
                   alt="avatar"
                   style={{
                     width: "100%",
@@ -257,28 +463,54 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             alignItems: "center",
           }}
         >
+          {/* First Name Field */}
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
-                src={formData.name ? userUserOutlineBlue : userUserOutline}
+                src={formData.first_name ? userUserOutlineBlue : userUserOutline}
                 alt="user"
                 style={{
                   width: 22,
                   height: 22,
-                  opacity: formData.name ? 1 : 0.6,
+                  opacity: formData.first_name ? 1 : 0.6,
                 }}
               />
             </span>
             <input
               type="text"
-              placeholder="Entrez votre nom"
-              style={getInputStyle(!!formData.name)}
-              value={formData.name}
+              placeholder="Entrez votre prénom *"
+              style={getInputStyle(!!formData.first_name)}
+              value={formData.first_name}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, name: e.target.value }))
+                setFormData((prev) => ({ ...prev, first_name: e.target.value }))
               }
             />
           </div>
+
+          {/* Last Name Field */}
+          <div style={inputContainerStyle}>
+            <span style={iconStyle}>
+              <img
+                src={formData.last_name ? userUserOutlineBlue : userUserOutline}
+                alt="user"
+                style={{
+                  width: 22,
+                  height: 22,
+                  opacity: formData.last_name ? 1 : 0.6,
+                }}
+              />
+            </span>
+            <input
+              type="text"
+              placeholder="Entrez votre nom de famille *"
+              style={getInputStyle(!!formData.last_name)}
+              value={formData.last_name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, last_name: e.target.value }))
+              }
+            />
+          </div>
+          {/* Email Field */}
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
@@ -293,7 +525,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </span>
             <input
               type="email"
-              placeholder="Entrez votre email"
+              placeholder="Entrez votre email *"
               style={getInputStyle(!!formData.email)}
               value={formData.email}
               onChange={(e) =>
@@ -302,6 +534,74 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               autoComplete="email"
             />
           </div>
+
+          {/* Phone Field with Country Code Dropdown */}
+          <div style={{ display: 'flex', gap: 8, width: '100%', marginBottom: 12 }}>
+            <div style={{ width: '35%' }}>
+              <UnifiedDropdown
+                options={codeOptions}
+                value={countryCode}
+                onChange={setCountryCode}
+                placeholder="+237"
+                style={{ marginBottom: 0}}
+              />
+            </div>
+            <div style={{ width: '62%' }}>
+              <div style={{ ...inputContainerStyle, marginBottom: 0 }}>
+                <span style={iconStyle}>
+                  <img
+                    src={formData.phone ? userUserOutlineBlue : userUserOutline}
+                    alt="phone"
+                    style={{ width: 22, height: 22, opacity: formData.phone ? 1 : 0.6 }}
+                  />
+                </span>
+                <input
+                  type="tel"
+                  placeholder="Votre numéro *"
+                  style={getInputStyle(!!formData.phone)}
+                  value={formData.phone}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                  autoComplete="tel"
+                />
+              </div>
+            </div>
+          </div>
+
+            {/* Town/City Field */}
+          <div style={inputContainerStyle}>
+            <span style={iconStyle}>
+              <img
+                src={formData.city ? userUserOutlineBlue : userUserOutline}
+                  alt="town"
+                style={{
+                  width: 22,
+                  height: 22,
+                  opacity: formData.city ? 1 : 0.6,
+                }}
+              />
+            </span>
+            <input
+              type="text"
+                placeholder="Entrez votre ville/quartier *"
+              style={getInputStyle(!!formData.city)}
+              value={formData.city}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, city: e.target.value }))
+              }
+              autoComplete="address-level2"
+            />
+          </div>
+
+          {/* Country Field Dropdown */}
+          <UnifiedDropdown
+            options={countryOptions}
+            value={formData.country}
+            onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
+            placeholder="Sélectionnez votre pays"
+            required={true}
+            style={{ marginBottom: 25}}
+          />
+          {/* Password Field */}
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
@@ -316,7 +616,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </span>
             <input
               type={showPassword ? "text" : "password"}
-              placeholder="Entrez votre mot de passe"
+              placeholder="Entrez votre mot de passe *"
               style={getInputStyle(!!formData.password)}
               value={formData.password}
               onChange={(e) =>
@@ -338,6 +638,111 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               />
             </span>
           </div>
+          
+          {/* Password Requirements Help */}
+          <div
+            style={{
+              width: "100%",
+              fontSize: 12,
+              color: "#666",
+              marginBottom: 12,
+              paddingLeft: 8,
+            }}
+          >
+            Le mot de passe doit contenir au moins 8 caractères avec des lettres et des chiffres
+          </div>
+
+          {/* Password Confirmation Field */}
+          <div style={inputContainerStyle}>
+            <span style={iconStyle}>
+              <img
+                src={formData.password2 ? passwordIconBlue : passwordIcon}
+                alt="password confirmation"
+                style={{
+                  width: 22,
+                  height: 22,
+                  opacity: formData.password2 ? 1 : 0.6,
+                }}
+              />
+            </span>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Confirmez votre mot de passe *"
+              style={getInputStyle(!!formData.password2)}
+              value={formData.password2}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  password2: e.target.value,
+                }))
+              }
+              autoComplete="new-password"
+            />
+          </div>
+          {/* User Type Selection */}
+          <div
+            style={{
+              width: "100%",
+              marginBottom: 18,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 14,
+                color: "#222",
+                marginBottom: 8,
+                fontWeight: 500,
+              }}
+            >
+              Type de compte *
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                width: "100%",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, user_type: 'consumer' }))}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  border: formData.user_type === 'consumer' ? "2px solid #00A6C0" : "1px solid #e0e0e0",
+                  background: formData.user_type === 'consumer' ? "#f0f9ff" : "#fff",
+                  color: formData.user_type === 'consumer' ? "#00A6C0" : "#666",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Client
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, user_type: 'producer' }))}
+                style={{
+                  flex: 1,
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  border: formData.user_type === 'producer' ? "2px solid #00A6C0" : "1px solid #e0e0e0",
+                  background: formData.user_type === 'producer' ? "#f0f9ff" : "#fff",
+                  color: formData.user_type === 'producer' ? "#00A6C0" : "#666",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Producteur
+              </button>
+            </div>
+          </div>
+
+          {/* Terms Acceptance */}
           <div
             style={{
               width: "100%",
@@ -412,12 +817,49 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             />
             Continuer avec Google
           </button>
+          {/* Validation Errors Display */}
+          {showValidationErrors && Object.keys(validationErrors).length > 0 && (
+            <div
+              style={{
+                width: "100%",
+                background: "#fff3f3",
+                border: "1px solid #ffcdd2",
+                borderRadius: 12,
+                padding: "16px",
+                marginBottom: 18,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#d32f2f",
+                  marginBottom: 8,
+                }}
+              >
+                Veuillez corriger les erreurs suivantes :
+              </div>
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: 20,
+                  fontSize: 13,
+                  color: "#d32f2f",
+                  lineHeight: 1.4,
+                }}
+              >
+                {Object.entries(validationErrors).map(([field, error]) => (
+                  <li key={field}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={!isFormValid}
             style={{
               width: "100%",
-              background: isFormValid ? "#009CB7" : "#b0b0b0",
+              background: "#009CB7",
               color: "#fff",
               fontWeight: 700,
               fontSize: 18,
@@ -425,15 +867,48 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               border: "none",
               padding: "16px 0",
               marginBottom: 18,
-              cursor: isFormValid ? "pointer" : "not-allowed",
-              opacity: isFormValid ? 1 : 0.7,
+              cursor: "pointer",
               transition: "background 0.2s, opacity 0.2s",
             }}
           >
             S'Inscrire
           </button>
         </form>
-        <div style={{ marginTop: 8, fontSize: 15, color: "#b0b0b0" }}>
+        {/* Signup Process Information */}
+        <div
+          style={{
+            width: "90vw",
+            maxWidth: 340,
+            marginTop: 16,
+            padding: "16px",
+            background: "#f8f9fa",
+            borderRadius: 12,
+            border: "1px solid #e9ecef",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#495057",
+              marginBottom: 8,
+            }}
+          >
+            📋 Processus d'inscription
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "#6c757d",
+              lineHeight: 1.4,
+            }}
+          >
+            Étapes suivantes :
+            <br />• {formData.user_type === 'producer' ? 'Vérification d\'identité (recto/verso), sélection de catégories et création de votre page' : 'Fournir vos informations de contact'}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16, fontSize: 15, color: "#b0b0b0" }}>
           Vous avez un compte ?{" "}
           <span
             onClick={onBack}
@@ -447,83 +922,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             Connexion
           </span>
         </div>
-        {showModal && (
-          <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: 32,
-                boxShadow: "0 4px 32px rgba(0,0,0,0.10)",
-                padding: "40px 24px 32px 24px",
-                minWidth: 300,
-                maxWidth: 340,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{
-                  width: 90,
-                  height: 90,
-                  borderRadius: "50%",
-                  background: "rgba(0,166,192,0.07)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 24,
-                }}
-              >
-                <img
-                  src={bravoCheckIcon}
-                  alt="check"
-                  style={{ width: 54, height: 54, color: "#009CB7" }}
-                />
-              </div>
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: 22,
-                  color: "#222",
-                  marginBottom: 8,
-                  textAlign: "center",
-                }}
-              >
-                Bravo !
-              </div>
-              <div
-                style={{
-                  fontSize: 16,
-                  color: "#b0b0b0",
-                  marginBottom: 28,
-                  textAlign: "center",
-                }}
-              >
-                Votre compte a bien été enregistré
-              </div>
-              <button
-                style={{
-                  width: "100%",
-                  background: "#009CB7",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 17,
-                  borderRadius: 15,
-                  border: "none",
-                  padding: "14px 0",
-                  marginBottom: 0,
-                  cursor: "pointer",
-                }}
-                onClick={() => {
-                  setShowModal(false);
-                  setGoToProfileChoice(true);
-                }}
-              >
-                Vers choix du profil
-              </button>
-            </div>
-          </Modal>
-        )}
+        {/* No modal; we navigate directly to next step based on role */}
       </div>
     </>
   );

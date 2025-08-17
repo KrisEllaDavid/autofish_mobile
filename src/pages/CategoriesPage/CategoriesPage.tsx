@@ -1,19 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import NavBar from "../../components/NavBar";
+import UnifiedDropdown from "../../components/UnifiedDropdown";
 import DescriptionPage from "../DescriptionPage";
 import ContactInfoPage from "../ContactInfoPage";
 import PageCreationPage from "../PageCreationPage";
+import { useApiWithLoading } from "../../services/apiWithLoading";
+import { Category } from "../../services/api";
 import "./CategoriesPage.css";
 import { useAuth } from "../../context/AuthContext";
-
-const mockCategories = [
-  "Produits agricoles",
-  "Poissons",
-  "Fruits de mer",
-  "Épices",
-  "Légumes",
-  "Céréales",
-];
+import { parseUserDataForClientRegistration, validateUserDataForRegistration } from "../../utils/registrationUtils";
+import { toast } from "react-toastify";
 
 interface CategoriesPageProps {
   onBack?: () => void;
@@ -24,45 +20,117 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
   onBack,
   profileType,
 }) => {
-  const { updateUserData } = useAuth();
+  const { userData, updateUserData, register, clearError } = useAuth();
+  const api = useApiWithLoading();
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [availableCategories, setAvailableCategories] =
-    useState(mockCategories);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [goToDescription, setGoToDescription] = useState(false);
   const [goToContactInfo, setGoToContactInfo] = useState(false);
   const [goToPageCreation, setGoToPageCreation] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  const handleSelect = (cat: string) => {
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const categoriesData = await api.getCategories();
+        setAvailableCategories(categoriesData);
+        
+        if (import.meta.env.DEV) {
+          console.log('✅ Loaded categories:', categoriesData.length);
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load categories';
+        setError(errorMessage);
+        console.error('❌ Failed to load categories:', err);
+        // Fallback to empty array if API fails
+        setAvailableCategories([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleSelect = (cat: Category) => {
     const newSelectedCategories = [...selectedCategories, cat];
     
     setSelectedCategories(newSelectedCategories);
-    setAvailableCategories(availableCategories.filter((c) => c !== cat));
+    setAvailableCategories(availableCategories.filter((c) => c.id !== cat.id));
     setDropdownOpen(false);
 
-    // Update userData with the selected categories
+    // Update userData with the selected categories (store IDs as strings)
     updateUserData({
-      selectedCategories: newSelectedCategories,
+      selectedCategories: newSelectedCategories.map(c => c.id.toString()),
     });
   };
 
-  const handleRemove = (cat: string) => {
-    setSelectedCategories(selectedCategories.filter((c) => c !== cat));
+  const handleRemove = (cat: Category) => {
+    const updatedSelected = selectedCategories.filter((c) => c.id !== cat.id);
+    setSelectedCategories(updatedSelected);
     setAvailableCategories([...availableCategories, cat]);
 
     // Update userData with the updated selected categories
     updateUserData({
-      selectedCategories: selectedCategories.filter((c) => c !== cat),
+      selectedCategories: updatedSelected.map(c => c.id.toString()),
     });
   };
 
-  const handleContinue = () => {
-    
+  const handleContinue = async () => {
     if (profileType === "client") {
-      setGoToContactInfo(true);
+      // Directly register consumer after choosing categories
+      try {
+        clearError();
+        if (!userData || !userData.email || !userData.password) {
+          toast.error("Informations d'inscription manquantes");
+          return;
+        }
+        const completeUserData = { ...userData };
+        const validation = validateUserDataForRegistration(completeUserData, completeUserData.password);
+        if (!validation.isValid) {
+          const msg = validation.missingFields.length > 3
+            ? `${validation.missingFields.slice(0, 3).join(', ')} et ${validation.missingFields.length - 3} autres`
+            : validation.missingFields.join(', ');
+          toast.error(`Champs manquants: ${msg}`);
+          return;
+        }
+        setIsRegistering(true);
+        
+        // Debug logging
+        console.log('🔍 Consumer Registration Debug:');
+        console.log('Complete User Data:', completeUserData);
+        
+        const registrationData = parseUserDataForClientRegistration(completeUserData, completeUserData.password!);
+        
+        console.log('🚀 Parsed Registration Data:', registrationData);
+        console.log('📋 Registration Data Fields:');
+        Object.entries(registrationData).forEach(([key, value]) => {
+          if (value instanceof File) {
+            console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+          } else if (Array.isArray(value)) {
+            console.log(`  ${key}: Array(${value.length} items) ${JSON.stringify(value)}`);
+          } else {
+            console.log(`  ${key}: ${typeof value} = ${value}`);
+          }
+        });
+        
+        await register(registrationData);
+        // On success, isAuthenticated becomes true and App shows HomePage
+      } catch (err) {
+        // Error is handled by register() and error state; provide a toast here for UX
+        toast.error("Inscription échouée. Veuillez réessayer.");
+      } finally {
+        setIsRegistering(false);
+      }
     } else if (profileType === "producer") {
-      // For producers, go to description page first
-      setGoToDescription(true);
+      // Skip description to streamline flow; proceed to page creation
+      setGoToPageCreation(true);
     }
   };
 
@@ -70,13 +138,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
     return <PageCreationPage onBack={() => setGoToPageCreation(false)} />;
   }
 
-  if (goToContactInfo) {
-    return (
-      <ContactInfoPage
-        onBack={() => setGoToContactInfo(false)}
-      />
-    );
-  }
+  // ContactInfoPage is no longer used for clients; keep code path for safety but never navigate there
 
   if (goToDescription) {
     return (
@@ -100,57 +162,115 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
       <NavBar title="Mes catégories" onBack={onBack} />
       <div className="categories-subtitle">
         Sélectionnez vos catégories principales
-      </div>
-      <div
-        className={`categories-dropdown${dropdownOpen ? " open" : ""}`}
-        tabIndex={0}
-        onBlur={() => setDropdownOpen(false)}
-      >
-        <div
-          className="categories-dropdown-header"
-          onClick={() => setDropdownOpen((open) => !open)}
-        >
-          <span>Liste des catégories</span>
-          <span className="categories-dropdown-arrow">
-            <img
-              src="/icons/chevron.svg"
-              alt="chevron"
-              style={{ width: 24, height: 24 }}
-            />
-          </span>
-        </div>
-        {dropdownOpen && availableCategories.length > 0 && (
-          <div className="categories-dropdown-list">
-            {availableCategories.map((cat) => (
-              <div
-                key={cat}
-                className="categories-dropdown-item"
-                onClick={() => handleSelect(cat)}
-              >
-                {cat}
-              </div>
-            ))}
+        {profileType === "producer" && (
+          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+            * Au moins une catégorie est requise pour les producteurs
           </div>
         )}
       </div>
-      <div className="categories-pills">
-        {selectedCategories.map((cat) => (
-          <div className="categories-pill" key={cat}>
-            {cat}
-            <button
-              className="categories-pill-close"
-              onClick={() => handleRemove(cat)}
-              aria-label="Supprimer"
-              type="button"
-            >
-              ×
-            </button>
+      
+      {/* Loading State */}
+      {loading && (
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '3px solid #f3f3f3',
+            borderTop: '3px solid #00B2D6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '20px auto'
+          }} />
+          <p>Chargement des catégories...</p>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div style={{ textAlign: "center", padding: "40px", color: "red" }}>
+          <p>Erreur: {error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#00B2D6",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              marginTop: "10px"
+            }}
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {/* Categories Dropdown */}
+      {!loading && !error && (
+        <>
+          <div style={{ width: '90vw', maxWidth: 340 }}>
+            <UnifiedDropdown
+              options={availableCategories.map(cat => ({ 
+                value: cat.id.toString(), 
+                label: cat.name 
+              }))}
+              value=""
+              onChange={(value) => {
+                const category = availableCategories.find(cat => cat.id.toString() === value);
+                if (category) {
+                  handleSelect(category);
+                }
+              }}
+              placeholder={availableCategories.length > 0 ? "Sélectionnez une catégorie" : "Aucune catégorie disponible"}
+              icon="/icons/User-Outline.svg"
+              activeIcon="/icons/User-Outline_blue.svg"
+              disabled={availableCategories.length === 0}
+            />
           </div>
-        ))}
-      </div>
-      <button className="categories-action-btn" onClick={handleContinue}>
-        Poursuivre
-      </button>
+          
+          {/* Selected Categories Pills */}
+          <div className="categories-pills">
+            {selectedCategories.map((cat) => (
+              <div className="categories-pill" key={cat.id}>
+                {cat.name}
+                <button
+                  className="categories-pill-close"
+                  onClick={() => handleRemove(cat)}
+                  aria-label="Supprimer"
+                  type="button"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          
+          {/* Continue Button */}
+          <button 
+            className="categories-action-btn" 
+            onClick={handleContinue}
+            disabled={profileType === "producer" && selectedCategories.length === 0}
+            style={{
+              opacity: profileType === "producer" && selectedCategories.length === 0 ? 0.5 : 1,
+              cursor: profileType === "producer" && selectedCategories.length === 0 ? 'not-allowed' : 'pointer'
+            }}
+          >
+            Suivant
+            {profileType === "producer" && selectedCategories.length === 0 && (
+              <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                Sélectionnez au moins une catégorie
+              </div>
+            )}
+          </button>
+        </>
+      )}
     </div>
   );
 };

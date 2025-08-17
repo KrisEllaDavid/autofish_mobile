@@ -88,10 +88,33 @@ export const mapCategoriesToIndices = (categoryNames: string[]): number[] => {
     if (index !== undefined) {
       return index;
     }
-    // If category not found, log warning and return 0 as default
-    console.warn(`Category "${categoryName}" not found in mapping. Using default index 0.`);
-    return 0;
-  });
+    // If category not found, log warning and skip instead of forcing 0
+    console.warn(`Category "${categoryName}" not found in static mapping; skipping.`);
+    return -1;
+  }).filter(idx => idx >= 0);
+};
+
+/**
+ * Normalize selected category identifiers to numeric IDs.
+ * If values are numeric strings, convert to numbers. If not,
+ * fall back to static name mapping.
+ */
+const normalizeCategoryIds = (selected?: string[]): number[] => {
+  if (!selected || selected.length === 0) return [];
+  const numericIds: number[] = [];
+  const unmappedNames: string[] = [];
+  for (const val of selected) {
+    const num = Number(val);
+    if (!Number.isNaN(num)) {
+      numericIds.push(num);
+    } else if (val && val.trim().length > 0) {
+      unmappedNames.push(val.trim());
+    }
+  }
+  if (unmappedNames.length > 0) {
+    numericIds.push(...mapCategoriesToIndices(unmappedNames));
+  }
+  return numericIds;
 };
 
 /**
@@ -105,9 +128,11 @@ export const parseUserDataForClientRegistration = (
   // Split the full name
   const { firstName, lastName } = splitName(userData.name || '');
   
-  // Convert avatar to File if present
+  // Convert avatar to File if present; prefer direct profile_picture File from context
   let profilePicture: File | undefined;
-  if (userData.avatar && userData.avatar.startsWith('data:image/')) {
+  if (userData.profile_picture instanceof File) {
+    profilePicture = userData.profile_picture as File;
+  } else if (userData.avatar && userData.avatar.startsWith('data:image/')) {
     profilePicture = base64ToFile(userData.avatar, 'profile_picture.jpg');
   }
   
@@ -133,11 +158,20 @@ export const parseUserDataForClientRegistration = (
     formattedPhone = userData.phone;
   }
   
-  // Split address into city and address components
-  const { city, address } = userData.address ? splitAddress(userData.address) : { city: '', address: '' };
+  // Prefer explicit city from signup; fallback to splitting address if provided
+  let explicitCity = userData.city || '';
+  let derivedCity = '';
+  let derivedAddress = '';
+  if (userData.address && userData.address !== userData.city) {
+    const split = splitAddress(userData.address);
+    derivedCity = split.city;
+    derivedAddress = split.address;
+  }
+  const city = explicitCity || derivedCity;
+  const address = userData.address || derivedAddress || explicitCity; // ensure at least city is sent if address empty
   
-  // Map category names to indices
-  const categoryIndices = userData.selectedCategories ? mapCategoriesToIndices(userData.selectedCategories) : [];
+  // Prefer using category IDs if available; fallback to static name mapping
+  const categoryIndices = userData.selectedCategories ? normalizeCategoryIds(userData.selectedCategories) : [];
   
   const registrationData: UserRegistrationRequest = {
     email: userData.email || '',
@@ -151,7 +185,7 @@ export const parseUserDataForClientRegistration = (
     terms_accepted: true, // User already accepted terms in signup flow
     profile_picture: profilePicture, // Send as File
     country: userData.country || '',
-    address: address,
+    address: address || city,
     description: userData.description || '',
     categories: categoryIndices,
     recto_id: undefined, // Not required for consumers
@@ -181,9 +215,11 @@ export const parseUserDataForProducerRegistration = (
   // Split the full name
   const { firstName, lastName } = splitName(userData.name || '');
   
-  // Convert avatar to File if present
+  // Convert avatar to File if present; prefer direct profile_picture File from context
   let profilePicture: File | undefined;
-  if (userData.avatar && userData.avatar.startsWith('data:image/')) {
+  if (userData.profile_picture instanceof File) {
+    profilePicture = userData.profile_picture as File;
+  } else if (userData.avatar && userData.avatar.startsWith('data:image/')) {
     profilePicture = base64ToFile(userData.avatar, 'profile_picture.jpg');
   }
   
@@ -209,12 +245,29 @@ export const parseUserDataForProducerRegistration = (
   // For producers, use page data if available, otherwise use main user data
   const pageData = userData.page || {};
   
-  // Split address into city and address components (use page address if available)
-  const addressToSplit = pageData.address || userData.address || '';
-  const { city, address } = addressToSplit ? splitAddress(addressToSplit) : { city: '', address: '' };
+  // Use explicit city from signup form, or split address if needed
+  let city = userData.city || '';
+  let address = userData.address || '';
   
-  // Map category names to indices
-  const categoryIndices = userData.selectedCategories ? mapCategoriesToIndices(userData.selectedCategories) : [];
+  // If we have page data with different address, use that
+  if (pageData.address && pageData.address !== userData.address) {
+    const split = splitAddress(pageData.address);
+    city = split.city;
+    address = split.address;
+  } else if (!city && userData.address) {
+    // Fallback: if no explicit city but we have address, try to split it
+    const split = splitAddress(userData.address);
+    city = split.city;
+    address = split.address;
+  }
+  
+  // Ensure we have at least city
+  if (!city && address) {
+    city = address;
+  }
+  
+  // Prefer using category IDs if available; fallback to static name mapping
+  const categoryIndices = userData.selectedCategories ? normalizeCategoryIds(userData.selectedCategories) : [];
   
   // Convert ID verification images to Files if present
   let rectoIdFile: File | undefined;
@@ -254,8 +307,8 @@ export const parseUserDataForProducerRegistration = (
   // Ensure description is not empty for producers
   const finalDescription = userData.description || 'Producteur sur AutoFish';
   
-  // Ensure categories is always an array
-  const finalCategories = categoryIndices && categoryIndices.length > 0 ? categoryIndices : [0];
+  // Use selected categories as-is; validation will enforce presence for producers
+  const finalCategories = categoryIndices || [];
   
   const registrationData: UserRegistrationRequest = {
     email: userData.email || '',
@@ -309,17 +362,17 @@ export const validateUserDataForRegistration = (userData: UserData, password?: s
   if (!password) missingFields.push('password');
   if (!userData.phone) missingFields.push('phone');
   if (!userData.code) missingFields.push('country code');
-  if (!userData.address) missingFields.push('address (city)');
+  if (!userData.city && !userData.address) missingFields.push('city or address');
   if (!userData.userRole) missingFields.push('user role');
   if (!userData.country) missingFields.push('country');
   
-  // Categories are required for consumers
-  if (userData.userRole === 'client' && (!userData.selectedCategories || userData.selectedCategories.length === 0)) {
-    missingFields.push('selected categories');
-  }
+  // Categories optional for consumers; required for producers only (enforced below)
   
   // ID verification and additional fields are required for producers
   if (userData.userRole === 'producteur') {
+    if (!userData.selectedCategories || userData.selectedCategories.length === 0) {
+      missingFields.push('selected categories');
+    }
     if (!userData.idRecto) missingFields.push('ID recto image');
     if (!userData.idVerso) missingFields.push('ID verso image');
     if (!userData.description) missingFields.push('description');

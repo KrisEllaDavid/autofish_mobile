@@ -14,10 +14,10 @@ const navBarStyle: React.CSSProperties = {
   justifyContent: "center",
   borderBottom: "1px solid rgb(255, 255, 255)",
   background: "#fff",
-  position: "fixed",
+  position: "sticky",
   top: 0,
   left: 0,
-  zIndex: 100,
+  zIndex: 1000,
 };
 
 const titleStyle: React.CSSProperties = {

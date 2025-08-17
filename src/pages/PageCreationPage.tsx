@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import NavBar from "../components/NavBar";
+import CountryDropdown from "../components/CountryDropdown";
+import PhoneInput from "../components/PhoneInput";
+import AddressInput from "../components/AddressInput";
 import PagePreviewPage from "./PagePreviewPage";
 import Modal from "../components/Modal";
 import HomePage from "./HomePage";
@@ -28,8 +31,7 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [personalAddress, setPersonalAddress] = useState(userData?.address || "");
   const [personalPhone, setPersonalPhone] = useState(userData?.phone || "");
   
-  const [showCountryList, setShowCountryList] = useState(false);
-  const [showPersonalCountryList, setShowPersonalCountryList] = useState(false);
+  // Removed individual dropdown state - now handled by components
   const [showPreview, setShowPreview] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showHomePage, setShowHomePage] = useState(false);
@@ -126,8 +128,8 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         
         toast.success('Compte producteur créé avec succès! Bienvenue sur AutoFish!');
         
-        // Show success modal
-        setShowModal(true);
+        // Go directly to home after successful registration
+        setShowHomePage(true);
         
       } catch (error: any) {
         // Handle different types of errors
@@ -255,7 +257,8 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 32,
+          paddingTop: 10,
+          paddingBottom: 40
         }}
       >
         <NavBar title="Création de page" onBack={onBack} />
@@ -273,102 +276,33 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             Informations personnelles
           </div>
           
-          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
-            Quel est votre pays de résidence ?
-          </div>
-          <div
-            className={`categories-dropdown${showPersonalCountryList ? " open" : ""}`}
-            tabIndex={0}
-            style={{ marginBottom: 22 }}
-            onClick={() => setShowPersonalCountryList((open) => !open)}
-          >
-            <div
-              className="categories-dropdown-header"
-              style={{ cursor: "pointer" }}
-            >
-              <span style={{ color: personalCountry ? "#222" : "#b0b0b0" }}>
-                {personalCountry || "Sélectionnez votre pays"}
-              </span>
-              <span className="categories-dropdown-arrow">
-                <img
-                  src="/icons/chevron.svg"
-                  alt="chevron"
-                  style={{ width: 24, height: 24 }}
-                />
-              </span>
-            </div>
-            {showPersonalCountryList && (
-              <div
-                className="categories-dropdown-list"
-                style={{ marginTop: 18, zIndex: 1000 }}
-              >
-                {countries.map((c) => (
-                  <div
-                    key={c.name}
-                    className="categories-dropdown-item"
-                    style={{
-                      fontSize: 16,
-                      color: "#222",
-                      cursor: "pointer",
-                      padding: "12px 24px",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPersonalCountry(c.name);
-                      setPersonalCountryCode(c.code);
-                      setShowPersonalCountryList(false);
-                    }}
-                  >
-                    {c.name}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
-            Quelle est votre adresse personnelle (Ville, Quartier)
-          </div>
-          <input
-            className="input-box"
-            placeholder="Entrez votre adresse personnelle"
-            value={personalAddress}
-            onChange={(e) => setPersonalAddress(e.target.value)}
+          <CountryDropdown
+            countries={countries}
+            selectedCountry={personalCountry}
+            selectedCode={personalCountryCode}
+            onCountryChange={(country, code) => {
+              setPersonalCountry(country);
+              setPersonalCountryCode(code);
+            }}
+            label="Quel est votre pays de résidence ?"
+            placeholder="Sélectionnez votre pays"
           />
           
-          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
-            Quel est votre numéro de téléphone personnel?
-          </div>
-          <div
-            style={{ display: "flex", alignItems: "center", marginBottom: 32 }}
-          >
-            <div
-              style={{
-                minWidth: 64,
-                fontSize: 16,
-                color: "#222",
-                padding: "18px 10px 18px 18px",
-                marginRight: 8,
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
-                userSelect: "none",
-                position: "relative",
-              }}
-              onClick={() => setShowPersonalCountryList(true)}
-            >
-              {personalCountryCode}{" "}
-              <span style={{ fontSize: 16, color: "#b0b0b0" }}></span>
-            </div>
-            <input
-              className="input-box"
-              style={{ marginBottom: 0 }}
-              placeholder="Entrez votre numéro personnel"
-              value={personalPhone}
-              onChange={(e) => setPersonalPhone(e.target.value)}
-              type="tel"
-            />
-          </div>
+          <AddressInput
+            address={personalAddress}
+            onAddressChange={setPersonalAddress}
+            label="Quelle est votre adresse personnelle (Ville, Quartier)"
+            placeholder="Entrez votre adresse personnelle"
+          />
+          
+          <PhoneInput
+            countryCode={personalCountryCode}
+            phoneNumber={personalPhone}
+            onPhoneChange={setPersonalPhone}
+            onCountryCodeClick={() => {}} // Country code changes through dropdown above
+            label="Quel est votre numéro de téléphone personnel?"
+            placeholder="Entrez votre numéro personnel"
+          />
 
           <div style={{ fontSize: 20, fontWeight: 700, color: "#222", marginBottom: 24, textAlign: "center", marginTop: 32 }}>
             Informations de votre page business
@@ -383,100 +317,31 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             value={pageName}
             onChange={(e) => setPageName(e.target.value)}
           />
-          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
-            Quelle est votre pays de vente ?
-          </div>
-          <div
-            className={`categories-dropdown${showCountryList ? " open" : ""}`}
-            tabIndex={0}
-            style={{ marginBottom: 22 }}
-            onClick={() => setShowCountryList((open) => !open)}
-          >
-            <div
-              className="categories-dropdown-header"
-              style={{ cursor: "pointer" }}
-            >
-              <span style={{ color: country ? "#222" : "#b0b0b0" }}>
-                {country || "Sélectionnez votre pays"}
-              </span>
-              <span className="categories-dropdown-arrow">
-                <img
-                  src="/icons/chevron.svg"
-                  alt="chevron"
-                  style={{ width: 24, height: 24 }}
-                />
-              </span>
-            </div>
-            {showCountryList && (
-              <div
-                className="categories-dropdown-list"
-                style={{ marginTop: 18, zIndex: 1000 }}
-              >
-                {countries.map((c) => (
-                  <div
-                    key={c.name}
-                    className="categories-dropdown-item"
-                    style={{
-                      fontSize: 16,
-                      color: "#222",
-                      cursor: "pointer",
-                      padding: "12px 24px",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCountry(c.name);
-                      setCountryCode(c.code);
-                      setShowCountryList(false);
-                    }}
-                  >
-                    {c.name}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
-            Quel est votre adresse (Ville, Quartier)
-          </div>
-          <input
-            className="input-box"
-            placeholder="Entrez votre adresse"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
+          <CountryDropdown
+            countries={countries}
+            selectedCountry={country}
+            selectedCode={countryCode}
+            onCountryChange={(country, code) => {
+              setCountry(country);
+              setCountryCode(code);
+            }}
+            label="Quelle est votre pays de vente ?"
+            placeholder="Sélectionnez votre pays"
           />
-          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
-            Quel est votre numéro de téléphone?
-          </div>
-          <div
-            style={{ display: "flex", alignItems: "center", marginBottom: 32 }}
-          >
-            <div
-              style={{
-                minWidth: 64,
-                fontSize: 16,
-                color: "#222",
-                padding: "18px 10px 18px 18px",
-                marginRight: 8,
-                display: "flex",
-                alignItems: "center",
-                cursor: "pointer",
-                userSelect: "none",
-                position: "relative",
-              }}
-              onClick={() => setShowCountryList(true)}
-            >
-              {countryCode}{" "}
-              <span style={{ fontSize: 16, color: "#b0b0b0" }}></span>
-            </div>
-            <input
-              className="input-box"
-              style={{ marginBottom: 0 }}
-              placeholder="Entrez votre numéro de téléphone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              type="tel"
-            />
-          </div>
+          <AddressInput
+            address={address}
+            onAddressChange={setAddress}
+            label="Quel est votre adresse (Ville, Quartier)"
+            placeholder="Entrez votre adresse"
+          />
+          <PhoneInput
+            countryCode={countryCode}
+            phoneNumber={phone}
+            onPhoneChange={setPhone}
+            onCountryCodeClick={() => {}} // Country code changes through dropdown above
+            label="Quel est votre numéro de téléphone?"
+            placeholder="Entrez votre numéro de téléphone"
+          />
           <button
             className="preview-btn"
             type="button"

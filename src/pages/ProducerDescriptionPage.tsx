@@ -70,7 +70,8 @@ const ProducerDescriptionPage: React.FC<ProducerDescriptionPageProps> = ({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 32,
+          paddingTop: 10,
+          paddingBottom: 40
         }}
       >
         <NavBar title="Ma description" onBack={onBack} />

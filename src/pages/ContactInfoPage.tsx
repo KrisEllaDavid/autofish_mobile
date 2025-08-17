@@ -65,11 +65,27 @@ const ContactInfoPage: React.FC<{
         
         setIsRegistering(true);
         
+        // Debug logging
+        console.log('🔍 Consumer Registration Debug (ContactInfoPage):');
+        console.log('Complete User Data:', completeUserData);
+        
         // Parse user data for API registration
         const registrationData = parseUserDataForClientRegistration(
           completeUserData, 
           completeUserData.password!
         );
+        
+        console.log('🚀 Parsed Registration Data:', registrationData);
+        console.log('📋 Registration Data Fields:');
+        Object.entries(registrationData).forEach(([key, value]) => {
+          if (value instanceof File) {
+            console.log(`  ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+          } else if (Array.isArray(value)) {
+            console.log(`  ${key}: Array(${value.length} items) ${JSON.stringify(value)}`);
+          } else {
+            console.log(`  ${key}: ${typeof value} = ${value}`);
+          }
+        });
         
         // Call the API registration
         await register(registrationData);
@@ -83,9 +99,8 @@ const ContactInfoPage: React.FC<{
         });
         
         toast.success('Compte créé avec succès! Bienvenue sur AutoFish!');
-        
-        // Show success modal
-        setShowModal(true);
+        // Go directly to home after successful registration
+        setShowHomePage(true);
         
       } catch (error: any) {
         // Handle different types of errors
@@ -189,7 +204,8 @@ const ContactInfoPage: React.FC<{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 32,
+          paddingTop: 10,
+          paddingBottom: 40
         }}
       >
         <NavBar title="Mes coordonnées" onBack={onBack} />

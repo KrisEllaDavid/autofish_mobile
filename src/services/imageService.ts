@@ -1,7 +1,7 @@
 // AutoFish Image Service
 // Handles image uploads, retrieval, and management with the dedicated image server
 
-const IMAGE_SERVER_URL = import.meta.env.VITE_IMAGE_SERVER_URL || 'http://31.97.178.131:3001';
+const IMAGE_SERVER_URL = 'http://31.97.178.131:3001';
 const isDev = import.meta.env.DEV;
 const isMobile = typeof window !== 'undefined' && window.location.protocol === 'capacitor:';
 
@@ -103,12 +103,20 @@ class ImageService {
    */
   async healthCheck(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseURL}/health`);
+      // For development, try to bypass SSL issues
+      const response = await fetch(`${this.baseURL}/health`, {
+        // Note: fetch doesn't support verify: false like requests
+        // We'll handle SSL errors gracefully
+      });
       const data = await response.json();
       return data.status === 'healthy';
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('❌ Image server health check failed:', error);
+        // If it's an SSL error, log it specifically
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          console.warn('⚠️  SSL certificate issue detected. This is normal for self-signed certificates.');
+        }
       }
       return false;
     }

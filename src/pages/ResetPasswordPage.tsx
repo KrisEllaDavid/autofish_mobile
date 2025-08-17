@@ -105,7 +105,8 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 64,
+          paddingTop: 10,
+          paddingBottom: 80,
         }}
       >
         <NavBar title="Réinitialiser le mot de passe" onBack={onBack} />

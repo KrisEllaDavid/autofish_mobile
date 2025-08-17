@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import Webcam from "react-webcam";
 import NavBar from "../components/NavBar";
 import CategoriesPage from "./CategoriesPage/CategoriesPage";
+import ProducerDescriptionPage from "./ProducerDescriptionPage";
 import { useAuth } from "../context/AuthContext";
 import CameraPermissionRequest from "../components/CameraPermissionRequest";
 import { checkCameraSupport, getAvailableCameras } from "../utils/cameraUtils";
@@ -25,8 +26,10 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
   const [versoImage, setVersoImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [goToCategories, setGoToCategories] = useState(false);
+  const [goToDescription, setGoToDescription] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
   const [showPermissionRequest, setShowPermissionRequest] = useState(false);
+  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false);
   const webcamRef = useRef<Webcam>(null);
 
   const handleOpenCamera = async (side: Side) => {
@@ -46,9 +49,16 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
       return;
     }
 
-    setShowPermissionRequest(true);
-    setIsCameraOpen(side);
-    setCameraError(null);
+    // If permission already granted, open camera directly
+    if (cameraPermissionGranted) {
+      setIsCameraOpen(side);
+      setCameraError(null);
+    } else {
+      // Request permission first time only
+      setShowPermissionRequest(true);
+      setIsCameraOpen(side);
+      setCameraError(null);
+    }
   };
 
   const handleCapture = () => {
@@ -69,6 +79,7 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
   };
 
   const handleRetake = (side: Side) => {
+    // Since permission was already granted, open camera directly
     setIsCameraOpen(side);
     setCameraError(null);
   };
@@ -97,6 +108,7 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
 
   const handlePermissionGranted = () => {
     setShowPermissionRequest(false);
+    setCameraPermissionGranted(true);
   };
 
   const handlePermissionDenied = () => {
@@ -105,11 +117,31 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
     setCameraError("Accès à la caméra refusé");
   };
 
+  if (goToDescription) {
+    return (
+      <ProducerDescriptionPage
+        onBack={() => setGoToDescription(false)}
+        onContinue={(description) => {
+          updateUserData({ description });
+          setGoToDescription(false);
+          setGoToCategories(true);
+        }}
+      />
+    );
+  }
+
   if (goToCategories) {
     return (
       <CategoriesPage
         profileType={profileType}
-        onBack={() => setGoToCategories(false)}
+        onBack={() => {
+          if (profileType === 'producer') {
+            setGoToCategories(false);
+            setGoToDescription(true);
+          } else {
+            setGoToCategories(false);
+          }
+        }}
       />
     );
   }
@@ -239,7 +271,8 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 32,
+          paddingTop: 10,
+          paddingBottom: 40
         }}
       >
         <NavBar title="Document d'identification" onBack={onBack} />
@@ -283,7 +316,13 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
               boxShadow: "0 2px 12px rgba(0, 156, 183, 0.08)",
             }}
             disabled={!(rectoImage && versoImage)}
-            onClick={() => setGoToCategories(true)}
+            onClick={() => {
+              if (profileType === 'producer') {
+                setGoToDescription(true);
+              } else {
+                setGoToCategories(true);
+              }
+            }}
           >
             Poursuivre
           </button>

@@ -24,7 +24,7 @@ const FavoritePostsPage: React.FC<FavoritePostsPageProps> = ({
   return (
     <div className="favorite-posts-page">
       <TopNavBar
-        title="Publications favorites"
+        title="Posts favoris"
         userAvatar={userAvatar}
         userName={userName}
         userEmail={userEmail}
@@ -48,3 +48,4 @@ const FavoritePostsPage: React.FC<FavoritePostsPageProps> = ({
 };
 
 export default FavoritePostsPage;
+
