@@ -42,7 +42,6 @@ const HomePage: React.FC = () => {
 
   // Pagination state for lazy loading
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = React.useRef<HTMLDivElement>(null);
@@ -82,7 +81,6 @@ const HomePage: React.FC = () => {
 
       // Update pagination state
       setCurrentPage(feedResponse.page);
-      setTotalPages(feedResponse.total_pages);
       setHasMore(feedResponse.next !== null);
 
       // Check for new publications
@@ -222,72 +220,6 @@ const HomePage: React.FC = () => {
       }
     };
   }, [hasMore, loadingMore, loading, currentPage]);
-
-  // Pull to refresh callback
-  const handleRefresh = async () => {
-    if (initialLoad) {
-      setLoading(true);
-    }
-    setError(null);
-    
-    try {
-      // Get public feed (all validated publications) - this is always public
-      const publicationsData = await api.getPublicFeed();
-      setPublications(publicationsData);
-      
-      // Try to fetch producer page data if user is authenticated
-      const producerPagesData: {[key: number]: ProducerPage} = {};
-      
-      try {
-        if (userData && api.isAuthenticated()) {
-          const allProducerPages = await api.getProducerPages();
-          allProducerPages.forEach(page => {
-            producerPagesData[page.id] = page;
-          });
-        } else {
-          // Create minimal producer data from publication page IDs when not authenticated
-          const uniquePageIds = [...new Set(publicationsData.map(pub => pub.page))];
-          uniquePageIds.forEach(pageId => {
-            producerPagesData[pageId] = {
-              id: pageId,
-              producer: 0,
-              name: `Producteur #${pageId}`,
-              slug: `producer-${pageId}`,
-              country: '',
-              address: '',
-              telephone: '',
-              categories: [],
-              city: '',
-              description: '',
-              is_validated: true,
-              created_at: '',
-              updated_at: '',
-            };
-          });
-        }
-      } catch (producerError) {
-        if (import.meta.env.DEV) {
-          console.warn('⚠️ Failed to load producer pages during refresh:', producerError);
-        }
-      }
-      
-      setProducerPages(producerPagesData);
-    } catch (err) {
-      let errorMessage = 'Failed to load publications';
-      if (err && typeof err === 'object') {
-        if ('detail' in err && typeof err.detail === 'string') {
-          errorMessage = err.detail;
-        } else if ('message' in err && typeof err.message === 'string') {
-          errorMessage = err.message;
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      setError(errorMessage);
-      setPublications([]);
-      setProducerPages({});
-    }
-  };
 
   // Removed pull-to-refresh feature
 

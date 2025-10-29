@@ -21,14 +21,12 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
 }) => {
   const { userData, updateUserData, register, clearError } = useAuth();
   const api = useApiWithLoading();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [goToDescription, setGoToDescription] = useState(false);
   const [goToPageCreation, setGoToPageCreation] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
 
   // Fetch categories from API - extracted to reusable function
   const fetchCategories = async () => {
@@ -120,11 +118,9 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
         
         await register(registrationData);
         // On success, isAuthenticated becomes true and App shows HomePage
-      } catch (err) {
+      } catch {
         // Error is handled by register() and error state; provide a toast here for UX
         toast.error("Inscription échouée. Veuillez réessayer.");
-      } finally {
-        setIsRegistering(false);
       }
     } else if (profileType === "producer") {
       // Producers need to provide description first

@@ -159,7 +159,7 @@ export const parseUserDataForClientRegistration = (
   }
   
   // Prefer explicit city from signup; fallback to splitting address if provided
-  let explicitCity = userData.city || '';
+  const explicitCity = userData.city || '';
   let derivedCity = '';
   let derivedAddress = '';
   if (userData.address && userData.address !== userData.city) {

@@ -109,8 +109,6 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [goToCategories, setGoToCategories] = useState(false);
-  const [showCountryList, setShowCountryList] = useState(false);
-  const [showCodeList, setShowCodeList] = useState(false);
 
   // Country and code options
   const countryOptions = [
@@ -130,9 +128,10 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         return value.trim() ? '' : 'Le prénom est requis';
       case 'last_name':
         return value.trim() ? '' : 'Le nom de famille est requis';
-      case 'email':
+      case 'email': {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return value.trim() ? (emailRegex.test(value) ? '' : 'Format d\'email invalide') : 'L\'email est requis';
+      }
       case 'phone':
         return value.trim() ? '' : 'Le numéro de téléphone est requis';
       case 'city':

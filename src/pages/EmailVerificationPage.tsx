@@ -36,7 +36,7 @@ const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
       } else {
         toast.info("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Erreur lors de la vérification. Veuillez réessayer.");
     } finally {
       setIsChecking(false);
@@ -61,7 +61,7 @@ const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
       await apiClient.resendVerificationEmail(email);
       toast.success("Email de vérification renvoyé !");
       setResendCooldown(60); // 60 second cooldown
-    } catch (error) {
+    } catch {
       toast.error("Erreur lors de l'envoi de l'email de vérification");
     } finally {
       setIsResending(false);

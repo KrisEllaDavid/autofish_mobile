@@ -75,9 +75,6 @@ function AppContent() {
 
       // Check if it's a verification success link from backend
       if (url.includes('verify-email') && url.includes('success=true')) {
-        const urlObj = new URL(url);
-        const email = urlObj.searchParams.get('email');
-
         toast.success('Email vérifié avec succès !');
         setNeedsEmailVerification(false);
 

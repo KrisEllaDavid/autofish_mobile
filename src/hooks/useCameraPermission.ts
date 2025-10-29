@@ -82,7 +82,7 @@ export const useCameraPermission = () => {
         isRequesting: false,
         error: null,
       });
-    } catch (error) {
+    } catch {
       setPermissionState({
         hasPermission: false,
         isRequesting: false,

@@ -595,7 +595,7 @@ class ApiClient {
     try {
       const response = await fetch(url, config);
       return this.handleResponse<T>(response);
-    } catch (error) {
+    } catch {
       throw new Error('Network error occurred');
     }
   }
@@ -840,7 +840,7 @@ class ApiClient {
           }),
         });
       }
-    } catch (error) {
+    } catch {
       console.warn('Logout request failed, but clearing local tokens anyway');
     } finally {
       // Always clear tokens locally
