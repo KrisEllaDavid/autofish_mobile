@@ -134,12 +134,19 @@ export interface Publication {
   id: number;
   producer?: number;
   page: number;
+  page_name?: string;
+  producer_name?: string;
+  producer_phone?: string;  // For WhatsApp contact
   title: string;
   description: string;
   price: number;
   category: Category;
+  category_name?: string;
   likes: number;
+  likes_count?: number;
+  is_liked?: boolean;
   picture?: string;
+  picture_url?: string;
   location: string;
   date_posted: string;
   is_valid: boolean;
@@ -149,6 +156,16 @@ export interface Publication {
   is_blocked: boolean;
   blocked_at?: string;
   blocked_by?: number;
+}
+
+export interface PaginatedFeedResponse {
+  count: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+  next: number | null;
+  previous: number | null;
+  results: Publication[];
 }
 
 export interface CreatePublicationRequest {
@@ -835,6 +852,17 @@ class ApiClient {
     return this.makeRequest<UserType>('/api/users/me/');
   }
 
+  async deleteAccount(): Promise<{ message: string }> {
+    const result = await this.makeRequest<{ message: string }>('/api/auth/delete-account/', {
+      method: 'DELETE',
+    });
+
+    // Clear tokens after successful account deletion
+    this.clearTokensFromStorage();
+
+    return result;
+  }
+
   async changePassword(currentPassword: string, newPassword: string, confirmPassword: string): Promise<{ detail: string }> {
     return this.makeRequest<{ detail: string }>('/api/auth/change-password/', {
       method: 'POST',
@@ -993,8 +1021,25 @@ class ApiClient {
     return this.makeRequest<Publication[]>('/api/producers/publications/my_publications/');
   }
 
-  async getPublicFeed(): Promise<Publication[]> {
-    return this.makeRequest<Publication[]>('/api/producers/publications/public_feed/');
+  async getPublicFeed(params?: {
+    page?: number;
+    limit?: number;
+    user_categories?: number[];
+  }): Promise<PaginatedFeedResponse> {
+    const queryParams = new URLSearchParams();
+
+    if (params?.page) {
+      queryParams.append('page', params.page.toString());
+    }
+    if (params?.limit) {
+      queryParams.append('limit', params.limit.toString());
+    }
+    if (params?.user_categories && params.user_categories.length > 0) {
+      queryParams.append('user_categories', params.user_categories.join(','));
+    }
+
+    const url = `/api/producers/publications/public_feed/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return this.makeRequest<PaginatedFeedResponse>(url);
   }
 
   async toggleLikePublication(id: number): Promise<{ status: string }> {

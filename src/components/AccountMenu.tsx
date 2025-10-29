@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
+import Modal from "./Modal";
 
 interface AccountMenuProps {
   open: boolean;
@@ -17,6 +18,8 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const { userData, logout } = useAuth();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Close on click outside
   useEffect(() => {
@@ -40,6 +43,30 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
     setTimeout(() => {
       logout();
     }, 500);
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      // Import API client dynamically to avoid circular dependencies
+      const { apiClient } = await import("../services/api");
+
+      await apiClient.deleteAccount();
+
+      toast.success("Votre compte a été supprimé avec succès");
+      setShowDeleteModal(false);
+      onClose();
+
+      // Logout after successful deletion
+      setTimeout(() => {
+        logout();
+      }, 1000);
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      toast.error("Erreur lors de la suppression du compte. Veuillez réessayer.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Positioning: below anchor
@@ -152,6 +179,25 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                 width: "100%",
                 background: "none",
                 border: "none",
+                color: mainBlue,
+                fontWeight: 600,
+                fontSize: 15,
+                marginBottom: 10,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+              onClick={() => {
+                setShowDeleteModal(true);
+                onClose();
+              }}
+            >
+              Supprimer mon compte
+            </button>
+            <button
+              style={{
+                width: "100%",
+                background: "none",
+                border: "none",
                 color: "#e74c3c",
                 fontWeight: 600,
                 fontSize: 15,
@@ -164,6 +210,62 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => !isDeleting && setShowDeleteModal(false)}
+          title="Supprimer mon compte"
+        >
+          <div style={{ padding: "20px 0" }}>
+            <p style={{ marginBottom: 20, fontSize: 15, lineHeight: 1.6 }}>
+              Êtes-vous sûr de vouloir supprimer votre compte ?
+            </p>
+            <p style={{ marginBottom: 20, fontSize: 14, color: "#e74c3c", lineHeight: 1.6 }}>
+              <strong>Cette action est irréversible.</strong> Toutes vos données, y compris vos publications, messages et informations personnelles seront définitivement supprimées.
+            </p>
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+                style={{
+                  flex: 1,
+                  padding: "12px 24px",
+                  borderRadius: 12,
+                  border: "1.5px solid #ddd",
+                  background: "#fff",
+                  color: "#666",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  cursor: isDeleting ? "not-allowed" : "pointer",
+                  opacity: isDeleting ? 0.5 : 1,
+                }}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                style={{
+                  flex: 1,
+                  padding: "12px 24px",
+                  borderRadius: 12,
+                  border: "none",
+                  background: "#e74c3c",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  cursor: isDeleting ? "not-allowed" : "pointer",
+                  opacity: isDeleting ? 0.7 : 1,
+                }}
+              >
+                {isDeleting ? "Suppression..." : "Supprimer définitivement"}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </>
   );

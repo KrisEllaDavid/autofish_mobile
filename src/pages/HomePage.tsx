@@ -40,40 +40,59 @@ const HomePage: React.FC = () => {
   );
   const [search, setSearch] = useState("");
 
+  // Pagination state for lazy loading
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const observerTarget = React.useRef<HTMLDivElement>(null);
+
   // Debug logging
   useEffect(() => {
     // TODO: Add analytics tracking for HomePage mount
     // TODO: Add bottom navigation visibility tracking
   }, [userData]);
 
-  // Load publications and producer data from API
-  useEffect(() => {
-    // Wait for auth context to be ready before making any requests
-    if (userData === undefined) {
-      if (import.meta.env.DEV) {
-        console.log('⏳ Waiting for auth context to initialize...');
+  // Load publications with pagination and preference-based sorting
+  const fetchPublications = async (page: number, append = false) => {
+    try {
+      if (!append) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
       }
-      return;
-    }
-    
-    const fetchPublicationsAndProducers = async () => {
-      try {
-        if (initialLoad) {
-          setLoading(true);
-        }
-        setError(null);
-        
-        // Get public feed (all validated publications) - this is always public
-        const publicationsData = await api.getPublicFeed();
-        setPublications(publicationsData);
+      setError(null);
 
-        // Check for new publications
-        if (!initialLoad && publicationsData.length > lastPublicationCount) {
-          setHasNewPublications(true);
-        }
-        setLastPublicationCount(publicationsData.length);
-        
-        // Try to fetch producer page data if user is authenticated
+      // Get user's category IDs for preference sorting
+      const userCategoryIds = userData?.selectedCategories?.map(cat => parseInt(cat)) || [];
+
+      // Fetch paginated feed with user preferences
+      const feedResponse = await api.getPublicFeed({
+        page,
+        limit: 20,
+        user_categories: userCategoryIds.length > 0 ? userCategoryIds : undefined
+      });
+
+      // Update publications (append for lazy loading, replace for initial)
+      if (append) {
+        setPublications(prev => [...prev, ...feedResponse.results]);
+      } else {
+        setPublications(feedResponse.results);
+      }
+
+      // Update pagination state
+      setCurrentPage(feedResponse.page);
+      setTotalPages(feedResponse.total_pages);
+      setHasMore(feedResponse.next !== null);
+
+      // Check for new publications
+      if (!append && feedResponse.count > lastPublicationCount) {
+        setHasNewPublications(true);
+      }
+      setLastPublicationCount(feedResponse.count);
+
+      // Try to fetch producer page data if user is authenticated (only on initial load)
+      if (!append) {
         const producerPagesData: {[key: number]: ProducerPage} = {};
         
         try {
@@ -133,38 +152,76 @@ const HomePage: React.FC = () => {
         }
         
         setProducerPages(producerPagesData);
-        
-      } catch (err) {
-        // Handle different types of errors more gracefully
-        let errorMessage = 'Failed to load publications';
-        
-        if (err && typeof err === 'object') {
-          // Handle API error responses
-          if ('detail' in err && typeof err.detail === 'string') {
-            errorMessage = err.detail;
-          } else if ('message' in err && typeof err.message === 'string') {
-            errorMessage = err.message;
-          }
-        } else if (err instanceof Error) {
+      }
+
+    } catch (err) {
+      // Handle different types of errors more gracefully
+      let errorMessage = 'Failed to load publications';
+
+      if (err && typeof err === 'object') {
+        // Handle API error responses
+        if ('detail' in err && typeof err.detail === 'string') {
+          errorMessage = err.detail;
+        } else if ('message' in err && typeof err.message === 'string') {
           errorMessage = err.message;
         }
-        
-        setError(errorMessage);
-        console.error('Failed to load publications:', err);
-        
-        // Set empty arrays so the UI can still render
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      console.error('Failed to load publications:', err);
+
+      // Set empty arrays so the UI can still render
+      if (!append) {
         setPublications([]);
         setProducerPages({});
-      } finally {
-        if (initialLoad) {
-          setLoading(false);
-          setInitialLoad(false);
+      }
+    } finally {
+      if (!append) {
+        setLoading(false);
+        setInitialLoad(false);
+      } else {
+        setLoadingMore(false);
+      }
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    // Wait for auth context to be ready before making any requests
+    if (userData === undefined) {
+      if (import.meta.env.DEV) {
+        console.log('⏳ Waiting for auth context to initialize...');
+      }
+      return;
+    }
+
+    fetchPublications(1, false);
+  }, [userData]); // Add userData as dependency so it refetches when user logs in
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          // Load next page when bottom element is visible
+          fetchPublications(currentPage + 1, true);
         }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
       }
     };
-
-    fetchPublicationsAndProducers();
-  }, [userData]); // Add userData as dependency so it refetches when user logs in
+  }, [hasMore, loadingMore, loading, currentPage]);
 
   // Pull to refresh callback
   const handleRefresh = async () => {
@@ -600,23 +657,64 @@ const HomePage: React.FC = () => {
                   <PostCard
                     key={publication.id}
                     id={publication.id.toString()}
-                    producerName={producerPage?.name || 'Producteur inconnu'}
+                    producerName={publication.page_name || producerPage?.name || 'Producteur inconnu'}
                     producerAvatar={producerPage?.logo || '/icons/account_icon.svg'}
-                    postImage={publication.picture || '/icons/autofish_blue_logo.svg'}
+                    postImage={publication.picture_url || publication.picture || '/icons/autofish_blue_logo.svg'}
                     description={publication.description}
                     date={publication.date_posted}
-                    likes={publication.likes}
+                    likes={publication.likes_count || publication.likes || 0}
                     comments={0} // TODO: Implement comments system
-                    category={publication.category.name}
+                    category={publication.category_name || publication.category.name}
                     location={publication.location}
                     price={publication.price}
+                    producerPhone={publication.producer_phone || producerPage?.telephone}
+                    postTitle={publication.title}
                     onLike={() => handleLike(publication.id)}
                     onComment={() => handleComment(publication.id)}
                     onProducerClick={() => handleProducerClick(publication.producer || 0)}
-                    isLiked={likedPosts.includes(publication.id.toString())}
+                    isLiked={publication.is_liked !== undefined ? publication.is_liked : likedPosts.includes(publication.id.toString())}
                   />
                 );
               })}
+
+              {/* Loading more indicator */}
+              {loadingMore && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  padding: '30px 0',
+                  color: '#009CB7'
+                }}>
+                  <div style={{
+                    border: '3px solid #f3f3f3',
+                    borderTop: '3px solid #009CB7',
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                </div>
+              )}
+
+              {/* Intersection observer target for infinite scroll */}
+              <div
+                ref={observerTarget}
+                style={{ height: '10px', width: '100%' }}
+                aria-hidden="true"
+              />
+
+              {/* No more posts message */}
+              {!hasMore && publications.length > 0 && (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '20px 0',
+                  color: '#999',
+                  fontSize: '14px'
+                }}>
+                  Vous avez vu toutes les publications
+                </div>
+              )}
+
               {/* Spacer element to add 100px after the last post */}
               <div style={{ height: '100px', width: '100%' }} aria-hidden="true" />
             </div>
