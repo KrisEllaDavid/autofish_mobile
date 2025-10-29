@@ -75,13 +75,11 @@ interface FormData {
   city: string;
   user_type: 'producer' | 'consumer';
   terms_accepted: boolean;
-   // Country is required for both; address for producers; keep city as town
-   country: string;
-   address: string;
-  description: string;
-  categories: string[]; // Category IDs
-  recto_id: File | null;
-  verso_id: File | null;
+  // Country is required for both users
+  country: string;
+  // Address only needed for producers (will be collected later)
+  // description removed from initial form - will be collected later in workflow
+  // categories, recto_id, verso_id, profile_picture handled in later steps
   profile_picture: File | null;
 }
 const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
@@ -96,13 +94,8 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     city: "",
     user_type: 'consumer',
     terms_accepted: false,
-    // Producer-specific fields
+    // Required for both user types
     country: "",
-    address: "",
-    description: "",
-    categories: [],
-    recto_id: null,
-    verso_id: null,
     profile_picture: null,
   });
   // Country dialing code (only Cameroun and Congo per requirements)
@@ -218,21 +211,17 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         code: countryCode,
         userRole: formData.user_type === 'producer' ? 'producteur' as const : 'client' as const,
         terms_accepted: acceptTerms,
-        // Use city as address for now (will be collected later for producers)
-        address: formData.city,
-        description: formData.description,
-        selectedCategories: formData.categories,
-        recto_id: formData.recto_id,
-        verso_id: formData.verso_id,
+        // For producers, address will be collected later; for consumers, use city as address
+        address: formData.user_type === 'consumer' ? formData.city : '',
         profile_picture: formData.profile_picture,
       } as any;
       updateUserData(signupData);
 
-      // Navigate according to selected role, skipping redundant profile choice step
+      // Navigate according to selected role
       if (formData.user_type === 'producer') {
         setGoToIDVerification(true);
       } else {
-        // Consumers go to categories, then ContactInfoPage will register
+        // Consumers go to categories, then directly register (no need for ContactInfoPage)
         setGoToCategories(true);
       }
     }

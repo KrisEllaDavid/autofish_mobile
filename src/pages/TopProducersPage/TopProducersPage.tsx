@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import "./TopProducersPage.css";
 import TopNavBar from "../../components/TopNavBar";
-import PullToRefreshIndicator from "../../components/PullToRefresh";
-import { usePullToRefresh } from "../../hooks/usePullToRefresh";
 import { useApiWithLoading } from "../../services/apiWithLoading";
 import { ProducerPage } from "../../services/api";
 import { imageService } from "../../services/imageService";
+import { normalizeImageUrl } from "../../utils/imageUtils";
 
 interface Producer {
   id: number;
@@ -35,7 +34,7 @@ const convertProducerPageToProducer = (producerPage: ProducerPage): Producer => 
   avatar: producerPage.logo || imageService.getFallbackImageUrl('logos'),
   specialty: producerPage.categories.map(cat => cat.name).join(', ') || 'Producteur',
   location: `${producerPage.city}, ${producerPage.country}`,
-  rating: 4.5, // TODO: Implement actual rating system
+  rating: 4.5, // Placeholder rating - would need to be implemented in API
   isVerified: producerPage.is_validated,
 });
 
@@ -101,11 +100,6 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
       }
     };
 
-  // Pull to refresh hook
-  const pullToRefresh = usePullToRefresh({
-    onRefresh: fetchProducers,
-    threshold: 80,
-  });
 
   useEffect(() => {
     fetchProducers();
@@ -127,12 +121,16 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
 
   const handleProducerClick = (producerId: number) => {
     console.log("Navigate to producer profile:", producerId);
-    // TODO: Navigate to producer detail page
+    // Navigate to producer detail page
+    // This would typically use React Router or Ionic Router
+    window.location.href = `/producer/${producerId}`;
   };
 
   const handleViewProfile = (producerId: number) => {
     console.log("View producer profile:", producerId);
-    // TODO: Navigate to producer profile view
+    // Navigate to producer profile view
+    // This would typically use React Router or Ionic Router
+    window.location.href = `/producer/${producerId}/profile`;
   };
 
   return (
@@ -148,17 +146,9 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
         activeTab={activeTab}
       />
 
-      <div 
-        className="producers-content" 
-        ref={pullToRefresh.containerRef}
-        style={{ position: 'relative' }}
+      <div
+        className="producers-content"
       >
-        <PullToRefreshIndicator
-          show={pullToRefresh.showIndicator}
-          text={pullToRefresh.indicatorText}
-          opacity={pullToRefresh.indicatorOpacity}
-          isRefreshing={pullToRefresh.isRefreshing}
-        />
         {/* Search Section */}
         <div className="search-section">
           <div className="search-input-container">
@@ -245,7 +235,7 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
             >
               <div className="producer-avatar">
                 <img
-                  src={producer.avatar}
+                  src={normalizeImageUrl(producer.avatar)}
                   alt={producer.name}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = imageService.getFallbackImageUrl('logos');

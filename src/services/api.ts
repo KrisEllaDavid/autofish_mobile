@@ -7,10 +7,8 @@ import { CapacitorHttp } from '@capacitor/core';
 // Detect mobile runtime (kept for potential platform-specific handling)
 const isMobile = typeof window !== 'undefined' && window.location.protocol === 'capacitor:';
 
-// API Configuration - Prefer explicit env override; else use same-origin during web dev (proxy handles CORS)
-const API_BASE_URL = (typeof import.meta.env.VITE_API_BASE_URL !== 'undefined')
-  ? import.meta.env.VITE_API_BASE_URL
-  : ((!isMobile && import.meta.env.DEV) ? '' : 'https://api.autofish.store');
+// API Configuration - Always use production API directly
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.autofish.store';
 
 // Base URL resolved above depending on environment
 const baseURL = API_BASE_URL;
@@ -45,25 +43,28 @@ export interface UserType {
   user_categories: any[];
   id_card_info: any;
   favorites: any[];
+  // New fields for producer verification status
+  access_level?: 'full' | 'limited' | 'admin';
+  status_message?: string;
 }
 
 export interface UserRegistrationRequest {
   email: string;
   password: string;
   password2: string;
-  first_name?: string;
-  last_name?: string;
-  phone?: string;
-  city?: string;
-  user_type?: 'producer' | 'consumer';
-  terms_accepted?: boolean;
-  profile_picture?: string | File;
-  country?: string;
-  address?: string;
+  first_name: string;  // Required
+  last_name: string;   // Required
+  phone: string;       // Required
+  city: string;        // Required
+  user_type: 'producer' | 'consumer';  // Required
+  terms_accepted: boolean;  // Required
+  profile_picture?: string | File;  // Will be converted to base64 string
+  country?: string;    // Required for producers
+  address?: string;    // Required for producers
   description?: string;
-  categories?: number[];
-  recto_id?: string | File;
-  verso_id?: string | File;
+  categories?: number[]; // Required for producers
+  recto_id?: string | File; // Required for producers, will be converted to base64 string
+  verso_id?: string | File; // Required for producers, will be converted to base64 string
 }
 
 export interface LoginRequest {
@@ -416,14 +417,14 @@ class ApiClient {
     try {
       let response: Response;
       
-      // Unified request handling - prefer CapacitorHttp when available for consistency
-      // This ensures the same request mechanism is used regardless of platform
-      if (isMobile && typeof CapacitorHttp !== 'undefined') {
+      // Use fetch for FormData uploads, CapacitorHttp for regular requests
+      // CapacitorHttp doesn't handle FormData properly, so we use fetch for file uploads
+      if (isMobile && typeof CapacitorHttp !== 'undefined' && !(options.body instanceof FormData)) {
         const capacitorOptions = {
           url,
           method: (options.method || 'GET') as any,
           headers,
-          data: options.body instanceof FormData ? undefined : (typeof options.body === 'string' ? options.body : JSON.stringify(options.body)),
+          data: (typeof options.body === 'string' ? options.body : JSON.stringify(options.body)),
         };
         
         if (import.meta.env.DEV) {
@@ -712,53 +713,91 @@ class ApiClient {
   // ================================
 
   async register(userData: UserRegistrationRequest): Promise<RegisterResponse> {
-    // Create FormData for file uploads
-    const formData = new FormData();
-    
-    // Add all fields to FormData
-    Object.entries(userData).forEach(([key, value]) => {
-      if (value instanceof File) {
-        // Add files directly
-        formData.append(key, value);
-      } else if (Array.isArray(value)) {
-        // For categories array, append each category
-        value.forEach((item) => {
-          formData.append(key, item.toString());
-        });
-      } else if (value !== undefined && value !== null) {
-        // For all other values, convert to string
-        formData.append(key, String(value));
+    // Helper function to convert base64 to File
+    const base64ToFile = (base64String: string, filename: string): File => {
+      const arr = base64String.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
       }
-    });
-    
-    // Debug: Log the FormData being sent
-    console.log('Sending registration data as FormData');
-    console.log('API URL:', `${this.baseURL}/api/auth/register/`);
-    
-    // Log FormData contents for debugging
-    for (let [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`FormData ${key}:`, {
-          name: value.name,
-          size: value.size,
-          type: value.type,
-          lastModified: value.lastModified
-        });
-      } else {
-        console.log(`FormData ${key}:`, value);
+
+      return new File([u8arr], filename, { type: mime });
+    };
+
+    // Use FormData for file uploads instead of JSON
+    const formData = new FormData();
+
+    // Add all non-file fields to FormData
+    formData.append('email', userData.email);
+    formData.append('password', userData.password);
+    formData.append('password2', userData.password2);
+    formData.append('first_name', userData.first_name);
+    formData.append('last_name', userData.last_name);
+    formData.append('phone', userData.phone || '');
+    formData.append('city', userData.city || '');
+    formData.append('user_type', userData.user_type);
+    formData.append('terms_accepted', userData.terms_accepted.toString());
+
+    // Add optional fields if they exist
+    if (userData.country) formData.append('country', userData.country);
+    if (userData.address) formData.append('address', userData.address);
+    if (userData.description) formData.append('description', userData.description);
+
+    // Add categories array
+    if (userData.categories && userData.categories.length > 0) {
+      userData.categories.forEach(categoryId => {
+        formData.append('categories', categoryId.toString());
+      });
+    }
+
+    // Handle file fields - convert base64 to File if needed
+    if (userData.profile_picture instanceof File) {
+      formData.append('profile_picture', userData.profile_picture);
+    } else if (typeof userData.profile_picture === 'string' && userData.profile_picture.startsWith('data:image/')) {
+      const profileFile = base64ToFile(userData.profile_picture, 'profile_picture.jpg');
+      formData.append('profile_picture', profileFile);
+    }
+
+    if (userData.recto_id instanceof File) {
+      formData.append('recto_id', userData.recto_id);
+    } else if (typeof userData.recto_id === 'string' && userData.recto_id.startsWith('data:image/')) {
+      const rectoFile = base64ToFile(userData.recto_id, 'recto_id.jpg');
+      formData.append('recto_id', rectoFile);
+    }
+
+    if (userData.verso_id instanceof File) {
+      formData.append('verso_id', userData.verso_id);
+    } else if (typeof userData.verso_id === 'string' && userData.verso_id.startsWith('data:image/')) {
+      const versoFile = base64ToFile(userData.verso_id, 'verso_id.jpg');
+      formData.append('verso_id', versoFile);
+    }
+
+    // Debug logging for development
+    if (import.meta.env.DEV) {
+      console.log('📋 Registration request - FormData entries:');
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`📋 ${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        } else {
+          console.log(`📋 ${key}:`, value);
+        }
       }
     }
-    
+
     const result = await this.makeRequest<RegisterResponse>('/api/auth/register/', {
       method: 'POST',
-      body: formData,
+      body: formData, // Send FormData instead of JSON
     });
-    
+
     // Auto-login: save tokens if backend returned them
     if ((result as any)?.tokens?.access && (result as any)?.tokens?.refresh) {
       this.saveTokensToStorage((result as any).tokens.access, (result as any).tokens.refresh);
     }
-    
+
     return result;
   }
 
@@ -1200,6 +1239,23 @@ class ApiClient {
 
   isAuthenticated(): boolean {
     return !!this.accessToken;
+  }
+
+  async validateToken(): Promise<boolean> {
+    if (!this.accessToken) {
+      return false;
+    }
+
+    try {
+      await this.getCurrentUser();
+      return true;
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.log('🔍 Token validation failed:', error);
+      }
+      this.clearTokensFromStorage();
+      return false;
+    }
   }
 
   // Utility method to handle API errors

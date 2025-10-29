@@ -135,10 +135,11 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
     borderBottom: "1px solid #f0f0f0"
   };
 
-  const dropdownItemHoverStyle: React.CSSProperties = {
-    ...dropdownItemStyle,
-    backgroundColor: "#f8f9fa"
-  };
+  // Hover style would be used with CSS-in-JS hover pseudo-selectors if needed
+  // const dropdownItemHoverStyle: React.CSSProperties = {
+  //   ...dropdownItemStyle,
+  //   backgroundColor: "#f8f9fa"
+  // };
 
   return (
     <>
@@ -185,7 +186,7 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
 
         {isOpen && (
           <div style={dropdownListStyle}>
-            {options.map((option, index) => (
+            {options.map((option) => (
               <div
                 key={option.value}
                 className="unified-dropdown-item"

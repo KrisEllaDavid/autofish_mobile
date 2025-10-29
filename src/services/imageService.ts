@@ -1,13 +1,17 @@
 // AutoFish Image Service
 // Handles image uploads, retrieval, and management with the dedicated image server
 
-const IMAGE_SERVER_URL = 'http://31.97.178.131:3001';
+const IMAGE_SERVER_URL = import.meta.env.VITE_IMAGE_SERVER_URL || 'http://31.97.178.131:3001';
 const isDev = import.meta.env.DEV;
 const isMobile = typeof window !== 'undefined' && window.location.protocol === 'capacitor:';
 
-// Use proxy for web development, direct URL for mobile and production
+// Use direct image server for uploads, proxy for serving
 const getImageServerBaseUrl = () => {
   return (isDev && !isMobile) ? '/image-server' : IMAGE_SERVER_URL;
+};
+
+const getImageProxyBaseUrl = () => {
+  return 'https://api.autofish.store/api/image-proxy';
 };
 
 export interface ImageUploadResponse {
@@ -69,10 +73,10 @@ class ImageService {
   }
 
   /**
-   * Get image URL for serving
+   * Get image URL for serving (uses HTTPS proxy)
    */
   getImageUrl(category: ImageCategory, filename: string): string {
-    return `${this.baseURL}/images/${category}/${filename}`;
+    return `${getImageProxyBaseUrl()}/${category}/${filename}`;
   }
 
   /**

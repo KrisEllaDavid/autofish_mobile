@@ -23,6 +23,15 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      // Allow unused variables if they start with underscore
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
+      ],
+      // Allow any type in some cases (can be gradually removed)
+      '@typescript-eslint/no-explicit-any': 'warn',
+      // Allow ts-ignore with warning
+      '@typescript-eslint/ban-ts-comment': 'warn',
     },
   },
 )

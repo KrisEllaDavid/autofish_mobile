@@ -18,18 +18,12 @@ const countries = [
 const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { userData, updateUserData, register, clearError, completeRegistration } = useAuth();
   
-  // Business page information
+  // Business page information only (personal info already collected in SignupPage)
   const [pageName, setPageName] = useState(userData?.page?.pageName || "");
-  const [country, setCountry] = useState(userData?.page?.country || countries[0].name);
-  const [countryCode, setCountryCode] = useState(userData?.page?.code || countries[0].code);
-  const [address, setAddress] = useState(userData?.page?.address || "");
-  const [phone, setPhone] = useState(userData?.page?.phone || "");
-  
-  // Personal contact information (required by API at root level)
-  const [personalCountry, setPersonalCountry] = useState(userData?.country || countries[0].name);
-  const [personalCountryCode, setPersonalCountryCode] = useState(userData?.code || countries[0].code);
-  const [personalAddress, setPersonalAddress] = useState(userData?.address || "");
-  const [personalPhone, setPersonalPhone] = useState(userData?.phone || "");
+  const [businessCountry, setBusinessCountry] = useState(userData?.page?.country || userData?.country || countries[0].name);
+  const [businessCountryCode, setBusinessCountryCode] = useState(userData?.page?.code || userData?.code || countries[0].code);
+  const [businessAddress, setBusinessAddress] = useState(userData?.page?.address || userData?.address || "");
+  const [businessPhone, setBusinessPhone] = useState(userData?.page?.phone || "");
   
   // Removed individual dropdown state - now handled by components
   const [showPreview, setShowPreview] = useState(false);
@@ -37,7 +31,7 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [showHomePage, setShowHomePage] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
 
-  const isValid = pageName && country && address && phone && personalCountry && personalAddress && personalPhone;
+  const isValid = pageName && businessCountry && businessAddress && businessPhone;
 
   if (showHomePage) {
     return <HomePage />;
@@ -45,18 +39,13 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const handleShowPreview = () => {
     updateUserData({
-      // Personal contact info (required by API at root level)
-      country: personalCountry,
-      address: personalAddress,
-      phone: personalPhone,
-      code: personalCountryCode,
-      // Business page info
+      // Business page info only (personal info already exists from SignupPage)
       page: {
         pageName,
-        country: country,
-        address: address,
-        phone: phone,
-        code: countryCode,
+        country: businessCountry,
+        address: businessAddress,
+        phone: businessPhone,
+        code: businessCountryCode,
       },
     });
     setShowPreview(true);
@@ -66,20 +55,15 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     // Clear any previous errors
     clearError();
     
-    // Update both personal and business info
+    // Update business page info only (personal info already exists from SignupPage)
     const updatedData = {
-      // Personal contact info (required by API at root level)
-      country: personalCountry,
-      address: personalAddress,
-      phone: personalPhone,
-      code: personalCountryCode,
       // Business page info
       page: {
         pageName,
-        country: country,
-        address: address,
-        phone: phone,
-        code: countryCode,
+        country: businessCountry,
+        address: businessAddress,
+        phone: businessPhone,
+        code: businessCountryCode,
       },
     };
     
@@ -88,15 +72,10 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     // Wait a bit longer to ensure userData is updated from ContactInfoPage
     setTimeout(async () => {
       try {
-        // Get the complete user data (including both personal and page info just updated)
-        const completeUserData = { 
-          ...userData, 
-          ...updatedData,
-          // Ensure personal contact info is available at the root level for validation
-          phone: personalPhone,
-          code: personalCountryCode,
-          country: personalCountry,
-          address: personalAddress
+        // Get the complete user data (personal info from SignupPage + business page info)
+        const completeUserData = {
+          ...userData,
+          ...updatedData
         };
         
         // Debug: Log the complete user data
@@ -273,38 +252,6 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           }}
         >
           <div style={{ fontSize: 20, fontWeight: 700, color: "#222", marginBottom: 24, textAlign: "center" }}>
-            Informations personnelles
-          </div>
-          
-          <CountryDropdown
-            countries={countries}
-            selectedCountry={personalCountry}
-            selectedCode={personalCountryCode}
-            onCountryChange={(country, code) => {
-              setPersonalCountry(country);
-              setPersonalCountryCode(code);
-            }}
-            label="Quel est votre pays de résidence ?"
-            placeholder="Sélectionnez votre pays"
-          />
-          
-          <AddressInput
-            address={personalAddress}
-            onAddressChange={setPersonalAddress}
-            label="Quelle est votre adresse personnelle (Ville, Quartier)"
-            placeholder="Entrez votre adresse personnelle"
-          />
-          
-          <PhoneInput
-            countryCode={personalCountryCode}
-            phoneNumber={personalPhone}
-            onPhoneChange={setPersonalPhone}
-            onCountryCodeClick={() => {}} // Country code changes through dropdown above
-            label="Quel est votre numéro de téléphone personnel?"
-            placeholder="Entrez votre numéro personnel"
-          />
-
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#222", marginBottom: 24, textAlign: "center", marginTop: 32 }}>
             Informations de votre page business
           </div>
 
@@ -319,28 +266,28 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           />
           <CountryDropdown
             countries={countries}
-            selectedCountry={country}
-            selectedCode={countryCode}
+            selectedCountry={businessCountry}
+            selectedCode={businessCountryCode}
             onCountryChange={(country, code) => {
-              setCountry(country);
-              setCountryCode(code);
+              setBusinessCountry(country);
+              setBusinessCountryCode(code);
             }}
             label="Quelle est votre pays de vente ?"
             placeholder="Sélectionnez votre pays"
           />
           <AddressInput
-            address={address}
-            onAddressChange={setAddress}
-            label="Quel est votre adresse (Ville, Quartier)"
-            placeholder="Entrez votre adresse"
+            address={businessAddress}
+            onAddressChange={setBusinessAddress}
+            label="Quel est votre adresse business (Ville, Quartier)"
+            placeholder="Entrez votre adresse business"
           />
           <PhoneInput
-            countryCode={countryCode}
-            phoneNumber={phone}
-            onPhoneChange={setPhone}
+            countryCode={businessCountryCode}
+            phoneNumber={businessPhone}
+            onPhoneChange={setBusinessPhone}
             onCountryCodeClick={() => {}} // Country code changes through dropdown above
-            label="Quel est votre numéro de téléphone?"
-            placeholder="Entrez votre numéro de téléphone"
+            label="Quel est votre numéro de téléphone business?"
+            placeholder="Entrez votre numéro de téléphone business"
           />
           <button
             className="preview-btn"

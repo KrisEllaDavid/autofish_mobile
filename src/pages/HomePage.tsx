@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import TopNavBar from "../components/TopNavBar";
 import BottomNavBar from "../components/BottomNavBar";
 import PostCard from "../components/PostCard";
-import PullToRefreshIndicator from "../components/PullToRefresh";
-import { usePullToRefresh } from "../hooks/usePullToRefresh";
+import VerificationStatusBanner from "../components/VerificationStatusBanner";
 import useLocalStorage from "../hooks/useLocalStorage";
 import "./HomePage.css";
 import NotificationsPage from "./Notifications/NotificationsPage";
@@ -33,6 +32,8 @@ const HomePage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [lastPublicationCount, setLastPublicationCount] = useLocalStorage<number>('lastPublicationCount', 0);
+  const [hasNewPublications, setHasNewPublications] = useState<boolean>(false);
   const [likedPosts, setLikedPosts] = useLocalStorage<string[]>(
     "likedPosts",
     []
@@ -65,6 +66,12 @@ const HomePage: React.FC = () => {
         // Get public feed (all validated publications) - this is always public
         const publicationsData = await api.getPublicFeed();
         setPublications(publicationsData);
+
+        // Check for new publications
+        if (!initialLoad && publicationsData.length > lastPublicationCount) {
+          setHasNewPublications(true);
+        }
+        setLastPublicationCount(publicationsData.length);
         
         // Try to fetch producer page data if user is authenticated
         const producerPagesData: {[key: number]: ProducerPage} = {};
@@ -225,11 +232,7 @@ const HomePage: React.FC = () => {
     }
   };
 
-  // Pull to refresh hook
-  const pullToRefresh = usePullToRefresh({
-    onRefresh: handleRefresh,
-    threshold: 80,
-  });
+  // Removed pull-to-refresh feature
 
   // Sort publications, prioritizing user's selected categories
   const sortedPublications = useMemo(() => {
@@ -355,6 +358,8 @@ const HomePage: React.FC = () => {
   // TopNavBar notification click
   const handleNotificationClick = () => {
     setOverlay(Overlay.Notifications);
+    // Clear new publications indicator when user checks notifications
+    setHasNewPublications(false);
   };
 
   // TopNavBar my page click
@@ -493,6 +498,7 @@ const HomePage: React.FC = () => {
         userRole={userData?.userRole}
         onMyPageClick={handleMyPageClick}
         activeTab={activeTab}
+        hasNewPublications={hasNewPublications}
       />
       {/* Search Bar */}
       <div
@@ -533,19 +539,15 @@ const HomePage: React.FC = () => {
         </div>
       </div>
 
+      {/* Verification Status Banner */}
+      <VerificationStatusBanner />
+
       {/* Content */}
       <div className="content">
-        <div 
-          className="posts-feed" 
-          ref={pullToRefresh.containerRef}
+        <div
+          className="posts-feed"
           style={{ position: 'relative' }}
         >
-          <PullToRefreshIndicator
-            show={pullToRefresh.showIndicator}
-            text={pullToRefresh.indicatorText}
-            opacity={pullToRefresh.indicatorOpacity}
-            isRefreshing={pullToRefresh.isRefreshing}
-          />
           {loading && initialLoad ? (
             <div style={{ textAlign: "center", padding: "20px" }}>
               <div style={{

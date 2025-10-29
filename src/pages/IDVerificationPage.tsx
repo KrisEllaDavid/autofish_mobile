@@ -2,7 +2,6 @@ import React, { useState, useRef } from "react";
 import Webcam from "react-webcam";
 import NavBar from "../components/NavBar";
 import CategoriesPage from "./CategoriesPage/CategoriesPage";
-import ProducerDescriptionPage from "./ProducerDescriptionPage";
 import { useAuth } from "../context/AuthContext";
 import CameraPermissionRequest from "../components/CameraPermissionRequest";
 import { checkCameraSupport, getAvailableCameras } from "../utils/cameraUtils";
@@ -26,7 +25,6 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
   const [versoImage, setVersoImage] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [goToCategories, setGoToCategories] = useState(false);
-  const [goToDescription, setGoToDescription] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
   const [showPermissionRequest, setShowPermissionRequest] = useState(false);
   const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false);
@@ -117,30 +115,13 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
     setCameraError("Accès à la caméra refusé");
   };
 
-  if (goToDescription) {
-    return (
-      <ProducerDescriptionPage
-        onBack={() => setGoToDescription(false)}
-        onContinue={(description) => {
-          updateUserData({ description });
-          setGoToDescription(false);
-          setGoToCategories(true);
-        }}
-      />
-    );
-  }
 
   if (goToCategories) {
     return (
       <CategoriesPage
         profileType={profileType}
         onBack={() => {
-          if (profileType === 'producer') {
-            setGoToCategories(false);
-            setGoToDescription(true);
-          } else {
-            setGoToCategories(false);
-          }
+          setGoToCategories(false);
         }}
       />
     );
@@ -317,11 +298,9 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
             }}
             disabled={!(rectoImage && versoImage)}
             onClick={() => {
-              if (profileType === 'producer') {
-                setGoToDescription(true);
-              } else {
-                setGoToCategories(true);
-              }
+              // Both producers and consumers go to categories after ID verification
+              // Address for producers will be collected in PageCreationPage
+              setGoToCategories(true);
             }}
           >
             Poursuivre

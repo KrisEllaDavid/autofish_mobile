@@ -92,8 +92,19 @@ const LoginPage: React.FC<LoginPageProps> = ({
     }
     
     try {
-      await login({ email: email.trim(), password });
+      const loginResult = await login({ email: email.trim(), password });
+
+      // Show success message and any status messages from backend
       toast.success("Connexion réussie!");
+
+      // Show verification status if it's a producer with limited access
+      if (loginResult && loginResult.status_message) {
+        // Add a slight delay to show the status message after success
+        setTimeout(() => {
+          toast.info(loginResult.status_message, { autoClose: 8000 });
+        }, 1000);
+      }
+
       setShowHomePage(true);
     } catch {
       // Error is handled by AuthContext and displayed via error state

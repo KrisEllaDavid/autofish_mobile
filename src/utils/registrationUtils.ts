@@ -128,14 +128,14 @@ export const parseUserDataForClientRegistration = (
   // Split the full name
   const { firstName, lastName } = splitName(userData.name || '');
   
-  // Convert avatar to File if present; prefer direct profile_picture File from context
-  let profilePicture: File | undefined;
+  // Handle profile picture - keep as File or base64 string
+  let profilePicture: File | string | undefined;
   if (userData.profile_picture instanceof File) {
     profilePicture = userData.profile_picture as File;
   } else if (userData.avatar && userData.avatar.startsWith('data:image/')) {
-    profilePicture = base64ToFile(userData.avatar, 'profile_picture.jpg');
+    profilePicture = userData.avatar; // Keep as base64 string, API service will convert
   }
-  
+
   // Map user role to API format
   const userType = userData.userRole === 'producteur' ? 'producer' : 'consumer';
   
@@ -179,7 +179,7 @@ export const parseUserDataForClientRegistration = (
     password2: password, // Confirm password (same as password)
     first_name: firstName,
     last_name: lastName,
-    phone: formattedPhone,
+    phone: formattedPhone || '',
     city: city,
     user_type: userType,
     terms_accepted: true, // User already accepted terms in signup flow
@@ -215,14 +215,14 @@ export const parseUserDataForProducerRegistration = (
   // Split the full name
   const { firstName, lastName } = splitName(userData.name || '');
   
-  // Convert avatar to File if present; prefer direct profile_picture File from context
-  let profilePicture: File | undefined;
+  // Handle profile picture - keep as File or base64 string
+  let profilePicture: File | string | undefined;
   if (userData.profile_picture instanceof File) {
     profilePicture = userData.profile_picture as File;
   } else if (userData.avatar && userData.avatar.startsWith('data:image/')) {
-    profilePicture = base64ToFile(userData.avatar, 'profile_picture.jpg');
+    profilePicture = userData.avatar; // Keep as base64 string, API service will convert
   }
-  
+
   // Format phone number with country code
   let formattedPhone: string | undefined;
   if (userData.phone && userData.code) {
@@ -242,26 +242,26 @@ export const parseUserDataForProducerRegistration = (
     formattedPhone = userData.phone;
   }
   
-  // For producers, use page data if available, otherwise use main user data
+  // For producers, use personal data first, then page data as fallback
   const pageData = userData.page || {};
-  
-  // Use explicit city from signup form, or split address if needed
+
+  // Use personal address from signup form first (required for producer verification)
   let city = userData.city || '';
   let address = userData.address || '';
-  
-  // If we have page data with different address, use that
-  if (pageData.address && pageData.address !== userData.address) {
-    const split = splitAddress(pageData.address);
-    city = split.city;
-    address = split.address;
-  } else if (!city && userData.address) {
-    // Fallback: if no explicit city but we have address, try to split it
-    const split = splitAddress(userData.address);
-    city = split.city;
-    address = split.address;
+
+  // If no personal address but we have page address, use that as fallback
+  if (!address && pageData.address) {
+    address = pageData.address;
   }
-  
-  // Ensure we have at least city
+
+  // If we still don't have city, try to split the address
+  if (!city && address) {
+    const split = splitAddress(address);
+    city = split.city;
+    // Keep full address for the address field
+  }
+
+  // Ensure we have at least city (use address as city if needed)
   if (!city && address) {
     city = address;
   }
@@ -269,22 +269,31 @@ export const parseUserDataForProducerRegistration = (
   // Prefer using category IDs if available; fallback to static name mapping
   const categoryIndices = userData.selectedCategories ? normalizeCategoryIds(userData.selectedCategories) : [];
   
-  // Convert ID verification images to Files if present
-  let rectoIdFile: File | undefined;
-  let versoIdFile: File | undefined;
-  
+  // Handle ID verification images - keep as base64 strings, API service will convert
+  let rectoIdFile: string | undefined;
+  let versoIdFile: string | undefined;
+
   if (userData.idRecto && userData.idRecto.startsWith('data:image/')) {
-    rectoIdFile = base64ToFile(userData.idRecto, 'recto_id.jpg');
+    rectoIdFile = userData.idRecto; // Keep as base64 string
   }
-  
+
   if (userData.idVerso && userData.idVerso.startsWith('data:image/')) {
-    versoIdFile = base64ToFile(userData.idVerso, 'verso_id.jpg');
+    versoIdFile = userData.idVerso; // Keep as base64 string
   }
   
-  // Get phone and country from page data if available, otherwise use main data
-  let finalPhone = (pageData.phone && pageData.code) 
-    ? `${pageData.code}${pageData.phone.replace(/\D/g, '')}` 
-    : formattedPhone;
+  // Use personal phone first (required for producer verification), then page data as fallback
+  let finalPhone = formattedPhone;
+
+  // If no personal phone but we have page phone, use that as fallback
+  if (!finalPhone && pageData.phone && pageData.code) {
+    const cleanPagePhone = pageData.phone.replace(/\D/g, '');
+    const codeWithoutPlus = pageData.code.replace('+', '');
+    if (cleanPagePhone.startsWith(codeWithoutPlus)) {
+      finalPhone = `+${cleanPagePhone}`;
+    } else {
+      finalPhone = `${pageData.code}${cleanPagePhone}`;
+    }
+  }
   
   // Ensure phone number is properly formatted
   if (finalPhone) {
@@ -302,7 +311,8 @@ export const parseUserDataForProducerRegistration = (
     }
   }
   
-  const finalCountry = pageData.country || userData.country || '';
+  // Use personal country first (required for producer verification), then page data as fallback
+  const finalCountry = userData.country || pageData.country || '';
   
   // Ensure description is not empty for producers
   const finalDescription = userData.description || 'Producteur sur AutoFish';
@@ -316,7 +326,7 @@ export const parseUserDataForProducerRegistration = (
     password2: password, // Confirm password (same as password)
     first_name: firstName,
     last_name: lastName,
-    phone: finalPhone,
+    phone: finalPhone || '',
     city: city,
     user_type: 'producer', // Always producer for this function
     terms_accepted: true, // User already accepted terms in signup flow
@@ -325,8 +335,8 @@ export const parseUserDataForProducerRegistration = (
     address: address,
     description: finalDescription, // Required for producers
     categories: finalCategories,
-    recto_id: rectoIdFile, // Send as File
-    verso_id: versoIdFile  // Send as File
+    recto_id: rectoIdFile, // Send as base64 string, API will convert
+    verso_id: versoIdFile  // Send as base64 string, API will convert
   };
   
   // Ensure all required fields are present and not empty

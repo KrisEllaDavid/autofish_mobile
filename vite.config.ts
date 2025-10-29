@@ -1,48 +1,73 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import fs from 'fs';
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import fs from "fs";
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     https: {
-      key: fs.readFileSync('./certs/local-key.pem'),
-       cert: fs.readFileSync('./certs/local-cert.pem'),
-  },
-    host: '0.0.0.0', // Use localhost for camera access over HTTP
+      key: fs.readFileSync("./certs/local-key.pem"),
+      cert: fs.readFileSync("./certs/local-cert.pem"),
+    },
+    host: "0.0.0.0", // Use localhost for camera access over HTTP
     //host: 'localhost', // Use localhost for camera access over HTTP
     port: 5173, // Default Vite port
     strictPort: true, // Fail if port is already in use
-    
+
     // Proxy API requests to avoid CORS during web development only
     // Mobile apps use CapacitorHttp which bypasses CORS naturally
     // This allows web development while keeping mobile implementation unchanged
     proxy: {
-      '/api': {
-        target: 'https://api.autofish.store',
+      "/api": {
+        target: "https://api.autofish.store",
         changeOrigin: true,
         secure: false,
         proxyTimeout: 30000,
         timeout: 30000,
         ws: false,
         configure: (proxy) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.error('[vite-proxy:/api] error:', err.message);
+          proxy.on("error", (err, _req, _res) => {
+            console.error("[vite-proxy:/api] error:", err.message);
           });
-          proxy.on('proxyReq', (_proxyReq, req) => {
-            console.log('[vite-proxy:/api] ->', req.method, req.url);
+          proxy.on("proxyReq", (_proxyReq, req) => {
+            console.log("[vite-proxy:/api] ->", req.method, req.url);
           });
-          proxy.on('proxyRes', (proxyRes, req) => {
-            console.log('[vite-proxy:/api] <-', proxyRes.statusCode, req.url);
+          proxy.on("proxyRes", (proxyRes, req) => {
+            console.log("[vite-proxy:/api] <-", proxyRes.statusCode, req.url);
           });
-        }
+        },
       },
-      '/image-server': {
-  target: 'https://31.97.178.131:3443',
-  changeOrigin: true,
-  secure: true,  // HTTP target
-}
-    }
+      "/image-server": {
+        target: "http://31.97.178.131:3001",
+        changeOrigin: true,
+        secure: false, // HTTP target
+        configure: (proxy) => {
+          proxy.on("error", (err, _req, _res) => {
+            console.error("[vite-proxy:/image-server] error:", err.message);
+          });
+          proxy.on("proxyReq", (_proxyReq, req) => {
+            console.log("[vite-proxy:/image-server] ->", req.method, req.url);
+          });
+          proxy.on("proxyRes", (proxyRes, req) => {
+            console.log(
+              "[vite-proxy:/image-server] <-",
+              proxyRes.statusCode,
+              req.url
+            );
+          });
+        },
+      },
+      "/images": {
+        target: "http://31.97.178.131:3001",
+        changeOrigin: true,
+        secure: false, // HTTP target
+        configure: (proxy) => {
+          proxy.on("error", (err, _req, _res) => {
+            console.error("[vite-proxy:/images] error:", err.message);
+          });
+        },
+      },
+    },
   },
-})
+});

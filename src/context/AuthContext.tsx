@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { apiClient, UserRegistrationRequest, LoginRequest, ApiError, ApiClient } from '../services/api';
+import { normalizeImageUrl } from '../utils/imageUtils';
 
 // Define the user data structure based on usage patterns in the app
 export interface UserData {
@@ -30,6 +31,9 @@ export interface UserData {
   is_verified?: boolean;
   email_verified?: boolean;
   is_active?: boolean;
+  // New fields for producer verification status
+  access_level?: 'full' | 'limited' | 'admin';
+  status_message?: string;
   page?: {
     pageName?: string;
     banner?: string;
@@ -59,7 +63,7 @@ interface AuthContextType {
   userData: UserData | null;
   updateUserData: (data: Partial<UserData>) => void;
   logout: () => void;
-  login: (credentials: LoginRequest) => Promise<void>;
+  login: (credentials: LoginRequest) => Promise<UserData | void>;
   register: (userData: UserRegistrationRequest) => Promise<void>;
   completeRegistration: () => void; // Mark registration as complete
   isAuthenticated: boolean;
@@ -68,6 +72,8 @@ interface AuthContextType {
   error: string | null;
   clearError: () => void;
   getAccessToken: () => string | null; // Add method to get current access token
+  needsEmailVerification: boolean; // Track if email verification is needed
+  setNeedsEmailVerification: (needs: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -82,19 +88,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsEmailVerification, setNeedsEmailVerification] = useState<boolean>(false);
 
-  // Normalize image URL to HTTPS to avoid mixed content
-  const normalizeImageUrl = (url?: string): string => {
-    if (!url) return '';
-    try {
-      if (url.startsWith('http://31.97.178.131:3001')) {
-        return url.replace('http://31.97.178.131:3001', 'https://31.97.178.131:3443');
-      }
-      return url;
-    } catch {
-      return url;
-    }
-  };
 
   useEffect(() => {
     // Check if user is authenticated based on both userData and stored tokens
@@ -119,8 +114,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           // Safely access user properties with comprehensive fallbacks
           const mappedUserData: UserData = {
-            name: currentUser ? 
-              `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || 
+            name: currentUser ?
+              `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() ||
               currentUser.email || 'User' : 'User',
             email: currentUser?.email || '',
             avatar: normalizeImageUrl(currentUser?.profile_picture_url || currentUser?.profile_picture || ''),
@@ -134,8 +129,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             is_verified: currentUser?.is_verified || false,
             email_verified: currentUser?.email_verified || false,
             is_active: currentUser?.is_active || false,
+            access_level: currentUser?.access_level || 'limited',
+            status_message: currentUser?.status_message || '',
             selectedCategories: [],
-            myPosts: []
+            myPosts: [],
+            // For producers, initialize basic page data (will be fetched from API)
+            page: currentUser?.user_type === 'producer' ? {
+              pageName: `${currentUser?.first_name || ''} ${currentUser?.last_name || ''}`.trim() || 'Ma Page',
+              banner: '',
+              address: currentUser?.address || currentUser?.city || '',
+              phone: currentUser?.phone || '',
+              country: currentUser?.country || '',
+              code: ''
+            } : undefined
           };
           setUserDataState(mappedUserData);
         } catch (error) {
@@ -149,7 +155,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       fetchCurrentUser();
     }
-  }, []);
+  }, [setUserDataState, userData]);
 
   const updateUserData = (data: Partial<UserData>) => {
     setUserDataState(prevData => {
@@ -174,7 +180,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } else if (typedKey === 'selectedCategories' && data.selectedCategories) {
           updatedData.selectedCategories = data.selectedCategories;
         } else {
-          (updatedData as any)[typedKey] = (data as any)[typedKey];
+          // Type-safe assignment for known properties
+          (updatedData as Record<string, unknown>)[typedKey] = (data as Record<string, unknown>)[typedKey];
         }
       });
 
@@ -186,7 +193,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   };
 
-  const login = async (credentials: LoginRequest): Promise<void> => {
+  const login = async (credentials: LoginRequest): Promise<UserData | void> => {
     setIsLoading(true);
     setError(null);
     
@@ -209,8 +216,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       const mappedUserData: UserData = {
-        name: user ? 
-          `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
+        name: user ?
+          `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
           user.email || 'User' : 'User',
         email: user?.email || '',
         avatar: normalizeImageUrl(user?.profile_picture_url || user?.profile_picture || ''),
@@ -225,9 +232,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         is_verified: user?.is_verified || false,
         email_verified: user?.email_verified || false,
         is_active: user?.is_active || true,
+        access_level: user?.access_level || 'limited',
+        status_message: user?.status_message || '',
         // Initialize other fields as needed
         selectedCategories: [],
-        myPosts: []
+        myPosts: [],
+        // For producers, initialize basic page data (will be fetched from API)
+        page: user?.user_type === 'producer' ? {
+          pageName: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Ma Page',
+          banner: '',
+          address: user?.address || user?.city || '',
+          phone: user?.phone || '',
+          country: user?.country || '',
+          code: ''
+        } : undefined
       };
       
       if (import.meta.env.DEV) {
@@ -235,7 +253,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       setUserDataState(mappedUserData);
+
+      // Check if email verification is needed
+      if (!user.email_verified) {
+        setNeedsEmailVerification(true);
+        setIsAuthenticated(false);
+        // Store partial user data for verification page
+        return mappedUserData;
+      }
+
       setIsAuthenticated(true);
+      setNeedsEmailVerification(false);
+
+      return mappedUserData;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 
         typeof err === 'object' && err !== null ? 
@@ -268,20 +298,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       const mappedUserData: UserData = {
-        name: user ? 
-          `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
+        name: user ?
+          `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
           user.email || 'User' : 'User',
         email: user?.email || '',
-        avatar: user?.profile_picture_url || user?.profile_picture || '',
+        avatar: normalizeImageUrl(user?.profile_picture_url || user?.profile_picture || ''),
         userRole: user?.user_type === 'producer' ? 'producteur' : 'client',
         description: user?.description || '',
         country: user?.country || '',
         code: '', // Country code is not returned by API, will be empty after registration
         address: user?.address || user?.city || '',
         phone: user?.phone || '',
+        // Map verification fields from API
+        is_verified: user?.is_verified || false,
+        email_verified: user?.email_verified || false,
+        is_active: user?.is_active || false,
+        access_level: user?.access_level || 'limited',
+        status_message: user?.status_message || '',
         // Initialize other fields as needed
         selectedCategories: [],
-        myPosts: []
+        myPosts: [],
+        // For producers, initialize basic page data (will be fetched from API)
+        page: user?.user_type === 'producer' ? {
+          pageName: `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || 'Ma Page',
+          banner: '',
+          address: user?.address || user?.city || '',
+          phone: user?.phone || '',
+          country: user?.country || '',
+          code: ''
+        } : undefined
       };
       
       // Don't include password in the stored user data after registration
@@ -290,10 +335,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Auto-login handling
       const hasTokens = (response as any)?.tokens?.access && (response as any)?.tokens?.refresh;
       if (hasTokens) {
-        // Tokens present in registration response
-        mappedUserData.registrationComplete = true;
-        setUserDataState(mappedUserData);
-        setIsAuthenticated(true);
+        // Check if user needs email verification
+        if (user?.email_verified === false) {
+          // User is registered but needs email verification
+          mappedUserData.registrationComplete = false;
+          setUserDataState(mappedUserData);
+          setIsAuthenticated(false);
+          setNeedsEmailVerification(true);
+        } else {
+          // Tokens present and email verified
+          mappedUserData.registrationComplete = true;
+          setUserDataState(mappedUserData);
+          setIsAuthenticated(true);
+          setNeedsEmailVerification(false);
+        }
       } else {
         // Fallback: attempt login explicitly using submitted credentials
         try {
@@ -318,33 +373,66 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               phone: loggedInUser?.phone || mappedUserData.phone,
               registrationComplete: true,
               selectedCategories: [],
-              myPosts: []
+              myPosts: [],
+              // For producers, initialize basic page data (will be fetched from API)
+              page: loggedInUser?.user_type === 'producer' ? {
+                pageName: `${loggedInUser?.first_name || ''} ${loggedInUser?.last_name || ''}`.trim() || 'Ma Page',
+                banner: '',
+                address: loggedInUser?.address || loggedInUser?.city || '',
+                phone: loggedInUser?.phone || '',
+                country: loggedInUser?.country || '',
+                code: ''
+              } : undefined
             };
 
-            setUserDataState(postLoginUserData);
-            setIsAuthenticated(true);
+            // Check if logged-in user needs email verification
+            if (loggedInUser?.email_verified === false) {
+              postLoginUserData.registrationComplete = false;
+              setUserDataState(postLoginUserData);
+              setIsAuthenticated(false);
+              setNeedsEmailVerification(true);
+            } else {
+              postLoginUserData.registrationComplete = true;
+              setUserDataState(postLoginUserData);
+              setIsAuthenticated(true);
+              setNeedsEmailVerification(false);
+            }
           } else {
-            // As a last resort, allow consumers immediately
-            if (registrationData.user_type === 'consumer') {
+            // As a last resort, check email verification status
+            if (user?.email_verified === false) {
+              mappedUserData.registrationComplete = false;
+              setUserDataState(mappedUserData);
+              setIsAuthenticated(false);
+              setNeedsEmailVerification(true);
+            } else if (registrationData.user_type === 'consumer') {
               mappedUserData.registrationComplete = true;
               setUserDataState(mappedUserData);
               setIsAuthenticated(true);
+              setNeedsEmailVerification(false);
             } else {
               mappedUserData.registrationComplete = false;
               setUserDataState(mappedUserData);
               setIsAuthenticated(false);
+              setNeedsEmailVerification(false);
             }
           }
         } catch {
-          // If explicit login fails, fall back to role-based behavior
-          if (registrationData.user_type === 'consumer') {
+          // If explicit login fails, fall back to role-based behavior with email verification check
+          if (user?.email_verified === false) {
+            mappedUserData.registrationComplete = false;
+            setUserDataState(mappedUserData);
+            setIsAuthenticated(false);
+            setNeedsEmailVerification(true);
+          } else if (registrationData.user_type === 'consumer') {
             mappedUserData.registrationComplete = true;
             setUserDataState(mappedUserData);
             setIsAuthenticated(true);
+            setNeedsEmailVerification(false);
           } else {
             mappedUserData.registrationComplete = false;
             setUserDataState(mappedUserData);
             setIsAuthenticated(false);
+            setNeedsEmailVerification(false);
           }
         }
       }
@@ -376,6 +464,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Clear all user data
     setUserDataState(null);
     setIsAuthenticated(false);
+    setNeedsEmailVerification(false);
     
     // Clear other app data from localStorage
     localStorage.removeItem('myPosts');
@@ -429,7 +518,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     error,
     clearError,
-    getAccessToken
+    getAccessToken,
+    needsEmailVerification,
+    setNeedsEmailVerification
   };
 
   return (

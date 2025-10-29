@@ -31,7 +31,7 @@ const SplashScreen: React.FC = () => {
         }}
       >
         <img
-          src="/images/splash image.svg"
+          src="/images/splash_image.svg"
           alt="Splash Background"
           style={{
             width: "100%",

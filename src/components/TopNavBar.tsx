@@ -10,6 +10,7 @@ interface TopNavBarProps {
   onMyPageClick?: () => void;
   activeTab?: string;
   userName?: string;
+  hasNewPublications?: boolean; // Indicator for new publications
 }
 
 const defaultAvatar = "/icons/autofish_blue_logo.svg";
@@ -29,25 +30,43 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   onNotificationClick,
   onMyPageClick,
   activeTab,
+  hasNewPublications = false,
 }) => {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div
-      className="top-nav"
-      style={{
-        width: "100%",
-        height: 80,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "0 16px",
-        backgroundColor: "#ffffff",
-        zIndex: 1000,
-        position: "fixed",
-      }}
-    >
+    <>
+      <style>{`
+        @keyframes pulse {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.2);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
+      <div
+        className="top-nav"
+        style={{
+          width: "100%",
+          height: 80,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "0 16px",
+          backgroundColor: "#ffffff",
+          zIndex: 1000,
+          position: "fixed",
+        }}
+      >
       <div
         style={{
           width: 90,
@@ -137,6 +156,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            position: "relative",
           }}
           onClick={onNotificationClick}
         >
@@ -149,6 +169,21 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
             alt="Notifications"
             style={{ width: 24, height: 24 }}
           />
+          {hasNewPublications && (
+            <div
+              style={{
+                position: "absolute",
+                top: 6,
+                right: 6,
+                width: 8,
+                height: 8,
+                backgroundColor: "#FF4444",
+                borderRadius: "50%",
+                border: "2px solid white",
+                animation: "pulse 2s infinite",
+              }}
+            />
+          )}
         </button>
         <button
           className="nav-button"
@@ -170,6 +205,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
         />
       </div>
     </div>
+    </>
   );
 };
 

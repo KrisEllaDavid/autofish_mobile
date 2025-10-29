@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import TopNavBar from "../../components/TopNavBar";
 import BottomNavBar from "../../components/BottomNavBar";
-import PullToRefreshIndicator from "../../components/PullToRefresh";
-import { usePullToRefresh } from "../../hooks/usePullToRefresh";
 import { useApiWithLoading } from "../../services/apiWithLoading";
 import { Notification as ApiNotification } from "../../services/api";
 import { Notification as UINotification } from "./notificationsMock";
@@ -100,11 +98,6 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({
     }
   };
 
-  // Pull to refresh hook
-  const pullToRefresh = usePullToRefresh({
-    onRefresh: fetchNotifications,
-    threshold: 80,
-  });
 
   useEffect(() => {
     fetchNotifications();
@@ -123,17 +116,10 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({
         onMyPageClick={onMyPageClick}
       />
       {/* Notifications Feed */}
-      <div 
-        className="posts-feed" 
-        style={{ marginTop: "90px", position: 'relative' }}
-        ref={pullToRefresh.containerRef}
+      <div
+        className="posts-feed"
+        style={{ marginTop: "90px" }}
       >
-        <PullToRefreshIndicator
-          show={pullToRefresh.showIndicator}
-          text={pullToRefresh.indicatorText}
-          opacity={pullToRefresh.indicatorOpacity}
-          isRefreshing={pullToRefresh.isRefreshing}
-        />
         
         {/* Hidden Loading State - only show on initial load */}
         {loading && initialLoad && (

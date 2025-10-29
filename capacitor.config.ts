@@ -15,6 +15,12 @@ const config: CapacitorConfig = {
     CapacitorHttp: {
       // Enable native HTTP for better CORS handling
       enabled: true
+    },
+    App: {
+      appUrlOpen: {
+        // Handle custom URL schemes and universal links
+        enabled: true
+      }
     }
   }
 };

@@ -10,12 +10,17 @@ import LoginPage from "./pages/LoginPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import SignupPage from "./pages/SignupPage";
+import EmailVerificationPage from "./pages/EmailVerificationPage";
 import HomePage from "./pages/HomePage";
 import { animations, fontFaces } from "./components/styles";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LoadingProvider, useLoading } from "./context/LoadingContext";
 import LoadingOverlay from "./components/LoadingOverlay";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { useTokenValidation } from "./hooks/useTokenValidation";
+import { toast } from "react-toastify";
+import { App as CapacitorApp } from '@capacitor/app';
+import { apiClient } from "./services/api";
 
 const GlobalStyle = createGlobalStyle`
   ${animations.fadeInOnboard}
@@ -56,8 +61,49 @@ function AppContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showResetPasswordPage, setShowResetPasswordPage] = useState(false);
   const [showSignupPage, setShowSignupPage] = useState(false);
-  const { isLoggingOut, isAuthenticated } = useAuth();
+  const { isLoggingOut, isAuthenticated, needsEmailVerification, userData, setNeedsEmailVerification, updateUserData } = useAuth();
   const { isLoading } = useLoading();
+
+  // Add token validation
+  useTokenValidation();
+
+  // Handle deep links when app is opened from email verification link
+  useEffect(() => {
+    const handleAppUrlOpen = async (event: any) => {
+      const url = event.url;
+      console.log('📱 App opened with URL:', url);
+
+      // Check if it's a verification success link from backend
+      if (url.includes('verify-email') && url.includes('success=true')) {
+        const urlObj = new URL(url);
+        const email = urlObj.searchParams.get('email');
+
+        toast.success('Email vérifié avec succès !');
+        setNeedsEmailVerification(false);
+
+        // Refresh user data
+        try {
+          const currentUser = await apiClient.getCurrentUser();
+          if (currentUser) {
+            updateUserData({
+              email_verified: true,
+              is_verified: currentUser.is_verified
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching updated user data:', error);
+        }
+      }
+    };
+
+    // Add listener for app URL open events
+    CapacitorApp.addListener('appUrlOpen', handleAppUrlOpen);
+
+    // Cleanup listener on unmount
+    return () => {
+      CapacitorApp.removeAllListeners();
+    };
+  }, [setNeedsEmailVerification, updateUserData]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -95,6 +141,35 @@ function AppContent() {
       <IonContent>
         <GlobalStyle />
         <SplashScreen />
+        <LoadingOverlay isVisible={isLoading} />
+      </IonContent>
+    );
+  }
+
+  // If user needs email verification, show EmailVerificationPage
+  if (needsEmailVerification && userData?.email) {
+    return (
+      <IonContent>
+        <GlobalStyle />
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+        <EmailVerificationPage
+          email={userData.email}
+          onVerified={() => {
+            setNeedsEmailVerification(false);
+            // The useTokenValidation hook will handle updating authentication status
+          }}
+        />
         <LoadingOverlay isVisible={isLoading} />
       </IonContent>
     );

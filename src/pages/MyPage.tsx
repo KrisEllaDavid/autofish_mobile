@@ -4,10 +4,13 @@ import TopNavBar from "../components/TopNavBar";
 import BottomNavBar from "../components/BottomNavBar";
 import { compressImage, validateImage } from "../utils/imageCompression";
 import { useAuth } from "../context/AuthContext";
+import { normalizeImageUrl } from "../utils/imageUtils";
 import Modal from "../components/Modal";
 import PostCard from "../components/PostCard";
 import { Post } from "../mock/posts";
 import { toast } from "react-toastify";
+import { useApiWithLoading } from "../services/apiWithLoading";
+import { ProducerPage } from "../services/api";
 import "react-toastify/dist/ReactToastify.css";
 
 // Extended Post interface for MyPage with additional properties
@@ -59,14 +62,27 @@ const MyPage: React.FC<MyPageProps> = ({
   userRole
 }) => {
   const { userData, updateUserData } = useAuth();
+  const api = useApiWithLoading();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [producerPageData, setProducerPageData] = useState<ProducerPage | null>(null);
+  const [fetchingPageData, setFetchingPageData] = useState(false);
   const [banner, setBanner] = useState<string>(
-    userData?.page?.banner || defaultBanner
+    producerPageData?.background_image || userData?.page?.banner || defaultBanner
   );
   const [showPageNameModal, setShowPageNameModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [pageName, setPageName] = useState(userData?.page?.pageName || "");
-  const [location, setLocation] = useState(userData?.page?.address || "");
+  const [pageName, setPageName] = useState(
+    producerPageData?.name ||
+    userData?.page?.pageName ||
+    userData?.name ||
+    "Ma Page"
+  );
+  const [location, setLocation] = useState(
+    producerPageData?.address ||
+    userData?.page?.address ||
+    userData?.address ||
+    ""
+  );
   const [showPostModal, setShowPostModal] = useState(false);
   const [editingPost, setEditingPost] = useState<MyPost | null>(null);
   const [posts, setPosts] = useState<MyPost[]>([]);
@@ -81,6 +97,48 @@ const MyPage: React.FC<MyPageProps> = ({
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
+
+  // Fetch producer page data from API
+  const fetchProducerPageData = async () => {
+    if (userData?.userRole !== 'producteur' || !api.isAuthenticated()) {
+      return;
+    }
+
+    try {
+      setFetchingPageData(true);
+      const pageData = await api.getMyProducerPage();
+      setProducerPageData(pageData);
+
+      // Update local state with API data
+      setBanner(pageData.background_image || defaultBanner);
+      setPageName(pageData.name || userData?.name || "Ma Page");
+      setLocation(pageData.address || "");
+
+      // Also update the context with fetched data for consistency
+      updateUserData({
+        page: {
+          ...userData?.page,
+          pageName: pageData.name,
+          banner: pageData.background_image,
+          address: pageData.address,
+          phone: pageData.telephone,
+          country: pageData.country,
+        }
+      });
+
+      if (import.meta.env.DEV) {
+        console.log('✅ Fetched producer page data:', pageData);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch producer page data:', error);
+      // Don't show error toast if the page doesn't exist yet - user might need to create it
+      if (error && typeof error === 'object' && 'status' in error && error.status !== 404) {
+        toast.error("Erreur lors du chargement des informations de la page");
+      }
+    } finally {
+      setFetchingPageData(false);
+    }
+  };
 
   // Load posts from cache or context
   useEffect(() => {
@@ -119,6 +177,11 @@ const MyPage: React.FC<MyPageProps> = ({
     loadPosts();
   }, [userData?.myPosts]);
 
+  // Fetch producer page data on component mount
+  useEffect(() => {
+    fetchProducerPageData();
+  }, [userData?.userRole]); // Re-fetch if user role changes
+
   // Banner change
   const handleBannerClick = () => fileInputRef.current?.click();
   const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,30 +194,118 @@ const MyPage: React.FC<MyPageProps> = ({
           maxHeight: 600,
           quality: 0.8,
         });
+
+        // Update banner locally for immediate feedback
         const reader = new FileReader();
         reader.onload = (ev) => {
           const newBanner = ev.target?.result as string;
           setBanner(newBanner);
-          updateUserData({ page: { ...userData?.page, banner: newBanner } });
         };
         reader.readAsDataURL(compressedFile);
+
+        // Update backend if producer page exists
+        if (userData?.userRole === 'producteur' && producerPageData) {
+          try {
+            const updatedPageData = await api.updateProducerPage(producerPageData.slug, {
+              background_image: compressedFile
+            });
+
+            setProducerPageData(updatedPageData);
+            setBanner(updatedPageData.background_image || defaultBanner);
+
+            // Update context
+            updateUserData({
+              page: {
+                ...userData?.page,
+                banner: updatedPageData.background_image
+              }
+            });
+
+            toast.success("Bannière mise à jour avec succès");
+          } catch (error) {
+            console.error("Failed to update banner:", error);
+            toast.error("Erreur lors de la mise à jour de la bannière");
+            // Revert banner on error
+            setBanner(producerPageData?.background_image || defaultBanner);
+          }
+        } else {
+          // Fallback to local storage for non-producers or if page doesn't exist
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const newBanner = ev.target?.result as string;
+            updateUserData({ page: { ...userData?.page, banner: newBanner } });
+          };
+          reader.readAsDataURL(compressedFile);
+        }
       } catch {
-        // Error processing image - show user-friendly message
         toast.error("Erreur lors du traitement de l'image");
       }
     }
   };
 
   // Edit page name/location
-  const savePageName = () => {
-    updateUserData({ page: { ...userData?.page, pageName } });
-    setShowPageNameModal(false);
-    toast.success("Nom de la page modifié avec succès");
+  const savePageName = async () => {
+    if (userData?.userRole === 'producteur' && producerPageData) {
+      try {
+        const updatedPageData = await api.updateProducerPage(producerPageData.slug, {
+          name: pageName.trim()
+        });
+
+        setProducerPageData(updatedPageData);
+        setPageName(updatedPageData.name);
+
+        // Update context
+        updateUserData({
+          page: {
+            ...userData?.page,
+            pageName: updatedPageData.name
+          }
+        });
+
+        setShowPageNameModal(false);
+        toast.success("Nom de la page modifié avec succès");
+      } catch (error) {
+        console.error("Failed to update page name:", error);
+        toast.error("Erreur lors de la mise à jour du nom de la page");
+      }
+    } else {
+      // Fallback to local storage
+      updateUserData({ page: { ...userData?.page, pageName } });
+      setShowPageNameModal(false);
+      toast.success("Nom de la page modifié avec succès");
+    }
   };
-  const saveLocation = () => {
-    updateUserData({ page: { ...userData?.page, address: location } });
-    setShowLocationModal(false);
-    toast.success("Adresse modifiée avec succès");
+
+  const saveLocation = async () => {
+    if (userData?.userRole === 'producteur' && producerPageData) {
+      try {
+        const updatedPageData = await api.updateProducerPage(producerPageData.slug, {
+          address: location.trim()
+        });
+
+        setProducerPageData(updatedPageData);
+        setLocation(updatedPageData.address);
+
+        // Update context
+        updateUserData({
+          page: {
+            ...userData?.page,
+            address: updatedPageData.address
+          }
+        });
+
+        setShowLocationModal(false);
+        toast.success("Adresse modifiée avec succès");
+      } catch (error) {
+        console.error("Failed to update location:", error);
+        toast.error("Erreur lors de la mise à jour de l'adresse");
+      }
+    } else {
+      // Fallback to local storage
+      updateUserData({ page: { ...userData?.page, address: location } });
+      setShowLocationModal(false);
+      toast.success("Adresse modifiée avec succès");
+    }
   };
 
   // Post modal logic
@@ -341,7 +492,7 @@ const MyPage: React.FC<MyPageProps> = ({
           {postImage && (
             <div style={{ marginBottom: 16 }}>
               <img
-                src={postImage}
+                src={normalizeImageUrl(postImage)}
                 alt="post"
                 className="modal-form-img-preview"
                 style={{ width: "100%", maxWidth: "100%", borderRadius: 12 }}
@@ -603,119 +754,229 @@ const MyPage: React.FC<MyPageProps> = ({
           display: flex;
           flex-direction: column;
         }
-        .fade-in-page { 
-          opacity: 0; 
+        .fade-in-page {
+          opacity: 0;
           animation: fadeInPage 0.5s ease-in forwards;
           flex: 1;
           overflow-y: auto;
           position: relative;
-          padding-bottom: 120px; /* Account for bottom nav */
+          padding-bottom: 100px;
         }
         @keyframes fadeInPage { to { opacity: 1; } }
-        .banner { 
-          width: 100%; 
-          height: 300px; 
-          object-fit: cover; 
-          position: relative; 
+
+        /* Banner Section */
+        .banner-container {
+          position: relative;
+          width: 100%;
+          height: 280px;
+          background: linear-gradient(135deg, #009cb7 0%, #007a8f 100%);
+          overflow: hidden;
+          border-radius: 0 0 24px 24px;
+          box-shadow: 0 8px 32px rgba(0, 156, 183, 0.15);
         }
-        .banner-overlay { 
-          position: absolute; 
-          top: 0; 
-          left: 0; 
-          right: 0; 
-          bottom: 0; 
-          background: rgba(1, 33, 46, 0.7); 
+        .banner {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
-        .banner-camera { 
-          position: absolute; 
-          bottom: 16px; 
-          right: 16px; 
-          width: 36px; 
-          height: 36px; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          box-shadow: 0 2px 8px rgba(0,0,0,0.12); 
-          cursor: pointer; 
-          z-index: 3; 
-          background: #009cb7; 
-          border-radius: 50%; 
+        .banner-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(135deg, rgba(0, 156, 183, 0.8) 0%, rgba(0, 122, 143, 0.9) 100%);
         }
-        .banner-camera img { width: 22px; height: 22px; }
-        .edit-btn { 
-          margin-left: 10px; 
-          background: #009cb7; 
-          border-radius: 50%; 
-          width: 32px; 
-          height: 32px; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          cursor: pointer; 
+        .banner-camera {
+          position: absolute;
+          bottom: 20px;
+          right: 20px;
+          width: 44px;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.9);
+          border-radius: 50%;
+          cursor: pointer;
+          z-index: 3;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+        .banner-camera:hover {
+          background: #fff;
+          transform: scale(1.05);
+        }
+        .banner-camera img { width: 24px; height: 24px; opacity: 0.8; }
+
+        /* Profile Info */
+        .profile-info {
+          position: absolute;
+          left: 24px;
+          bottom: 24px;
+          z-index: 4;
+          color: #fff;
+          max-width: calc(100% - 120px);
+        }
+        .profile-name {
+          display: flex;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+        .profile-name-text {
+          font-size: 24px;
+          font-weight: 700;
+          color: #fff;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+          margin-right: 12px;
+        }
+        .edit-btn {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        .edit-btn:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: scale(1.05);
         }
         .edit-btn img { width: 18px; height: 18px; }
-        .banner-info { 
-          position: absolute; 
-          left: 24px; 
-          bottom: 24px; 
-          z-index: 4; 
-          color: #fff; 
+        .profile-location {
+          display: flex;
+          align-items: center;
+          margin-bottom: 8px;
         }
-        .banner-info-row { 
-          display: flex; 
-          align-items: center; 
-          margin-bottom: 8px; 
+        .profile-location-text {
+          font-size: 16px;
+          font-weight: 500;
+          opacity: 0.95;
+          text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+          margin-right: 12px;
+          display: flex;
+          align-items: center;
         }
-        .banner-info-row:last-child { margin-bottom: 0; }
-        .banner-info-label { 
-          font-size: 15px; 
-          font-weight: 400; 
-          opacity: 0.9; 
-          margin-right: 8px; 
+        .profile-location-text img {
+          margin-right: 8px;
         }
-        .banner-info-value { 
-          font-size: 22px; 
-          font-weight: 700; 
-          color: #fff; 
+        .verification-status {
+          margin-top: 8px;
         }
-        .banner-info-edit { margin-left: 8px; }
-        .publications-section { 
-          padding: 0 0 0 0; 
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 600;
+          text-shadow: none;
+        }
+        .status-verified {
+          background: rgba(76, 175, 80, 0.9);
+          color: #fff;
+        }
+        .status-pending {
+          background: rgba(255, 107, 53, 0.9);
+          color: #fff;
+        }
+
+        /* Content Section */
+        .content-section {
+          padding: 32px 20px 0;
           max-width: 600px;
-          margin: 30px 18px 250px 18px;
+          margin: 0 auto;
+          width: 100%;
         }
-        .publications-title { 
-          color: #000; 
-          font-size: 18px; 
-          font-weight: 700; 
-          margin-bottom: 25px; 
-          display: flex; 
-          align-items: center; 
-          justify-content: space-between; 
-          padding: 0 20px; 
+        .section-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 24px;
+          padding: 0 4px;
+        }
+        .section-title {
+          color: #1a1a1a;
+          font-size: 20px;
+          font-weight: 700;
+        }
+        .add-button-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
+        .warning-text {
+          font-size: 11px;
+          color: #FF6B35;
+          font-weight: 500;
+          text-align: center;
+          max-width: 120px;
+          line-height: 1.2;
+        }
+        .publications-add {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #009cb7 0%, #007a8f 100%);
+          color: #fff;
+          font-size: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          font-weight: 700;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(0, 156, 183, 0.3);
+          border: none;
+        }
+        .publications-add.disabled {
+          background: #ccc;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+        .publications-add:hover:not(.disabled) {
+          transform: scale(1.05);
+          box-shadow: 0 6px 20px rgba(0, 156, 183, 0.4);
+        }
+
+        /* Posts Grid */
+        .posts-grid {
+          display: grid;
+          gap: 20px;
         }
         .post-card-container {
-          width: 100%;
-          margin-bottom: 18px;
           position: relative;
-          animation: fadeIn 0.3s ease-out forwards;
+          animation: fadeIn 0.4s ease-out forwards;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease;
+        }
+        .post-card-container:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
         }
         @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(20px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
           }
         }
-        .post-card-container:nth-child(1) { animation-delay: 0.05s; }
-        .post-card-container:nth-child(2) { animation-delay: 0.1s; }
-        .post-card-container:nth-child(3) { animation-delay: 0.15s; }
-        .post-card-container:nth-child(4) { animation-delay: 0.2s; }
-        .post-card-container:nth-child(5) { animation-delay: 0.25s; }
-        .post-card-container:nth-child(n + 6) { animation-delay: 0.3s; }
+        .post-card-container:nth-child(1) { animation-delay: 0.1s; }
+        .post-card-container:nth-child(2) { animation-delay: 0.2s; }
+        .post-card-container:nth-child(3) { animation-delay: 0.3s; }
+        .post-card-container:nth-child(4) { animation-delay: 0.4s; }
+        .post-card-container:nth-child(5) { animation-delay: 0.5s; }
+        .post-card-container:nth-child(n + 6) { animation-delay: 0.6s; }
+
         .post-actions {
           position: absolute;
           top: 12px;
@@ -725,37 +986,39 @@ const MyPage: React.FC<MyPageProps> = ({
           z-index: 10;
         }
         .post-menu-btn {
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(255, 255, 255, 0.95);
           border: none;
           border-radius: 50%;
-          width: 32px;
-          height: 32px;
+          width: 36px;
+          height: 36px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.3s ease;
           padding: 0;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         .post-menu-btn:hover {
-          background: rgba(255, 255, 255, 1);
+          background: #fff;
           transform: scale(1.05);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-        .post-menu-dot {
-          width: 4px;
-          height: 4px;
-          background: #666;
-          border-radius: 50%;
-          margin: 0 1px;
+
+        /* Loading and Empty States */
+        .loading-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 60px 20px;
         }
         .loading-spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid #f3f3f3;
-          border-top: 3px solid #009cb7;
+          width: 48px;
+          height: 48px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #009cb7;
           border-radius: 50%;
           animation: spin 1s linear infinite;
-          margin: 20px auto;
         }
         @keyframes spin {
           0% { transform: rotate(0deg); }
@@ -763,39 +1026,26 @@ const MyPage: React.FC<MyPageProps> = ({
         }
         .empty-state {
           text-align: center;
-          padding: 40px 20px;
-          color: #666;
+          padding: 60px 20px;
+          background: #fff;
+          border-radius: 16px;
+          margin-top: 12px;
+        }
+        .empty-state-icon {
+          font-size: 48px;
+          margin-bottom: 16px;
+          opacity: 0.5;
         }
         .empty-state-title {
-          font-size: 18px;
+          font-size: 20px;
           font-weight: 600;
           margin-bottom: 8px;
+          color: #333;
         }
         .empty-state-subtitle {
-          font-size: 14px;
-          color: #888;
-        }
-        .publications-add { 
-          width: 32px; 
-          height: 32px; 
-          border-radius: 50%; 
-          background: #009cb7; 
-          color: #fff; 
-          font-size: 26px; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center; 
-          cursor: pointer; 
-          font-weight: 700; 
-          transition: all 0.2s ease;
-        }
-        .publications-add.disabled {
-          background: #ccc;
-          cursor: not-allowed;
-        }
-        .publications-add:hover:not(.disabled) {
-          background: #007a8f;
-          transform: scale(1.05);
+          font-size: 15px;
+          color: #666;
+          line-height: 1.4;
         }
         .modal-form-label { font-weight: 600; margin-bottom: 6px; color: #222; }
         .modal-form-input, .modal-form-select, .modal-form-textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1.2px solid #e0e0e0; background: #fff; font-size: 16px; color: #222; margin-bottom: 16px; box-sizing: border-box; }
@@ -823,173 +1073,194 @@ const MyPage: React.FC<MyPageProps> = ({
           activeTab={activeTab}
         />
         <div className="fade-in-page">
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            height: 300,
-            marginBottom: 0,
-            background: "#000",
-            borderTopLeftRadius: 0,
-            borderTopRightRadius: 0,
-            overflow: "hidden",
-          }}
-        >
-          <img
-            src={banner}
-            alt="banner"
-            className="banner"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = defaultBanner;
-            }}
-          />
-          <div className="banner-overlay" style={{ height: "100%" }} />
-          <div className="banner-camera" onClick={handleBannerClick}>
-            <img src={cameraIcon} alt="upload cover" />
-            <input
-              type="file"
-              accept="image/*"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              onChange={handleBannerChange}
+          {/* Banner Section */}
+          <div className="banner-container">
+            <img
+              src={normalizeImageUrl(banner)}
+              alt="banner"
+              className="banner"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = defaultBanner;
+              }}
             />
-          </div>
-          <div className="banner-info">
-            <div className="banner-info-row">
-              <span className="banner-info-value">
-                {userData?.page?.pageName}
-              </span>
-              <span
-                className="edit-btn banner-info-edit"
-                onClick={() => setShowPageNameModal(true)}
-              >
-                <img src={editIconWhite} alt="edit" />
-              </span>
-            </div>
-            <div className="banner-info-row">
-              <span className="banner-info-label">
-                <img
-                  src="/icons/Location.svg"
-                  alt="location"
-                  style={{
-                    width: 16,
-                    height: 16,
-                    marginRight: 6,
-                    opacity: 0.9,
-                  }}
-                />
-                {userData?.page?.address}
-              </span>
-              <span
-                className="edit-btn banner-info-edit"
-                onClick={() => setShowLocationModal(true)}
-              >
-                <img src={editIconWhite} alt="edit" />
-              </span>
-            </div>
-            {userData?.userRole === 'producteur' && (
-              <div className="banner-info-row">
-                <span className="banner-info-label" style={{ fontSize: '14px' }}>
-                  {userData?.is_verified ? (
-                    <span style={{ color: '#4CAF50' }}>
-                      ✅ Compte vérifié
-                    </span>
-                  ) : (
-                    <span style={{ color: '#FF6B35' }}>
-                      ⏳ En attente de vérification
-                    </span>
-                  )}
+            <div className="banner-overlay" />
+
+            {fetchingPageData && (
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                background: 'rgba(255, 255, 255, 0.9)',
+                borderRadius: '12px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                zIndex: 5
+              }}>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  border: '2px solid #e0e0e0',
+                  borderTop: '2px solid #00B2D6',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+                <span style={{ fontSize: '14px', color: '#666' }}>
+                  Chargement des informations...
                 </span>
               </div>
             )}
-          </div>
-        </div>
-        <div className="publications-section">
-          <div className="publications-title">
-            Publications
-            {userData?.userRole === 'producteur' && (
-              <>
-                {!userData?.is_verified && (
-                  <div style={{ 
-                    fontSize: '12px', 
-                    color: '#FF6B35', 
-                    fontWeight: '500',
-                    marginRight: '10px',
-                    textAlign: 'right'
-                  }}>
-                    ⚠️ Compte en attente de vérification
-                  </div>
-                )}
-                <span 
-                  className={`publications-add ${!userData?.is_verified ? 'disabled' : ''}`} 
-                  onClick={openCreatePostModal}
-                  style={{
-                    opacity: userData?.is_verified ? 1 : 0.5,
-                    cursor: userData?.is_verified ? 'pointer' : 'not-allowed'
-                  }}
-                >
-              +
-            </span>
-              </>
-            )}
-          </div>
-          {isLoading ? (
-            <div className="loading-spinner" />
-          ) : posts.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-title">Aucune publication</div>
-              <div className="empty-state-subtitle">
-                Vous n'avez pas encore publié
-              </div>
+
+            <div className="banner-camera" onClick={handleBannerClick}>
+              <img src={cameraIcon} alt="upload cover" />
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleBannerChange}
+              />
             </div>
-          ) : (
-            posts.map((post) => (
-              <div key={post.id} className="post-card-container">
-                <PostCard
-                  id={post.id}
-                  producerName={post.producerName}
-                  producerAvatar={post.producerAvatar}
-                  postImage={post.postImage}
-                  description={post.description}
-                  date={post.date}
-                  likes={post.likes}
-                  comments={post.comments}
-                  category={post.category}
-                  location={post.location}
-                  price={post.price}
-                  isLiked={post.isLiked}
-                  onLike={() => {}}
-                  onComment={() => {}}
-                  onProducerClick={() => {}}
-                  hideContactButton={true}
-                />
-                <div className="post-actions">
-                  <button
-                    className="post-menu-btn"
-                    onClick={() => openEditPostModal(post)}
-                  >
-                    <img
-                      src={editIconBlack}
-                      alt="edit"
-                      style={{ width: 18, height: 18, opacity: 0.7 }}
-                    />
-                  </button>
-                  <button
-                    className="post-menu-btn"
-                    onClick={() => handleDeletePost(post.id)}
-                  >
-                    <img
-                      src="/icons/delete-icon.svg"
-                      alt="delete"
-                      style={{ width: 18, height: 18, opacity: 0.7 }}
-                    />
-                  </button>
+
+            <div className="profile-info">
+              <div className="profile-name">
+                <span className="profile-name-text">
+                  {producerPageData?.name || userData?.page?.pageName || userData?.name || 'Ma Page'}
+                </span>
+                <div
+                  className="edit-btn"
+                  onClick={() => setShowPageNameModal(true)}
+                >
+                  <img src={editIconWhite} alt="edit" />
                 </div>
               </div>
-            ))
-          )}
-        </div>
+
+              <div className="profile-location">
+                <span className="profile-location-text">
+                  <img
+                    src="/icons/Location.svg"
+                    alt="location"
+                    style={{
+                      width: 16,
+                      height: 16,
+                      opacity: 0.9,
+                      filter: 'brightness(0) invert(1)'
+                    }}
+                  />
+                  {producerPageData?.address || userData?.page?.address || 'Aucune adresse'}
+                </span>
+                <div
+                  className="edit-btn"
+                  onClick={() => setShowLocationModal(true)}
+                >
+                  <img src={editIconWhite} alt="edit" />
+                </div>
+              </div>
+
+              {userData?.userRole === 'producteur' && (
+                <div className="verification-status">
+                  {userData?.is_verified ? (
+                    <span className="status-badge status-verified">
+                      ✅ Compte vérifié
+                    </span>
+                  ) : (
+                    <span className="status-badge status-pending">
+                      ⏳ En attente de vérification
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Content Section */}
+          <div className="content-section">
+            <div className="section-header">
+              <h2 className="section-title">Mes Publications</h2>
+              {userData?.userRole === 'producteur' && (
+                <div className="add-button-container">
+                  {!userData?.is_verified && (
+                    <div className="warning-text">
+                      ⚠️ Compte en attente de vérification
+                    </div>
+                  )}
+                  <button
+                    className={`publications-add ${!userData?.is_verified ? 'disabled' : ''}`}
+                    onClick={openCreatePostModal}
+                    disabled={!userData?.is_verified}
+                  >
+                    +
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="loading-container">
+                <div className="loading-spinner" />
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">📝</div>
+                <div className="empty-state-title">Aucune publication</div>
+                <div className="empty-state-subtitle">
+                  Vous n'avez pas encore publié de contenu.<br />
+                  Créez votre première publication pour commencer!
+                </div>
+              </div>
+            ) : (
+              <div className="posts-grid">
+                {posts.map((post) => (
+                  <div key={post.id} className="post-card-container">
+                    <PostCard
+                      id={post.id}
+                      producerName={post.producerName}
+                      producerAvatar={post.producerAvatar}
+                      postImage={post.postImage}
+                      description={post.description}
+                      date={post.date}
+                      likes={post.likes}
+                      comments={post.comments}
+                      category={post.category}
+                      location={post.location}
+                      price={post.price}
+                      isLiked={post.isLiked}
+                      onLike={() => {}}
+                      onComment={() => {}}
+                      onProducerClick={() => {}}
+                      hideContactButton={true}
+                    />
+                    <div className="post-actions">
+                      <button
+                        className="post-menu-btn"
+                        onClick={() => openEditPostModal(post)}
+                        title="Modifier"
+                      >
+                        <img
+                          src={editIconBlack}
+                          alt="edit"
+                          style={{ width: 20, height: 20, opacity: 0.7 }}
+                        />
+                      </button>
+                      <button
+                        className="post-menu-btn"
+                        onClick={() => handleDeletePost(post.id)}
+                        title="Supprimer"
+                      >
+                        <img
+                          src="/icons/delete-icon.svg"
+                          alt="delete"
+                          style={{ width: 20, height: 20, opacity: 0.7 }}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         {renderModal()}
         {renderPageNameModal()}
         {renderLocationModal()}

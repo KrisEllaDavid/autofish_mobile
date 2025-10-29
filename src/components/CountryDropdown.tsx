@@ -18,7 +18,7 @@ interface CountryDropdownProps {
 const CountryDropdown: React.FC<CountryDropdownProps> = ({
   countries,
   selectedCountry,
-  selectedCode,
+  selectedCode: _selectedCode, // Prefix with underscore to indicate intentionally unused
   onCountryChange,
   placeholder = "Sélectionnez votre pays",
   label,

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import NavBar from "../../components/NavBar";
 import UnifiedDropdown from "../../components/UnifiedDropdown";
 import DescriptionPage from "../DescriptionPage";
-import ContactInfoPage from "../ContactInfoPage";
 import PageCreationPage from "../PageCreationPage";
 import { useApiWithLoading } from "../../services/apiWithLoading";
 import { Category } from "../../services/api";
@@ -28,33 +27,32 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [goToDescription, setGoToDescription] = useState(false);
-  const [goToContactInfo, setGoToContactInfo] = useState(false);
   const [goToPageCreation, setGoToPageCreation] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
 
-  // Fetch categories from API
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const categoriesData = await api.getCategories();
-        setAvailableCategories(categoriesData);
-        
-        if (import.meta.env.DEV) {
-          console.log('✅ Loaded categories:', categoriesData.length);
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to load categories';
-        setError(errorMessage);
-        console.error('❌ Failed to load categories:', err);
-        // Fallback to empty array if API fails
-        setAvailableCategories([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Fetch categories from API - extracted to reusable function
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const categoriesData = await api.getCategories();
+      setAvailableCategories(categoriesData);
 
+      if (import.meta.env.DEV) {
+        console.log('✅ Loaded categories:', categoriesData.length);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load categories';
+      setError(errorMessage);
+      console.error('❌ Failed to load categories:', err);
+      // Fallback to empty array if API fails
+      setAvailableCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCategories();
   }, []);
 
@@ -129,8 +127,8 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
         setIsRegistering(false);
       }
     } else if (profileType === "producer") {
-      // Skip description to streamline flow; proceed to page creation
-      setGoToPageCreation(true);
+      // Producers need to provide description first
+      setGoToDescription(true);
     }
   };
 
@@ -145,13 +143,8 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
       <DescriptionPage
         onBack={() => setGoToDescription(false)}
         onContinue={(_description) => {
-          // Producers go directly to page creation (which includes contact info)
-          if (profileType === "producer") {
-            setGoToPageCreation(true);
-          } else {
-            // Clients go to contact info page
-            setGoToContactInfo(true);
-          }
+          // Producers go directly to page creation (which includes address collection)
+          setGoToPageCreation(true);
         }}
       />
     );
@@ -195,19 +188,20 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
       {error && (
         <div style={{ textAlign: "center", padding: "40px", color: "red" }}>
           <p>Erreur: {error}</p>
-          <button 
-            onClick={() => window.location.reload()}
+          <button
+            onClick={fetchCategories}
+            disabled={loading}
             style={{
               padding: "8px 16px",
-              backgroundColor: "#00B2D6",
+              backgroundColor: loading ? "#ccc" : "#00B2D6",
               color: "white",
               border: "none",
               borderRadius: "4px",
-              cursor: "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
               marginTop: "10px"
             }}
           >
-            Réessayer
+            {loading ? "Chargement..." : "Réessayer"}
           </button>
         </div>
       )}

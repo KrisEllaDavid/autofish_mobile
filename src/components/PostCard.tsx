@@ -1,4 +1,5 @@
 import React from "react";
+import { normalizeImageUrl } from "../utils/imageUtils";
 
 interface PostCardProps {
   id: string;
@@ -107,7 +108,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(
             }}
           >
             <img
-              src={producerAvatar}
+              src={normalizeImageUrl(producerAvatar)}
               alt={`Photo de profil de ${producerName}`}
               style={{
                 width: "100%",
@@ -176,7 +177,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(
         {/* Post image with category pill overlay */}
         <div style={{ width: "100%", position: "relative", marginTop: 12 }}>
           <img
-            src={postImage}
+            src={normalizeImageUrl(postImage)}
             alt="Post"
             style={{
               width: "100%",
