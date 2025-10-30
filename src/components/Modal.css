@@ -4,20 +4,28 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 9999;
   animation: fadeIn 0.2s ease-out;
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .modal-content {
+  background: white;
+  padding: 24px;
   max-width: 90%;
   max-height: 90%;
   overflow: auto;
-  border-radius: 28px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   animation: modalZoomIn 0.3s ease-out;
+  position: relative;
 }
 
 @keyframes fadeIn {

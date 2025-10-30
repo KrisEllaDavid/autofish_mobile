@@ -3,7 +3,9 @@ import TopNavBar from "../components/TopNavBar";
 import BottomNavBar from "../components/BottomNavBar";
 import PostCard from "../components/PostCard";
 import VerificationStatusBanner from "../components/VerificationStatusBanner";
+import VerificationSuccessModal from "../components/VerificationSuccessModal";
 import useLocalStorage from "../hooks/useLocalStorage";
+import { useVerificationStatus } from "../hooks/useVerificationStatus";
 import "./HomePage.css";
 import NotificationsPage from "./Notifications/NotificationsPage";
 import MyPage from "./MyPage";
@@ -45,6 +47,9 @@ const HomePage: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = React.useRef<HTMLDivElement>(null);
+
+  // Verification status monitoring
+  const { showVerificationModal, closeVerificationModal } = useVerificationStatus();
 
   // Debug logging
   useEffect(() => {
@@ -123,8 +128,8 @@ const HomePage: React.FC = () => {
             }
             
             // Create minimal producer data from publication page IDs when not authenticated
-            const uniquePageIds = [...new Set(publicationsData.map(pub => pub.page))];
-            uniquePageIds.forEach(pageId => {
+            const uniquePageIds = [...new Set(feedResponse.results.map((pub: Publication) => pub.page))];
+            uniquePageIds.forEach((pageId: number) => {
               producerPagesData[pageId] = {
                 id: pageId,
                 producer: 0,
@@ -655,6 +660,12 @@ const HomePage: React.FC = () => {
       </div>
       {/* Bottom Navigation */}
       <BottomNavBar activeTab={activeTab} onTabChange={handleTabChange} />
+
+      {/* Verification Success Modal */}
+      <VerificationSuccessModal
+        isOpen={showVerificationModal}
+        onClose={closeVerificationModal}
+      />
     </div>
   );
 };

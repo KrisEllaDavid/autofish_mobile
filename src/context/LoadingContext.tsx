@@ -15,7 +15,6 @@ interface LoadingProviderProps {
 
 export const LoadingProvider: React.FC<LoadingProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
-  // @ts-expect-error - loadingCount is used for tracking multiple concurrent requests
   const [_loadingCount, setLoadingCount] = useState(0); // Used for tracking multiple concurrent requests
 
   const showLoading = () => {

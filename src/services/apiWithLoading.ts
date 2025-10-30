@@ -37,7 +37,8 @@ export const useApiWithLoading = () => {
     updatePublication: (id: number, publicationData: any) => withLoading(apiClient.updatePublication(id, publicationData)),
     deletePublication: (id: number) => withLoading(apiClient.deletePublication(id)),
     getMyPublications: () => withLoading(apiClient.getMyPublications()),
-    getPublicFeed: () => withLoading(apiClient.getPublicFeed()),
+    getPublicFeed: (params?: { page?: number; limit?: number; user_categories?: number[] }) =>
+      withLoading(apiClient.getPublicFeed(params)),
     toggleLikePublication: (id: number) => withLoading(apiClient.toggleLikePublication(id)),
     validatePublication: (id: number) => withLoading(apiClient.validatePublication(id)),
 

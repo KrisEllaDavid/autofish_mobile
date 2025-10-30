@@ -217,22 +217,33 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
         <Modal
           isOpen={showDeleteModal}
           onClose={() => !isDeleting && setShowDeleteModal(false)}
-          title="Supprimer mon compte"
         >
-          <div style={{ padding: "20px 0" }}>
-            <p style={{ marginBottom: 20, fontSize: 15, lineHeight: 1.6 }}>
+          <div style={{ maxWidth: 400 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16, color: "#222", textAlign: "center" }}>
+              Supprimer mon compte
+            </h2>
+            <p style={{ marginBottom: 16, fontSize: 15, lineHeight: 1.6, color: "#555", textAlign: "center" }}>
               Êtes-vous sûr de vouloir supprimer votre compte ?
             </p>
-            <p style={{ marginBottom: 20, fontSize: 14, color: "#e74c3c", lineHeight: 1.6 }}>
-              <strong>Cette action est irréversible.</strong> Toutes vos données, y compris vos publications, messages et informations personnelles seront définitivement supprimées.
-            </p>
-            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+            <div style={{
+              padding: "16px",
+              background: "#fff3f3",
+              borderRadius: 12,
+              marginBottom: 24,
+              border: "1px solid #ffdbdb"
+            }}>
+              <p style={{ fontSize: 14, color: "#e74c3c", lineHeight: 1.6, margin: 0 }}>
+                <strong>⚠️ Cette action est irréversible.</strong><br />
+                Toutes vos données, y compris vos publications, messages et informations personnelles seront définitivement supprimées.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
               <button
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
                 style={{
                   flex: 1,
-                  padding: "12px 24px",
+                  padding: "14px 20px",
                   borderRadius: 12,
                   border: "1.5px solid #ddd",
                   background: "#fff",
@@ -241,6 +252,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                   fontSize: 15,
                   cursor: isDeleting ? "not-allowed" : "pointer",
                   opacity: isDeleting ? 0.5 : 1,
+                  transition: "all 0.2s",
                 }}
               >
                 Annuler
@@ -250,7 +262,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                 disabled={isDeleting}
                 style={{
                   flex: 1,
-                  padding: "12px 24px",
+                  padding: "14px 20px",
                   borderRadius: 12,
                   border: "none",
                   background: "#e74c3c",
@@ -259,6 +271,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                   fontSize: 15,
                   cursor: isDeleting ? "not-allowed" : "pointer",
                   opacity: isDeleting ? 0.7 : 1,
+                  transition: "all 0.2s",
                 }}
               >
                 {isDeleting ? "Suppression..." : "Supprimer définitivement"}

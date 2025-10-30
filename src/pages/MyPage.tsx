@@ -463,31 +463,23 @@ const MyPage: React.FC<MyPageProps> = ({
       <Modal isOpen={showPostModal} onClose={() => setShowPostModal(false)}>
         <div
           style={{
-            maxWidth: 400,
-            width: "90vw",
-            padding: 24,
-            background: "#fff",
-            borderRadius: 18,
-            boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-            maxHeight: "80vh",
+            maxWidth: "min(400px, 90vw)",
+            width: "100%",
+            maxHeight: "85vh",
             overflowY: "auto",
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: MODAL_Z_INDEX,
           }}
         >
-          <div
+          <h2
             style={{
               fontWeight: 700,
-              fontSize: 20,
-              marginBottom: 18,
+              fontSize: 18,
+              marginBottom: 16,
               color: MAIN_BLUE,
+              margin: "0 0 16px 0",
             }}
           >
             {editingPost ? "Modifier la publication" : "Nouvelle publication"}
-          </div>
+          </h2>
           <div className="modal-form-label">Image</div>
           {postImage && (
             <div style={{ marginBottom: 16 }}>
@@ -573,31 +565,23 @@ const MyPage: React.FC<MyPageProps> = ({
       >
         <div
           style={{
-            maxWidth: 400,
-            width: "90vw",
-            padding: 24,
-            background: "#fff",
-            borderRadius: 18,
-            boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-            maxHeight: "80vh",
+            maxWidth: "min(400px, 90vw)",
+            width: "100%",
+            maxHeight: "85vh",
             overflowY: "auto",
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: MODAL_Z_INDEX,
           }}
         >
-          <div
+          <h2
             style={{
               fontWeight: 700,
-              fontSize: 20,
-              marginBottom: 18,
+              fontSize: 18,
+              marginBottom: 16,
               color: MAIN_BLUE,
+              margin: "0 0 16px 0",
             }}
           >
             Modifier le nom de la page
-          </div>
+          </h2>
           <div className="modal-form-label">Nom de la page</div>
           <input
             className="modal-form-input"
@@ -636,31 +620,23 @@ const MyPage: React.FC<MyPageProps> = ({
       >
         <div
           style={{
-            maxWidth: 400,
-            width: "90vw",
-            padding: 24,
-            background: "#fff",
-            borderRadius: 18,
-            boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-            maxHeight: "80vh",
+            maxWidth: "min(400px, 90vw)",
+            width: "100%",
+            maxHeight: "85vh",
             overflowY: "auto",
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: MODAL_Z_INDEX,
           }}
         >
-          <div
+          <h2
             style={{
               fontWeight: 700,
-              fontSize: 20,
-              marginBottom: 18,
+              fontSize: 18,
+              marginBottom: 16,
               color: MAIN_BLUE,
+              margin: "0 0 16px 0",
             }}
           >
             Modifier l'adresse
-          </div>
+          </h2>
           <div className="modal-form-label">Adresse</div>
           <input
             className="modal-form-input"
@@ -696,35 +672,27 @@ const MyPage: React.FC<MyPageProps> = ({
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
         <div
           style={{
-            maxWidth: 400,
-            width: "90vw",
-            padding: 24,
-            background: "#fff",
-            borderRadius: 18,
-            boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-            maxHeight: "80vh",
+            maxWidth: "min(400px, 90vw)",
+            width: "100%",
+            maxHeight: "85vh",
             overflowY: "auto",
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: MODAL_Z_INDEX,
           }}
         >
-          <div
+          <h2
             style={{
               fontWeight: 700,
-              fontSize: 20,
-              marginBottom: 18,
+              fontSize: 18,
+              marginBottom: 12,
               color: "#FF4B4B",
+              margin: "0 0 12px 0",
             }}
           >
             Supprimer la publication
-          </div>
-          <div style={{ marginBottom: 24, color: "#666" }}>
+          </h2>
+          <p style={{ marginBottom: 20, color: "#666", fontSize: 14, lineHeight: 1.5 }}>
             Êtes-vous sûr de vouloir supprimer cette publication ? Cette action
             est irréversible.
-          </div>
+          </p>
           <div className="modal-btn-row">
             <button
               className="modal-btn cancel"
@@ -768,11 +736,11 @@ const MyPage: React.FC<MyPageProps> = ({
         .banner-container {
           position: relative;
           width: 100%;
-          height: 280px;
+          height: 200px;
           background: linear-gradient(135deg, #009cb7 0%, #007a8f 100%);
           overflow: hidden;
-          border-radius: 0 0 24px 24px;
-          box-shadow: 0 8px 32px rgba(0, 156, 183, 0.15);
+          border-radius: 0 0 20px 20px;
+          box-shadow: 0 4px 16px rgba(0, 156, 183, 0.15);
         }
         .banner {
           width: 100%;
@@ -789,89 +757,93 @@ const MyPage: React.FC<MyPageProps> = ({
         }
         .banner-camera {
           position: absolute;
-          bottom: 20px;
-          right: 20px;
-          width: 44px;
-          height: 44px;
+          bottom: 12px;
+          right: 12px;
+          width: 40px;
+          height: 40px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255, 255, 255, 0.9);
+          background: rgba(255, 255, 255, 0.95);
           border-radius: 50%;
           cursor: pointer;
           z-index: 3;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
         }
-        .banner-camera:hover {
-          background: #fff;
-          transform: scale(1.05);
+        .banner-camera:active {
+          transform: scale(0.95);
         }
-        .banner-camera img { width: 24px; height: 24px; opacity: 0.8; }
+        .banner-camera img { width: 20px; height: 20px; opacity: 0.8; }
 
         /* Profile Info */
         .profile-info {
           position: absolute;
-          left: 24px;
-          bottom: 24px;
+          left: 16px;
+          bottom: 16px;
           z-index: 4;
           color: #fff;
-          max-width: calc(100% - 120px);
+          max-width: calc(100% - 80px);
         }
         .profile-name {
           display: flex;
           align-items: center;
-          margin-bottom: 12px;
+          margin-bottom: 8px;
         }
         .profile-name-text {
-          font-size: 24px;
+          font-size: 20px;
           font-weight: 700;
           color: #fff;
-          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-          margin-right: 12px;
+          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+          margin-right: 8px;
+          line-height: 1.2;
         }
         .edit-btn {
-          background: rgba(255, 255, 255, 0.2);
+          background: rgba(255, 255, 255, 0.25);
           border-radius: 50%;
-          width: 36px;
-          height: 36px;
+          width: 32px;
+          height: 32px;
+          min-width: 32px;
+          min-height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           transition: all 0.3s ease;
+          border: none;
         }
-        .edit-btn:hover {
-          background: rgba(255, 255, 255, 0.3);
-          transform: scale(1.05);
+        .edit-btn:active {
+          transform: scale(0.95);
+          background: rgba(255, 255, 255, 0.35);
         }
-        .edit-btn img { width: 18px; height: 18px; }
+        .edit-btn img { width: 16px; height: 16px; }
         .profile-location {
           display: flex;
           align-items: center;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
         .profile-location-text {
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 500;
           opacity: 0.95;
           text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-          margin-right: 12px;
+          margin-right: 8px;
           display: flex;
           align-items: center;
+          line-height: 1.3;
         }
         .profile-location-text img {
-          margin-right: 8px;
+          margin-right: 6px;
         }
         .verification-status {
-          margin-top: 8px;
+          margin-top: 6px;
         }
         .status-badge {
           display: inline-flex;
           align-items: center;
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 14px;
+          padding: 4px 10px;
+          border-radius: 16px;
+          font-size: 12px;
           font-weight: 600;
           text-shadow: none;
         }
@@ -886,8 +858,8 @@ const MyPage: React.FC<MyPageProps> = ({
 
         /* Content Section */
         .content-section {
-          padding: 32px 20px 0;
-          max-width: 600px;
+          padding: 24px 16px 0;
+          max-width: 100%;
           margin: 0 auto;
           width: 100%;
         }
@@ -895,70 +867,71 @@ const MyPage: React.FC<MyPageProps> = ({
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 24px;
-          padding: 0 4px;
+          margin-bottom: 20px;
+          padding: 0;
         }
         .section-title {
           color: #1a1a1a;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 700;
         }
         .add-button-container {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
         }
         .warning-text {
-          font-size: 11px;
+          font-size: 10px;
           color: #FF6B35;
-          font-weight: 500;
+          font-weight: 600;
           text-align: center;
-          max-width: 120px;
-          line-height: 1.2;
+          max-width: 110px;
+          line-height: 1.3;
         }
         .publications-add {
-          width: 44px;
-          height: 44px;
+          width: 48px;
+          height: 48px;
+          min-width: 48px;
+          min-height: 48px;
           border-radius: 50%;
           background: linear-gradient(135deg, #009cb7 0%, #007a8f 100%);
           color: #fff;
-          font-size: 24px;
+          font-size: 28px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          font-weight: 700;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 16px rgba(0, 156, 183, 0.3);
+          font-weight: 400;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(0, 156, 183, 0.3);
           border: none;
         }
         .publications-add.disabled {
           background: #ccc;
           cursor: not-allowed;
           box-shadow: none;
+          opacity: 0.6;
         }
-        .publications-add:hover:not(.disabled) {
-          transform: scale(1.05);
-          box-shadow: 0 6px 20px rgba(0, 156, 183, 0.4);
+        .publications-add:active:not(.disabled) {
+          transform: scale(0.95);
         }
 
         /* Posts Grid */
         .posts-grid {
           display: grid;
-          gap: 20px;
+          gap: 16px;
         }
         .post-card-container {
           position: relative;
-          animation: fadeIn 0.4s ease-out forwards;
-          border-radius: 16px;
+          animation: fadeIn 0.3s ease-out forwards;
+          border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-          transition: all 0.3s ease;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          transition: all 0.2s ease;
         }
-        .post-card-container:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        .post-card-container:active {
+          transform: scale(0.98);
         }
         @keyframes fadeIn {
           from {
@@ -979,8 +952,8 @@ const MyPage: React.FC<MyPageProps> = ({
 
         .post-actions {
           position: absolute;
-          top: 12px;
-          right: 12px;
+          top: 10px;
+          right: 10px;
           display: flex;
           gap: 8px;
           z-index: 10;
@@ -989,20 +962,21 @@ const MyPage: React.FC<MyPageProps> = ({
           background: rgba(255, 255, 255, 0.95);
           border: none;
           border-radius: 50%;
-          width: 36px;
-          height: 36px;
+          width: 40px;
+          height: 40px;
+          min-width: 40px;
+          min-height: 40px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
           padding: 0;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
-        .post-menu-btn:hover {
+        .post-menu-btn:active {
+          transform: scale(0.92);
           background: #fff;
-          transform: scale(1.05);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         /* Loading and Empty States */
@@ -1010,13 +984,13 @@ const MyPage: React.FC<MyPageProps> = ({
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: 60px 20px;
+          padding: 40px 16px;
         }
         .loading-spinner {
-          width: 48px;
-          height: 48px;
-          border: 4px solid #f3f3f3;
-          border-top: 4px solid #009cb7;
+          width: 40px;
+          height: 40px;
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #009cb7;
           border-radius: 50%;
           animation: spin 1s linear infinite;
         }
@@ -1026,40 +1000,98 @@ const MyPage: React.FC<MyPageProps> = ({
         }
         .empty-state {
           text-align: center;
-          padding: 60px 20px;
+          padding: 48px 20px;
           background: #fff;
-          border-radius: 16px;
-          margin-top: 12px;
+          border-radius: 12px;
+          margin-top: 8px;
         }
         .empty-state-icon {
-          font-size: 48px;
-          margin-bottom: 16px;
+          font-size: 56px;
+          margin-bottom: 12px;
           opacity: 0.5;
         }
         .empty-state-title {
-          font-size: 20px;
-          font-weight: 600;
+          font-size: 18px;
+          font-weight: 700;
           margin-bottom: 8px;
           color: #333;
         }
         .empty-state-subtitle {
-          font-size: 15px;
+          font-size: 14px;
           color: #666;
-          line-height: 1.4;
+          line-height: 1.5;
         }
-        .modal-form-label { font-weight: 600; margin-bottom: 6px; color: #222; }
-        .modal-form-input, .modal-form-select, .modal-form-textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1.2px solid #e0e0e0; background: #fff; font-size: 16px; color: #222; margin-bottom: 16px; box-sizing: border-box; }
-        .modal-form-textarea { min-height: 80px; resize: vertical; }
-        .modal-form-img-preview { width: 100%; max-width: 220px; border-radius: 12px; margin-bottom: 16px; }
-        .modal-btn-row { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
-        .modal-btn { padding: 15px 26px; border-radius: 10px; border: none; font-weight: 600; font-size: 14px; cursor: pointer; width: 50%;}
-        .modal-btn.save { background: #009cb7; color: #fff; }
-        .modal-btn.cancel { background: #eee; color: #222; }
+        .modal-form-label {
+          font-weight: 600;
+          margin-bottom: 8px;
+          color: #222;
+          font-size: 14px;
+        }
+        .modal-form-input, .modal-form-select, .modal-form-textarea {
+          width: 100%;
+          padding: 14px;
+          border-radius: 12px;
+          border: 1.5px solid #e0e0e0;
+          background: #fff;
+          font-size: 16px;
+          color: #222;
+          margin-bottom: 16px;
+          box-sizing: border-box;
+          transition: border-color 0.2s;
+        }
+        .modal-form-input:focus, .modal-form-select:focus, .modal-form-textarea:focus {
+          outline: none;
+          border-color: #009cb7;
+        }
+        .modal-form-textarea {
+          min-height: 100px;
+          resize: vertical;
+          font-family: inherit;
+        }
+        .modal-form-img-preview {
+          width: 100%;
+          max-width: 100%;
+          border-radius: 12px;
+          margin-bottom: 12px;
+        }
+        .modal-btn-row {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          margin-top: 12px;
+        }
+        .modal-btn {
+          padding: 16px 24px;
+          border-radius: 12px;
+          border: none;
+          font-weight: 700;
+          font-size: 15px;
+          cursor: pointer;
+          width: 50%;
+          transition: all 0.2s;
+        }
+        .modal-btn:active {
+          transform: scale(0.97);
+        }
+        .modal-btn.save {
+          background: #009cb7;
+          color: #fff;
+        }
+        .modal-btn.cancel {
+          background: #f5f5f5;
+          color: #666;
+        }
         .modal-btn.delete {
           background: #FF4B4B;
           color: #fff;
         }
-        .modal-buttons { width : 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
+        .modal-buttons {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+        }
       `}</style>
       <div className="my-page-container">
         <TopNavBar
@@ -1143,8 +1175,8 @@ const MyPage: React.FC<MyPageProps> = ({
                     src="/icons/Location.svg"
                     alt="location"
                     style={{
-                      width: 16,
-                      height: 16,
+                      width: 14,
+                      height: 14,
                       opacity: 0.9,
                       filter: 'brightness(0) invert(1)'
                     }}

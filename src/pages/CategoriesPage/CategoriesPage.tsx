@@ -56,10 +56,9 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
 
   const handleSelect = (cat: Category) => {
     const newSelectedCategories = [...selectedCategories, cat];
-    
+
     setSelectedCategories(newSelectedCategories);
     setAvailableCategories(availableCategories.filter((c) => c.id !== cat.id));
-    setDropdownOpen(false);
 
     // Update userData with the selected categories (store IDs as strings)
     updateUserData({
@@ -96,8 +95,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
           toast.error(`Champs manquants: ${msg}`);
           return;
         }
-        setIsRegistering(true);
-        
+
         // Debug logging
         console.log('🔍 Consumer Registration Debug:');
         console.log('Complete User Data:', completeUserData);
