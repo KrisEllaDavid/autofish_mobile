@@ -63,7 +63,18 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
       }, 1000);
     } catch (error) {
       console.error("Error deleting account:", error);
-      toast.error("Erreur lors de la suppression du compte. Veuillez réessayer.");
+
+      // Show specific error message if available
+      let errorMessage = "Erreur lors de la suppression du compte. Veuillez réessayer.";
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = `Erreur: ${(error as { message: string }).message}`;
+      } else if (error && typeof error === 'object' && 'error' in error) {
+        errorMessage = `Erreur: ${(error as { error: string }).error}`;
+      }
+
+      toast.error(errorMessage, {
+        autoClose: 5000
+      });
     } finally {
       setIsDeleting(false);
     }

@@ -22,17 +22,6 @@ interface MyPost extends Post {
 // Constants
 const DEFAULT_BANNER = "/images/page_banner.jpg";
 const MAIN_BLUE = "#00B2D6";
-const CATEGORIES = [
-  "Sélectionner une catégorie",
-  "Produits agricoles",
-  "Poissons",
-  "Fruits de mer",
-  "Épices",
-  "Légumes",
-  "Céréales",
-];
-const MODAL_Z_INDEX = 100000;
-
 const defaultBanner = DEFAULT_BANNER;
 const cameraIcon = "/icons/camera_icon_white.svg";
 const editIconWhite = "/icons/edit-white.svg";
@@ -42,7 +31,9 @@ interface MyPageProps {
   onBack: () => void;
   onNotificationClick?: () => void;
   onMyPageClick?: () => void;
-  onTabChange: (tab: "home" | "messages" | "producers" | "profile" | "favorites") => void;
+  onTabChange: (
+    tab: "home" | "messages" | "producers" | "profile" | "favorites"
+  ) => void;
   activeTab?: string;
   userAvatar?: string;
   userName?: string;
@@ -50,38 +41,39 @@ interface MyPageProps {
   userRole?: string;
 }
 
-const MyPage: React.FC<MyPageProps> = ({ 
-  onBack: _onBack, 
-  onNotificationClick, 
-  onMyPageClick, 
+const MyPage: React.FC<MyPageProps> = ({
+  onBack: _onBack,
+  onNotificationClick,
+  onMyPageClick,
   onTabChange,
   activeTab,
   userAvatar,
   userName,
   userEmail,
-  userRole
+  userRole,
 }) => {
   const { userData, updateUserData } = useAuth();
   const api = useApiWithLoading();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [producerPageData, setProducerPageData] = useState<ProducerPage | null>(null);
+  const hasFetchedPageData = useRef(false);
+  const [producerPageData, setProducerPageData] = useState<ProducerPage | null>(
+    null
+  );
   const [fetchingPageData, setFetchingPageData] = useState(false);
   const [banner, setBanner] = useState<string>(
-    producerPageData?.background_image || userData?.page?.banner || defaultBanner
+    userData?.page?.banner || defaultBanner
   );
   const [showPageNameModal, setShowPageNameModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [pageName, setPageName] = useState(
-    producerPageData?.name ||
     userData?.page?.pageName ||
-    userData?.name ||
-    "Ma Page"
+      userData?.name ||
+      "Ma Page"
   );
   const [location, setLocation] = useState(
-    producerPageData?.address ||
     userData?.page?.address ||
-    userData?.address ||
-    ""
+      userData?.address ||
+      ""
   );
   const [showPostModal, setShowPostModal] = useState(false);
   const [editingPost, setEditingPost] = useState<MyPost | null>(null);
@@ -89,10 +81,17 @@ const MyPage: React.FC<MyPageProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Categories from API
+  const [categories, setCategories] = useState<string[]>([
+    "Sélectionner une catégorie",
+  ]);
+
   // Post modal state
   const [postImage, setPostImage] = useState<string>("");
   const [postDescription, setPostDescription] = useState("");
-  const [postCategory, setPostCategory] = useState(CATEGORIES[0]);
+  const [postCategory, setPostCategory] = useState(
+    "Sélectionner une catégorie"
+  );
   const [postPrice, setPostPrice] = useState("");
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -100,12 +99,18 @@ const MyPage: React.FC<MyPageProps> = ({
 
   // Fetch producer page data from API
   const fetchProducerPageData = async () => {
-    if (userData?.userRole !== 'producteur' || !api.isAuthenticated()) {
+    if (userData?.userRole !== "producteur" || !api.isAuthenticated()) {
+      return;
+    }
+
+    // Prevent duplicate fetches
+    if (hasFetchedPageData.current || fetchingPageData) {
       return;
     }
 
     try {
       setFetchingPageData(true);
+      hasFetchedPageData.current = true;
       const pageData = await api.getMyProducerPage();
       setProducerPageData(pageData);
 
@@ -123,16 +128,26 @@ const MyPage: React.FC<MyPageProps> = ({
           address: pageData.address,
           phone: pageData.telephone,
           country: pageData.country,
-        }
+        },
       });
 
       if (import.meta.env.DEV) {
-        console.log('✅ Fetched producer page data:', pageData);
+        console.log("✅ Fetched producer page data:", pageData);
       }
     } catch (error) {
-      console.error('❌ Failed to fetch producer page data:', error);
-      // Don't show error toast if the page doesn't exist yet - user might need to create it
-      if (error && typeof error === 'object' && 'status' in error && error.status !== 404) {
+      console.error("❌ Failed to fetch producer page data:", error);
+
+      // If page doesn't exist, show clear error message
+      if (
+        error &&
+        typeof error === "object" &&
+        "status" in error &&
+        (error as any).status === 404
+      ) {
+        toast.error(
+          "Page producteur non trouvée. Veuillez contacter le support."
+        );
+      } else {
         toast.error("Erreur lors du chargement des informations de la page");
       }
     } finally {
@@ -140,47 +155,75 @@ const MyPage: React.FC<MyPageProps> = ({
     }
   };
 
-  // Load posts from cache or context
-  useEffect(() => {
-    const loadPosts = async () => {
-      setIsLoading(true);
-      try {
-        // Try to get from cache first
-        const cachedPosts = localStorage.getItem("myPosts");
-        if (cachedPosts) {
-          const parsedPosts = JSON.parse(cachedPosts);
-          // Sort posts by lastModified date
-          parsedPosts.sort(
-            (a: MyPost, b: MyPost) =>
-              new Date(b.lastModified || b.date).getTime() -
-              new Date(a.lastModified || a.date).getTime()
-          );
-          setPosts(parsedPosts);
-        } else if (userData?.myPosts) {
-          const sortedPosts = [...userData.myPosts].sort(
-            (a: MyPost, b: MyPost) =>
-              new Date(b.lastModified || b.date).getTime() -
-              new Date(a.lastModified || a.date).getTime()
-          );
-          setPosts(sortedPosts);
-          // Cache the posts
-          localStorage.setItem("myPosts", JSON.stringify(sortedPosts));
-        }
-      } catch {
-        // Error loading posts - show user-friendly message
-        toast.error("Erreur lors du chargement des publications");
-      } finally {
-        setIsLoading(false);
+  // Load posts from API
+  const fetchPublications = async () => {
+    if (userData?.userRole !== "producteur" || !api.isAuthenticated()) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const publications = await api.getMyPublications();
+
+      // Convert API publications to MyPost format
+      const convertedPosts: MyPost[] = publications.map((pub) => ({
+        id: pub.id.toString(),
+        postImage: pub.picture_url || pub.picture || "",
+        description: pub.description,
+        category: pub.category_name || pub.category.name,
+        price: pub.price,
+        producerName: pub.page_name || userData?.page?.pageName || "",
+        producerAvatar: userData?.avatar || "",
+        location: pub.location,
+        date: pub.date_posted,
+        lastModified: pub.date_posted,
+        likes: pub.likes_count || pub.likes || 0,
+        comments: 0, // TODO: Add comments when backend supports it
+        isLiked: pub.is_liked || false,
+      }));
+
+      setPosts(convertedPosts);
+
+      if (import.meta.env.DEV) {
+        console.log("✅ Fetched publications:", publications);
       }
-    };
+    } catch (error) {
+      console.error("❌ Failed to fetch publications:", error);
+      toast.error("Erreur lors du chargement des publications");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    loadPosts();
-  }, [userData?.myPosts]);
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      const apiCategories = await api.getCategories();
+      const categoryNames = [
+        "Sélectionner une catégorie",
+        ...apiCategories.map((cat) => cat.name),
+      ];
+      setCategories(categoryNames);
+    } catch (error) {
+      console.error("❌ Failed to fetch categories:", error);
+      // Keep default category if fetch fails
+    }
+  };
 
-  // Fetch producer page data on component mount
+  // Load posts from API on mount
   useEffect(() => {
-    fetchProducerPageData();
-  }, [userData?.userRole]); // Re-fetch if user role changes
+    fetchPublications();
+    fetchCategories();
+  }, []);
+
+  // Fetch producer page data on component mount (only once)
+  useEffect(() => {
+    if (userData?.userRole === "producteur" && !hasFetchedPageData.current) {
+      fetchProducerPageData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Banner change
   const handleBannerClick = () => fileInputRef.current?.click();
@@ -204,11 +247,14 @@ const MyPage: React.FC<MyPageProps> = ({
         reader.readAsDataURL(compressedFile);
 
         // Update backend if producer page exists
-        if (userData?.userRole === 'producteur' && producerPageData) {
+        if (userData?.userRole === "producteur" && producerPageData) {
           try {
-            const updatedPageData = await api.updateProducerPage(producerPageData.slug, {
-              background_image: compressedFile
-            });
+            const updatedPageData = await api.updateProducerPage(
+              producerPageData.slug,
+              {
+                background_image: compressedFile,
+              }
+            );
 
             setProducerPageData(updatedPageData);
             setBanner(updatedPageData.background_image || defaultBanner);
@@ -217,8 +263,8 @@ const MyPage: React.FC<MyPageProps> = ({
             updateUserData({
               page: {
                 ...userData?.page,
-                banner: updatedPageData.background_image
-              }
+                banner: updatedPageData.background_image,
+              },
             });
 
             toast.success("Bannière mise à jour avec succès");
@@ -245,11 +291,14 @@ const MyPage: React.FC<MyPageProps> = ({
 
   // Edit page name/location
   const savePageName = async () => {
-    if (userData?.userRole === 'producteur' && producerPageData) {
+    if (userData?.userRole === "producteur" && producerPageData) {
       try {
-        const updatedPageData = await api.updateProducerPage(producerPageData.slug, {
-          name: pageName.trim()
-        });
+        const updatedPageData = await api.updateProducerPage(
+          producerPageData.slug,
+          {
+            name: pageName.trim(),
+          }
+        );
 
         setProducerPageData(updatedPageData);
         setPageName(updatedPageData.name);
@@ -258,8 +307,8 @@ const MyPage: React.FC<MyPageProps> = ({
         updateUserData({
           page: {
             ...userData?.page,
-            pageName: updatedPageData.name
-          }
+            pageName: updatedPageData.name,
+          },
         });
 
         setShowPageNameModal(false);
@@ -277,11 +326,14 @@ const MyPage: React.FC<MyPageProps> = ({
   };
 
   const saveLocation = async () => {
-    if (userData?.userRole === 'producteur' && producerPageData) {
+    if (userData?.userRole === "producteur" && producerPageData) {
       try {
-        const updatedPageData = await api.updateProducerPage(producerPageData.slug, {
-          address: location.trim()
-        });
+        const updatedPageData = await api.updateProducerPage(
+          producerPageData.slug,
+          {
+            address: location.trim(),
+          }
+        );
 
         setProducerPageData(updatedPageData);
         setLocation(updatedPageData.address);
@@ -290,8 +342,8 @@ const MyPage: React.FC<MyPageProps> = ({
         updateUserData({
           page: {
             ...userData?.page,
-            address: updatedPageData.address
-          }
+            address: updatedPageData.address,
+          },
         });
 
         setShowLocationModal(false);
@@ -312,14 +364,16 @@ const MyPage: React.FC<MyPageProps> = ({
   const openCreatePostModal = () => {
     // Check if user is verified before allowing publication creation
     if (!userData?.is_verified) {
-      toast.error("Votre compte doit être vérifié par l'administrateur pour publier");
+      toast.error(
+        "Votre compte doit être vérifié par l'administrateur pour publier"
+      );
       return;
     }
-    
+
     setEditingPost(null);
     setPostImage("");
     setPostDescription("");
-    setPostCategory(CATEGORIES[0]);
+    setPostCategory(categories[0]);
     setPostPrice("");
     setShowPostModal(true);
   };
@@ -327,7 +381,7 @@ const MyPage: React.FC<MyPageProps> = ({
     setEditingPost(post);
     setPostImage(post.postImage || "");
     setPostDescription(post.description || "");
-    setPostCategory(post.category || CATEGORIES[0]);
+    setPostCategory(post.category || categories[0]);
     setPostPrice(post.price?.toString() || "");
     setShowPostModal(true);
   };
@@ -363,13 +417,16 @@ const MyPage: React.FC<MyPageProps> = ({
     if (!postToDelete) return;
 
     try {
+      // Delete from backend API
+      await api.deletePublication(parseInt(postToDelete));
+
+      // Update local state after successful API call
       const updatedPosts = posts.filter((p) => p.id !== postToDelete);
       setPosts(updatedPosts);
-      localStorage.setItem("myPosts", JSON.stringify(updatedPosts));
-      await updateUserData({ myPosts: updatedPosts });
+
       toast.success("Publication supprimée avec succès");
-    } catch {
-      // Error deleting post - already handled with toast.error below
+    } catch (error) {
+      console.error("❌ Failed to delete publication:", error);
       toast.error("Erreur lors de la suppression de la publication");
     } finally {
       setShowDeleteModal(false);
@@ -387,7 +444,7 @@ const MyPage: React.FC<MyPageProps> = ({
       toast.error("Veuillez ajouter une description");
       return;
     }
-    if (!postCategory) {
+    if (!postCategory || postCategory === "Sélectionner une catégorie") {
       toast.error("Veuillez sélectionner une catégorie");
       return;
     }
@@ -401,54 +458,114 @@ const MyPage: React.FC<MyPageProps> = ({
     }
 
     // Additional verification check for producers
-    if (userData?.userRole === 'producteur' && !userData?.is_verified) {
-      toast.error("Votre compte doit être vérifié par l'administrateur pour publier");
+    if (userData?.userRole === "producteur" && !userData?.is_verified) {
+      toast.error(
+        "Votre compte doit être vérifié par l'administrateur pour publier"
+      );
+      return;
+    }
+
+    if (!producerPageData?.id) {
+      toast.error(
+        "Votre page producteur n'a pas été trouvée. Veuillez contacter le support.",
+        {
+          autoClose: 5000,
+        }
+      );
       return;
     }
 
     setIsSaving(true);
     try {
-      const newPost: MyPost = {
-        id: editingPost ? editingPost.id : Date.now().toString(),
-        postImage: postImage,
-        description: postDescription.trim(),
-        category: postCategory,
-        price: parseFloat(postPrice),
-        producerName: userData?.page?.pageName || "",
-        producerAvatar: userData?.avatar || "",
-        location: userData?.page?.address || "",
-        date: new Date().toISOString(),
-        lastModified: new Date().toISOString(),
-        likes: editingPost?.likes || 0,
-        comments: editingPost?.comments || 0,
-        isLiked: editingPost?.isLiked || false,
-      };
+      // Fetch categories to get category ID
+      const categories = await api.getCategories();
+      const categoryObj = categories.find((cat) => cat.name === postCategory);
 
-      let updatedPosts;
+      if (!categoryObj) {
+        toast.error("Catégorie invalide");
+        return;
+      }
+
+      // Prepare image file if it's a new upload (data URL)
+      let imageFile: File | undefined;
+      if (postImage.startsWith("data:")) {
+        // Convert data URL to File
+        const response = await fetch(postImage);
+        const blob = await response.blob();
+        imageFile = new File([blob], "publication.jpg", { type: "image/jpeg" });
+      }
+
       if (editingPost) {
-        updatedPosts = posts.map((p) =>
-          p.id === editingPost.id ? newPost : p
+        // Update existing publication
+        const updateData: any = {
+          description: postDescription.trim(),
+          price: parseFloat(postPrice),
+          category: categoryObj.id,
+          location: producerPageData.address || "",
+        };
+
+        // Only include image if it's a new upload
+        if (imageFile) {
+          updateData.picture = imageFile;
+        }
+
+        const updatedPub = await api.updatePublication(
+          parseInt(editingPost.id),
+          updateData
         );
+
+        // Update local state
+        const updatedPosts = posts.map((p) =>
+          p.id === editingPost.id
+            ? {
+                ...p,
+                postImage: updatedPub.picture_url || p.postImage,
+                description: updatedPub.description,
+                category: updatedPub.category_name || updatedPub.category.name,
+                price: updatedPub.price,
+                lastModified: updatedPub.date_posted,
+              }
+            : p
+        );
+        setPosts(updatedPosts);
         toast.success("Publication modifiée avec succès");
       } else {
-        updatedPosts = [newPost, ...posts];
+        // Create new publication
+        const publicationData = {
+          page: producerPageData.id,
+          description: postDescription.trim(),
+          price: parseFloat(postPrice),
+          category: categoryObj.id,
+          location: producerPageData.address || "",
+          picture: imageFile,
+        };
+
+        const newPub = await api.createPublication(publicationData);
+
+        // Add to local state
+        const newPost: MyPost = {
+          id: newPub.id.toString(),
+          postImage: newPub.picture_url || postImage,
+          description: newPub.description,
+          category: newPub.category_name || newPub.category.name,
+          price: newPub.price,
+          producerName: userData?.page?.pageName || "",
+          producerAvatar: userData?.avatar || "",
+          location: newPub.location,
+          date: newPub.date_posted,
+          lastModified: newPub.date_posted,
+          likes: 0,
+          comments: 0,
+          isLiked: false,
+        };
+
+        setPosts([newPost, ...posts]);
         toast.success("Publication créée avec succès");
       }
 
-      // Sort posts by lastModified date
-      updatedPosts.sort(
-        (a, b) =>
-          new Date(b.lastModified || b.date).getTime() -
-          new Date(a.lastModified || a.date).getTime()
-      );
-
-      setPosts(updatedPosts);
-      localStorage.setItem("myPosts", JSON.stringify(updatedPosts));
-      await updateUserData({ myPosts: updatedPosts });
-
       setShowPostModal(false);
-    } catch {
-      // Error saving post - already handled with toast.error below
+    } catch (error) {
+      console.error("❌ Failed to save publication:", error);
       toast.error("Erreur lors de l'enregistrement de la publication");
     } finally {
       setIsSaving(false);
@@ -515,7 +632,7 @@ const MyPage: React.FC<MyPageProps> = ({
             value={postCategory}
             onChange={(e) => setPostCategory(e.target.value)}
           >
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>
@@ -689,7 +806,14 @@ const MyPage: React.FC<MyPageProps> = ({
           >
             Supprimer la publication
           </h2>
-          <p style={{ marginBottom: 20, color: "#666", fontSize: 14, lineHeight: 1.5 }}>
+          <p
+            style={{
+              marginBottom: 20,
+              color: "#666",
+              fontSize: 14,
+              lineHeight: 1.5,
+            }}
+          >
             Êtes-vous sûr de vouloir supprimer cette publication ? Cette action
             est irréversible.
           </p>
@@ -736,10 +860,10 @@ const MyPage: React.FC<MyPageProps> = ({
         .banner-container {
           position: relative;
           width: 100%;
-          height: 200px;
+          height: 350px;
           background: linear-gradient(135deg, #009cb7 0%, #007a8f 100%);
           overflow: hidden;
-          border-radius: 0 0 20px 20px;
+          border-radius: 0 0 0 0;
           box-shadow: 0 4px 16px rgba(0, 156, 183, 0.15);
         }
         .banner {
@@ -757,14 +881,14 @@ const MyPage: React.FC<MyPageProps> = ({
         }
         .banner-camera {
           position: absolute;
-          bottom: 12px;
+          bottom: 30px;
           right: 12px;
-          width: 40px;
-          height: 40px;
+          width: 48px;
+          height: 48px;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: rgba(255, 255, 255, 0.95);
+          background: rgba(20, 20, 20, 1);
           border-radius: 50%;
           cursor: pointer;
           z-index: 3;
@@ -774,13 +898,13 @@ const MyPage: React.FC<MyPageProps> = ({
         .banner-camera:active {
           transform: scale(0.95);
         }
-        .banner-camera img { width: 20px; height: 20px; opacity: 0.8; }
+        .banner-camera img { width: 20px; height: 20px; opacity: 1; }
 
         /* Profile Info */
         .profile-info {
           position: absolute;
           left: 16px;
-          bottom: 16px;
+          bottom: 30px;
           z-index: 4;
           color: #fff;
           max-width: calc(100% - 80px);
@@ -880,6 +1004,8 @@ const MyPage: React.FC<MyPageProps> = ({
           flex-direction: column;
           align-items: center;
           gap: 6px;
+          min-height: 48px;
+          min-width: 48px;
         }
         .warning-text {
           font-size: 10px;
@@ -906,6 +1032,7 @@ const MyPage: React.FC<MyPageProps> = ({
           transition: all 0.2s ease;
           box-shadow: 0 4px 12px rgba(0, 156, 183, 0.3);
           border: none;
+          padding : 0;
         }
         .publications-add.disabled {
           background: #ccc;
@@ -927,7 +1054,6 @@ const MyPage: React.FC<MyPageProps> = ({
           animation: fadeIn 0.3s ease-out forwards;
           border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
           transition: all 0.2s ease;
         }
         .post-card-container:active {
@@ -1118,28 +1244,32 @@ const MyPage: React.FC<MyPageProps> = ({
             <div className="banner-overlay" />
 
             {fetchingPageData && (
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                background: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '12px',
-                padding: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                zIndex: 5
-              }}>
-                <div style={{
-                  width: '20px',
-                  height: '20px',
-                  border: '2px solid #e0e0e0',
-                  borderTop: '2px solid #00B2D6',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }} />
-                <span style={{ fontSize: '14px', color: '#666' }}>
+              <div
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  background: "rgba(255, 255, 255, 0.9)",
+                  borderRadius: "12px",
+                  padding: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  zIndex: 5,
+                }}
+              >
+                <div
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    border: "2px solid #e0e0e0",
+                    borderTop: "2px solid #00B2D6",
+                    borderRadius: "50%",
+                    animation: "spin 1s linear infinite",
+                  }}
+                />
+                <span style={{ fontSize: "14px", color: "#666" }}>
                   Chargement des informations...
                 </span>
               </div>
@@ -1159,7 +1289,10 @@ const MyPage: React.FC<MyPageProps> = ({
             <div className="profile-info">
               <div className="profile-name">
                 <span className="profile-name-text">
-                  {producerPageData?.name || userData?.page?.pageName || userData?.name || 'Ma Page'}
+                  {producerPageData?.name ||
+                    userData?.page?.pageName ||
+                    userData?.name ||
+                    "Ma Page"}
                 </span>
                 <div
                   className="edit-btn"
@@ -1178,10 +1311,12 @@ const MyPage: React.FC<MyPageProps> = ({
                       width: 14,
                       height: 14,
                       opacity: 0.9,
-                      filter: 'brightness(0) invert(1)'
+                      filter: "brightness(0) invert(1)",
                     }}
                   />
-                  {producerPageData?.address || userData?.page?.address || 'Aucune adresse'}
+                  {producerPageData?.address ||
+                    userData?.page?.address ||
+                    "Aucune adresse"}
                 </span>
                 <div
                   className="edit-btn"
@@ -1191,7 +1326,7 @@ const MyPage: React.FC<MyPageProps> = ({
                 </div>
               </div>
 
-              {userData?.userRole === 'producteur' && (
+              {userData?.userRole === "producteur" && (
                 <div className="verification-status">
                   {userData?.is_verified ? (
                     <span className="status-badge status-verified">
@@ -1211,7 +1346,7 @@ const MyPage: React.FC<MyPageProps> = ({
           <div className="content-section">
             <div className="section-header">
               <h2 className="section-title">Mes Publications</h2>
-              {userData?.userRole === 'producteur' && (
+              {userData?.userRole === "producteur" && (
                 <div className="add-button-container">
                   {!userData?.is_verified && (
                     <div className="warning-text">
@@ -1219,7 +1354,9 @@ const MyPage: React.FC<MyPageProps> = ({
                     </div>
                   )}
                   <button
-                    className={`publications-add ${!userData?.is_verified ? 'disabled' : ''}`}
+                    className={`publications-add ${
+                      !userData?.is_verified ? "disabled" : ""
+                    }`}
                     onClick={openCreatePostModal}
                     disabled={!userData?.is_verified}
                   >
@@ -1238,7 +1375,8 @@ const MyPage: React.FC<MyPageProps> = ({
                 <div className="empty-state-icon">📝</div>
                 <div className="empty-state-title">Aucune publication</div>
                 <div className="empty-state-subtitle">
-                  Vous n'avez pas encore publié de contenu.<br />
+                  Vous n'avez pas encore publié de contenu.
+                  <br />
                   Créez votre première publication pour commencer!
                 </div>
               </div>
@@ -1293,10 +1431,10 @@ const MyPage: React.FC<MyPageProps> = ({
               </div>
             )}
           </div>
-        {renderModal()}
-        {renderPageNameModal()}
-        {renderLocationModal()}
-        {renderDeleteModal()}
+          {renderModal()}
+          {renderPageNameModal()}
+          {renderLocationModal()}
+          {renderDeleteModal()}
         </div>
         <BottomNavBar activeTab="profile" onTabChange={onTabChange} />
       </div>
