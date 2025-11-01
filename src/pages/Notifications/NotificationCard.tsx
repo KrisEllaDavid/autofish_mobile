@@ -14,11 +14,13 @@ const getInitials = (name: string) => {
 interface NotificationCardProps {
   notification: Notification;
   style?: React.CSSProperties;
+  onNotificationClick?: (notification: Notification) => void;
 }
 
 const NotificationCard: React.FC<NotificationCardProps> = ({
   notification,
   style,
+  onNotificationClick,
 }) => (
   <div className="post-animation" style={style}>
     <div
@@ -31,7 +33,9 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
         padding: 12,
         marginBottom: 12,
         border: "1px solid #e6e6e6",
+        cursor: onNotificationClick ? "pointer" : "default",
       }}
+      onClick={() => onNotificationClick && onNotificationClick(notification)}
     >
       {/* Avatar or initials */}
       {notification.user.avatar ? (

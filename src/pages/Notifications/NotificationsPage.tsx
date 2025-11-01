@@ -36,6 +36,7 @@ interface NotificationsPageProps {
   onNotificationClick: () => void;
   onMyPageClick: () => void;
   onTabChange: (tab: "home" | "messages" | "producers" | "profile" | "favorites") => void;
+  onNavigateToPost?: (postId: string) => void;
   activeTab: string;
   userAvatar?: string;
   userName?: string;
@@ -48,6 +49,7 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({
   onNotificationClick,
   onMyPageClick,
   onTabChange,
+  onNavigateToPost,
   activeTab,
   userAvatar,
   userName,
@@ -59,6 +61,13 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
+
+  const handleNotificationClick = (notification: UINotification) => {
+    // Navigate to the related post if it exists
+    if (notification.postId && onNavigateToPost) {
+      onNavigateToPost(notification.postId);
+    }
+  };
 
   // Fetch notifications from API
   const fetchNotifications = async () => {
@@ -176,7 +185,10 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({
                 <p>Vous n'avez pas encore de notifications. Elles apparaîtront ici lorsque vous en recevrez.</p>
               </div>
             ) : (
-              <NotificationList notifications={notifications} />
+              <NotificationList
+                notifications={notifications}
+                onNotificationClick={handleNotificationClick}
+              />
             )}
           </>
         )}
