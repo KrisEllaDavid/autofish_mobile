@@ -20,9 +20,7 @@ interface MyPost extends Post {
 }
 
 // Constants
-const DEFAULT_BANNER = "/images/page_banner.jpg";
 const MAIN_BLUE = "#00B2D6";
-const defaultBanner = DEFAULT_BANNER;
 const cameraIcon = "/icons/camera_icon_white.svg";
 const editIconWhite = "/icons/edit-white.svg";
 const editIconBlack = "/icons/edit-black.svg";
@@ -61,7 +59,7 @@ const MyPage: React.FC<MyPageProps> = ({
   );
   const [fetchingPageData, setFetchingPageData] = useState(false);
   const [banner, setBanner] = useState<string>(
-    userData?.page?.banner || defaultBanner
+    userData?.page?.banner || ""
   );
   const [showPageNameModal, setShowPageNameModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -115,7 +113,7 @@ const MyPage: React.FC<MyPageProps> = ({
       setProducerPageData(pageData);
 
       // Update local state with API data
-      setBanner(pageData.background_image || defaultBanner);
+      setBanner(pageData.background_image || "");
       setPageName(pageData.name || userData?.name || "Ma Page");
       setLocation(pageData.address || "");
 
@@ -257,7 +255,7 @@ const MyPage: React.FC<MyPageProps> = ({
             );
 
             setProducerPageData(updatedPageData);
-            setBanner(updatedPageData.background_image || defaultBanner);
+            setBanner(updatedPageData.background_image || "");
 
             // Update context
             updateUserData({
@@ -272,7 +270,7 @@ const MyPage: React.FC<MyPageProps> = ({
             console.error("Failed to update banner:", error);
             toast.error("Erreur lors de la mise à jour de la bannière");
             // Revert banner on error
-            setBanner(producerPageData?.background_image || defaultBanner);
+            setBanner(producerPageData?.background_image || "");
           }
         } else {
           // Fallback to local storage for non-producers or if page doesn't exist
@@ -1232,15 +1230,14 @@ const MyPage: React.FC<MyPageProps> = ({
         />
         <div className="fade-in-page">
           {/* Banner Section */}
-          <div className="banner-container">
-            <img
-              src={normalizeImageUrl(banner)}
-              alt="banner"
-              className="banner"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = defaultBanner;
-              }}
-            />
+          <div
+            className="banner-container"
+            style={{
+              background: banner
+                ? `url(${normalizeImageUrl(banner)}) center/cover no-repeat`
+                : 'linear-gradient(135deg, #00B2D6 0%, #009CB7 100%)'
+            }}
+          >
             <div className="banner-overlay" />
 
             {fetchingPageData && (

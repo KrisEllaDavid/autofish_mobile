@@ -4,7 +4,6 @@ import { compressImage, validateImage } from "../utils/imageCompression";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 
-const defaultBanner = "/images/page_banner.jpg";
 const defaultAvatar = "/icons/account.svg";
 const cameraIcon = "/icons/camera_icon_white.svg";
 const locationIcon = "/icons/Location.svg";
@@ -16,7 +15,7 @@ const PagePreviewPage: React.FC<{
   const { userData, updateUserData } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const banner = userData?.page?.banner || defaultBanner;
+  const banner = userData?.page?.banner || "";
 
   const handleBannerClick = () => {
     fileInputRef.current?.click();
@@ -203,21 +202,14 @@ const PagePreviewPage: React.FC<{
             width: "100%",
             height: 300,
             marginBottom: 30,
-            background: "#000",
+            background: banner
+              ? `url(${banner}) center/cover no-repeat`
+              : 'linear-gradient(135deg, #00B2D6 0%, #009CB7 100%)',
             borderTopLeftRadius: 0,
             borderTopRightRadius: 0,
             overflow: "hidden",
           }}
         >
-          <img
-            src={banner}
-            alt="banner"
-            className="banner"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = defaultBanner;
-            }}
-          />
           <div className="banner-overlay" style={{ height: "100%" }} />
           <div
             style={{
