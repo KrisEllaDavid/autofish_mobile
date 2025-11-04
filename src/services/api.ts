@@ -118,7 +118,9 @@ export interface ProducerPage {
   name: string;
   slug: string;
   logo?: string;
+  logo_url?: string;  // Full URL from image server or backend
   background_image?: string;
+  background_image_url?: string;  // Full URL from image server or backend
   country: string;
   address: string;
   telephone: string;

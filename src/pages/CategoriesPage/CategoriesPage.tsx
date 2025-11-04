@@ -27,6 +27,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [goToDescription, setGoToDescription] = useState(false);
   const [goToPageCreation, setGoToPageCreation] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   // Fetch categories from API - extracted to reusable function
   const fetchCategories = async () => {
@@ -81,6 +82,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
     if (profileType === "client") {
       // Directly register consumer after choosing categories
       try {
+        setIsRegistering(true);
         clearError();
         if (!userData || !userData.email || !userData.password) {
           toast.error("Informations d'inscription manquantes");
@@ -99,9 +101,9 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
         // Debug logging
         console.log('🔍 Consumer Registration Debug:');
         console.log('Complete User Data:', completeUserData);
-        
+
         const registrationData = parseUserDataForClientRegistration(completeUserData, completeUserData.password!);
-        
+
         console.log('🚀 Parsed Registration Data:', registrationData);
         console.log('📋 Registration Data Fields:');
         Object.entries(registrationData).forEach(([key, value]) => {
@@ -113,12 +115,17 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
             console.log(`  ${key}: ${typeof value} = ${value}`);
           }
         });
-        
+
         await register(registrationData);
         // On success, isAuthenticated becomes true and App shows HomePage
-      } catch {
-        // Error is handled by register() and error state; provide a toast here for UX
+        // Or needsEmailVerification becomes true and verification page is shown
+        toast.success("Inscription réussie! Vérifiez votre email pour activer votre compte.");
+      } catch (error) {
+        // Only show error if registration actually failed
+        console.error('Registration error:', error);
         toast.error("Inscription échouée. Veuillez réessayer.");
+      } finally {
+        setIsRegistering(false);
       }
     } else if (profileType === "producer") {
       // Producers need to provide description first
@@ -241,16 +248,30 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
           </div>
           
           {/* Continue Button */}
-          <button 
-            className="categories-action-btn" 
+          <button
+            className="categories-action-btn"
             onClick={handleContinue}
-            disabled={profileType === "producer" && selectedCategories.length === 0}
+            disabled={(profileType === "producer" && selectedCategories.length === 0) || isRegistering}
             style={{
-              opacity: profileType === "producer" && selectedCategories.length === 0 ? 0.5 : 1,
-              cursor: profileType === "producer" && selectedCategories.length === 0 ? 'not-allowed' : 'pointer'
+              opacity: (profileType === "producer" && selectedCategories.length === 0) || isRegistering ? 0.5 : 1,
+              cursor: (profileType === "producer" && selectedCategories.length === 0) || isRegistering ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
             }}
           >
-            Suivant
+            {isRegistering && profileType === "client" && (
+              <div style={{
+                width: '16px',
+                height: '16px',
+                border: '2px solid #ffffff',
+                borderTop: '2px solid transparent',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
+            )}
+            {profileType === "client" ? "Terminer l'inscription" : "Suivant"}
             {profileType === "producer" && selectedCategories.length === 0 && (
               <div style={{ fontSize: '12px', marginTop: '4px' }}>
                 Sélectionnez au moins une catégorie

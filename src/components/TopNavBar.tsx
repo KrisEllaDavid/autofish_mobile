@@ -13,7 +13,7 @@ interface TopNavBarProps {
   hasNewPublications?: boolean; // Indicator for new publications
 }
 
-const defaultAvatar = "/icons/autofish_blue_logo.svg";
+const defaultAvatar = "/icons/autofish_blue_logo 1.png";
 const notificationIcon = "/icons/Notification.svg";
 const notificationIconWhite = "/icons/Notification_white.svg";
 const menuIcon = "/icons/3-dots-home-menu.svg";

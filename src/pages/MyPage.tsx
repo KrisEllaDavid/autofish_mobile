@@ -113,7 +113,9 @@ const MyPage: React.FC<MyPageProps> = ({
       setProducerPageData(pageData);
 
       // Update local state with API data
-      setBanner(pageData.background_image || "");
+      // Use background_image_url if available, fallback to background_image
+      const bannerUrl = pageData.background_image_url || pageData.background_image || "";
+      setBanner(bannerUrl);
       setPageName(pageData.name || userData?.name || "Ma Page");
       setLocation(pageData.address || "");
 
@@ -122,7 +124,7 @@ const MyPage: React.FC<MyPageProps> = ({
         page: {
           ...userData?.page,
           pageName: pageData.name,
-          banner: pageData.background_image,
+          banner: bannerUrl,
           address: pageData.address,
           phone: pageData.telephone,
           country: pageData.country,
@@ -247,6 +249,7 @@ const MyPage: React.FC<MyPageProps> = ({
         // Update backend if producer page exists
         if (userData?.userRole === "producteur" && producerPageData) {
           try {
+            console.log("🔄 Uploading banner to backend...");
             const updatedPageData = await api.updateProducerPage(
               producerPageData.slug,
               {
@@ -254,23 +257,31 @@ const MyPage: React.FC<MyPageProps> = ({
               }
             );
 
+            console.log("✅ Banner upload response:", updatedPageData);
+            console.log("📸 background_image:", updatedPageData.background_image);
+            console.log("🌐 background_image_url:", updatedPageData.background_image_url);
+
             setProducerPageData(updatedPageData);
-            setBanner(updatedPageData.background_image || "");
+            // Use background_image_url if available, fallback to background_image
+            const updatedBanner = updatedPageData.background_image_url || updatedPageData.background_image || "";
+            console.log("🖼️ Setting banner to:", updatedBanner);
+            setBanner(updatedBanner);
 
             // Update context
             updateUserData({
               page: {
                 ...userData?.page,
-                banner: updatedPageData.background_image,
+                banner: updatedBanner,
               },
             });
 
             toast.success("Bannière mise à jour avec succès");
           } catch (error) {
-            console.error("Failed to update banner:", error);
+            console.error("❌ Failed to update banner:", error);
             toast.error("Erreur lors de la mise à jour de la bannière");
             // Revert banner on error
-            setBanner(producerPageData?.background_image || "");
+            const revertBanner = producerPageData?.background_image_url || producerPageData?.background_image || "";
+            setBanner(revertBanner);
           }
         } else {
           // Fallback to local storage for non-producers or if page doesn't exist

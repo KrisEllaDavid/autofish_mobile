@@ -31,7 +31,7 @@ interface TopProducersPageProps {
 const convertProducerPageToProducer = (producerPage: ProducerPage): Producer => ({
   id: producerPage.id,
   name: producerPage.name,
-  avatar: producerPage.logo || imageService.getFallbackImageUrl('logos'),
+  avatar: producerPage.logo_url || producerPage.logo || imageService.getFallbackImageUrl('logos'),
   specialty: producerPage.categories.map(cat => cat.name).join(', ') || 'Producteur',
   location: `${producerPage.city}, ${producerPage.country}`,
   rating: 4.5, // Placeholder rating - would need to be implemented in API

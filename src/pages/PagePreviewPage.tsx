@@ -4,7 +4,7 @@ import { compressImage, validateImage } from "../utils/imageCompression";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 
-const defaultAvatar = "/icons/account.svg";
+const defaultAvatar = "/icons/autofish_blue_logo 1.png";
 const cameraIcon = "/icons/camera_icon_white.svg";
 const locationIcon = "/icons/Location.svg";
 

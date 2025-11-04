@@ -595,7 +595,7 @@ const HomePage: React.FC = () => {
                     key={publication.id}
                     id={publication.id.toString()}
                     producerName={publication.page_name || producerPage?.name || 'Producteur inconnu'}
-                    producerAvatar={producerPage?.logo || '/icons/account_icon.svg'}
+                    producerAvatar={producerPage?.logo_url || producerPage?.logo || '/icons/account_icon.svg'}
                     postImage={publication.picture_url || publication.picture || '/icons/autofish_blue_logo.svg'}
                     description={publication.description}
                     date={publication.date_posted}

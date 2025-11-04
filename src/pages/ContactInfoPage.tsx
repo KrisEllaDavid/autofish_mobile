@@ -367,7 +367,7 @@ const ContactInfoPage: React.FC<{
                 }}
               >
                 <img
-                  src={userData?.avatar || "/icons/account.svg"}
+                  src={userData?.avatar || "/icons/autofish_blue_logo 1.png"}
                   alt="avatar"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />

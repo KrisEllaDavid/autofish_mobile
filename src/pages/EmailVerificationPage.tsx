@@ -15,29 +15,48 @@ const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
   email,
   onVerified,
 }) => {
-  const { updateUserData } = useAuth();
+  const { updateUserData, login, userData } = useAuth();
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isChecking, setIsChecking] = useState(false);
 
-  // Check verification status only when user manually clicks
+  // Check verification status and auto-login
   const checkVerification = async () => {
     if (isChecking) return;
 
     setIsChecking(true);
     try {
-      // Check if the user is now verified by trying to get current user
-      const currentUser = await apiClient.getCurrentUser();
-      if (currentUser && currentUser.email_verified) {
-        updateUserData({ email_verified: true });
-        toast.success("Email vérifié avec succès !");
-        onVerified();
+      // Check if we have email and password in userData to login
+      if (!userData?.email || !userData?.password) {
+        // Fallback: Just check verification status without auto-login
+        const currentUser = await apiClient.getCurrentUser();
+        if (currentUser && currentUser.email_verified) {
+          updateUserData({ email_verified: true });
+          toast.success("Email vérifié avec succès !");
+          onVerified();
+          return;
+        } else {
+          toast.info("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
+        }
         return;
+      }
+
+      // Try to login with stored credentials
+      const loginResult = await login({
+        email: userData.email,
+        password: userData.password
+      });
+
+      // If login is successful and email is verified, user will be auto-navigated
+      if (loginResult && loginResult.email_verified) {
+        toast.success("Email vérifié avec succès ! Connexion en cours...");
+        onVerified();
       } else {
         toast.info("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
       }
-    } catch {
-      toast.error("Erreur lors de la vérification. Veuillez réessayer.");
+    } catch (error) {
+      console.error("Verification/login error:", error);
+      toast.error("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
     } finally {
       setIsChecking(false);
     }
