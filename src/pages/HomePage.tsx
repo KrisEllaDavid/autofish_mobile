@@ -13,11 +13,13 @@ import TopProducersPage from "./TopProducersPage/TopProducersPage";
 import FavoritePostsPage from "./FavoritePostsPage/FavoritePostsPage";
 import MessagesPage from "./MessagesPage/MessagesPage";
 import MyAccountPage from "./MyAccountPage/MyAccountPage";
+import SearchResultsPage from "./SearchResultsPage";
+import PublicationPreviewPage from "./PublicationPreviewPage";
 import { useAuth } from "../context/AuthContext";
 import { useApiWithLoading } from "../services/apiWithLoading";
 import { Publication, ProducerPage } from "../services/api";
 
-type MainTab = "home" | "messages" | "producers" | "profile" | "myPage" | "favorites";
+type MainTab = "home" | "messages" | "producers" | "profile" | "myPage" | "favorites" | "search" | "publication-preview";
 
 enum Overlay {
   None = "none",
@@ -41,6 +43,8 @@ const HomePage: React.FC = () => {
     []
   );
   const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPublicationId, setSelectedPublicationId] = useState<number | null>(null);
 
   // Pagination state for lazy loading
   const [currentPage, setCurrentPage] = useState(1);
@@ -381,6 +385,11 @@ const HomePage: React.FC = () => {
         onNotificationClick={handleNotificationClick}
         onMyPageClick={handleMyPageClick}
         onTabChange={handleTabChange}
+        onNavigateToPost={(postId) => {
+          setSelectedPublicationId(parseInt(postId));
+          setActiveTab("publication-preview");
+          setOverlay(Overlay.None);
+        }}
         activeTab="notifications"
         userAvatar={userData?.avatar}
         userName={userData?.name}
@@ -393,12 +402,55 @@ const HomePage: React.FC = () => {
   // Show my page
   if (activeTab === "myPage") {
     return (
-      <MyPage 
+      <MyPage
         onBack={goHome}
         onNotificationClick={handleNotificationClick}
         onMyPageClick={handleMyPageClick}
         onTabChange={handleTabChange}
         activeTab="myPage"
+        userAvatar={userData?.avatar}
+        userName={userData?.name}
+        userEmail={userData?.email}
+        userRole={userData?.userRole}
+      />
+    );
+  }
+
+  // Show search results page
+  if (activeTab === "search") {
+    return (
+      <SearchResultsPage
+        onBack={goHome}
+        onNotificationClick={handleNotificationClick}
+        onMyPageClick={handleMyPageClick}
+        onTabChange={handleTabChange}
+        activeTab="search"
+        userAvatar={userData?.avatar}
+        userName={userData?.name}
+        userEmail={userData?.email}
+        userRole={userData?.userRole}
+        initialSearchQuery={searchQuery}
+        onPostClick={(postId) => {
+          setSelectedPublicationId(postId);
+          setActiveTab("publication-preview");
+        }}
+      />
+    );
+  }
+
+  // Show publication preview page
+  if (activeTab === "publication-preview" && selectedPublicationId) {
+    return (
+      <PublicationPreviewPage
+        publicationId={selectedPublicationId}
+        onBack={() => {
+          setSelectedPublicationId(null);
+          setActiveTab("home");
+        }}
+        onNotificationClick={handleNotificationClick}
+        onMyPageClick={handleMyPageClick}
+        onTabChange={handleTabChange}
+        activeTab="publication-preview"
         userAvatar={userData?.avatar}
         userName={userData?.name}
         userEmail={userData?.email}
@@ -494,7 +546,7 @@ const HomePage: React.FC = () => {
         activeTab={activeTab}
         hasNewPublications={hasNewPublications}
       />
-      {/* Search Bar */}
+      {/* Search Bar - Click to open search page */}
       <div
         style={{
           width: "100%",
@@ -515,21 +567,37 @@ const HomePage: React.FC = () => {
             position: "relative",
           }}
         >
-          <input
-            type="text"
-            placeholder="Rechercher des produits..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+          <div
+            onClick={() => {
+              setSearchQuery("");
+              setActiveTab("search");
+            }}
             style={{
               width: "100%",
               padding: "12px 16px",
               border: "1px solid #e0e0e0",
               borderRadius: "8px",
               fontSize: "16px",
-              outline: "none",
               backgroundColor: "white",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              color: "#999",
+              transition: "border-color 0.2s, box-shadow 0.2s",
             }}
-          />
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "#00B2D6";
+              e.currentTarget.style.boxShadow = "0 0 0 2px rgba(0, 178, 214, 0.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "#e0e0e0";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <span style={{ fontSize: 18 }}>🔍</span>
+            <span>Rechercher des produits...</span>
+          </div>
         </div>
       </div>
 
@@ -591,26 +659,43 @@ const HomePage: React.FC = () => {
               {filteredPublications.map((publication) => {
                 const producerPage = producerPages[publication.page];
                 return (
-                  <PostCard
+                  <div
                     key={publication.id}
-                    id={publication.id.toString()}
-                    producerName={publication.page_name || producerPage?.name || 'Producteur inconnu'}
-                    producerAvatar={producerPage?.logo_url || producerPage?.logo || '/icons/account_icon.svg'}
-                    postImage={publication.picture_url || publication.picture || '/icons/autofish_blue_logo.svg'}
-                    description={publication.description}
-                    date={publication.date_posted}
-                    likes={publication.likes_count || publication.likes || 0}
-                    comments={0} // TODO: Implement comments system
-                    category={publication.category_name || publication.category.name}
-                    location={publication.location}
-                    price={publication.price}
-                    producerPhone={publication.producer_phone || producerPage?.telephone}
-                    postTitle={publication.title}
-                    onLike={() => handleLike(publication.id)}
-                    onComment={() => handleComment(publication.id)}
-                    onProducerClick={() => handleProducerClick(publication.producer || 0)}
-                    isLiked={publication.is_liked !== undefined ? publication.is_liked : likedPosts.includes(publication.id.toString())}
-                  />
+                    onClick={() => {
+                      setSelectedPublicationId(publication.id);
+                      setActiveTab("publication-preview");
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <PostCard
+                      id={publication.id.toString()}
+                      producerName={publication.page_name || producerPage?.name || 'Producteur inconnu'}
+                      producerAvatar={producerPage?.logo_url || producerPage?.logo || '/icons/account_icon.svg'}
+                      postImage={publication.picture_url || publication.picture || '/icons/autofish_blue_logo.svg'}
+                      description={publication.description}
+                      date={publication.date_posted}
+                      likes={publication.likes_count || publication.likes || 0}
+                      comments={0} // TODO: Implement comments system
+                      category={publication.category_name || publication.category.name}
+                      location={publication.location}
+                      price={publication.price}
+                      producerPhone={publication.producer_phone || producerPage?.telephone}
+                      postTitle={publication.title}
+                      onLike={(e) => {
+                        e?.stopPropagation();
+                        handleLike(publication.id);
+                      }}
+                      onComment={(e) => {
+                        e?.stopPropagation();
+                        handleComment(publication.id);
+                      }}
+                      onProducerClick={(e) => {
+                        e?.stopPropagation();
+                        handleProducerClick(publication.producer || 0);
+                      }}
+                      isLiked={publication.is_liked !== undefined ? publication.is_liked : likedPosts.includes(publication.id.toString())}
+                    />
+                  </div>
                 );
               })}
 

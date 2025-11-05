@@ -17,6 +17,8 @@ import "react-toastify/dist/ReactToastify.css";
 interface MyPost extends Post {
   lastModified?: string;
   isLiked?: boolean;
+  pageIsValidated?: boolean;
+  willAppearInFeed?: boolean;
 }
 
 // Constants
@@ -186,6 +188,8 @@ const MyPage: React.FC<MyPageProps> = ({
         likes: pub.likes_count || pub.likes || 0,
         comments: 0, // TODO: Add comments when backend supports it
         isLiked: pub.is_liked || false,
+        pageIsValidated: pub.page_is_validated,
+        willAppearInFeed: pub.will_appear_in_feed,
       }));
 
       setPosts(convertedPosts);
@@ -1356,6 +1360,46 @@ const MyPage: React.FC<MyPageProps> = ({
             </div>
           </div>
 
+          {/* Page Validation Warning */}
+          {userData?.userRole === "producteur" && producerPageData && !producerPageData.is_validated && (
+            <div
+              style={{
+                backgroundColor: "#FFF3CD",
+                border: "1px solid #FFC107",
+                borderRadius: 12,
+                padding: "16px",
+                margin: "16px 16px 0 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontWeight: 600,
+                  fontSize: 16,
+                  color: "#856404",
+                }}
+              >
+                <span>⚠️</span>
+                <span>Page en attente de validation</span>
+              </div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 14,
+                  color: "#856404",
+                  lineHeight: 1.5,
+                }}
+              >
+                Les administrateurs d'Autofish vont vérifier que toutes vos informations sont correctes avant que vos publications soient disponibles pour les consommateurs.
+              </p>
+            </div>
+          )}
+
           {/* Content Section */}
           <div className="content-section">
             <div className="section-header">
@@ -1398,6 +1442,25 @@ const MyPage: React.FC<MyPageProps> = ({
               <div className="posts-grid">
                 {posts.map((post) => (
                   <div key={post.id} className="post-card-container">
+                    {!post.willAppearInFeed && (
+                      <div
+                        style={{
+                          backgroundColor: "#FFF3CD",
+                          border: "1px solid #FFC107",
+                          borderRadius: "8px 8px 0 0",
+                          padding: "8px 12px",
+                          fontSize: 12,
+                          color: "#856404",
+                          fontWeight: 600,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        <span>⚠️</span>
+                        <span>Page non validée - Publication non visible publiquement</span>
+                      </div>
+                    )}
                     <PostCard
                       id={post.id}
                       producerName={post.producerName}

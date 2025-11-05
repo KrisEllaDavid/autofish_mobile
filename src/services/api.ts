@@ -147,18 +147,41 @@ export interface Publication {
   category_name?: string;
   likes: number;
   likes_count?: number;
+  comments_count?: number;  // Number of comments
   is_liked?: boolean;
   picture?: string;
   picture_url?: string;
   location: string;
   date_posted: string;
   is_valid: boolean;
+  page_is_validated?: boolean;  // Whether the producer's page is validated
+  will_appear_in_feed?: boolean;  // Whether this publication will appear in public feed
   discussion_link?: string;
   is_reported: boolean;
   report_count: number;
   is_blocked: boolean;
   blocked_at?: string;
   blocked_by?: number;
+}
+
+export interface Comment {
+  id: number;
+  publication: number;
+  user: number;
+  user_name: string;
+  user_avatar?: string;
+  user_email: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  is_owner: boolean;
+}
+
+export interface PaginatedCommentsResponse {
+  results: Comment[];
+  count: number;
+  page: number;
+  has_more: boolean;
 }
 
 export interface PaginatedFeedResponse {
@@ -1053,6 +1076,10 @@ class ApiClient {
     return this.makeRequest<PaginatedFeedResponse>(url);
   }
 
+  async getPublicationById(id: number): Promise<Publication> {
+    return this.makePublicRequest<Publication>(`/api/producers/publications/${id}/`);
+  }
+
   async toggleLikePublication(id: number): Promise<{ status: string }> {
     return this.makeRequest<{ status: string }>(`/api/producers/publications/${id}/toggle_like/`, {
       method: 'POST',
@@ -1063,6 +1090,39 @@ class ApiClient {
     return this.makeRequest<Publication>(`/api/producers/publications/${id}/validate_publication/`, {
       method: 'POST',
     });
+  }
+
+  // ================================
+  // COMMENT METHODS
+  // ================================
+
+  async getPublicationComments(publicationId: number, page: number = 1, limit: number = 20): Promise<PaginatedCommentsResponse> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', page.toString());
+    queryParams.append('limit', limit.toString());
+
+    return this.makeRequest<PaginatedCommentsResponse>(
+      `/api/producers/publications/${publicationId}/comments/?${queryParams.toString()}`
+    );
+  }
+
+  async createComment(publicationId: number, content: string): Promise<Comment> {
+    return this.makeRequest<Comment>(
+      `/api/producers/publications/${publicationId}/comments/create/`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      }
+    );
+  }
+
+  async deleteComment(commentId: number): Promise<{ message: string }> {
+    return this.makeRequest<{ message: string }>(
+      `/api/producers/publications/comments/${commentId}/`,
+      {
+        method: 'DELETE',
+      }
+    );
   }
 
   // ================================

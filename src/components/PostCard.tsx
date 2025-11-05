@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { normalizeImageUrl } from "../utils/imageUtils";
+import CommentsBottomSheet from "./CommentsBottomSheet";
 
 interface PostCardProps {
   id: string;
@@ -16,10 +17,11 @@ interface PostCardProps {
   isLiked?: boolean;
   producerPhone?: string; // WhatsApp contact
   postTitle?: string; // For WhatsApp message
-  onLike?: (postId: string) => void;
-  onComment?: (postId: string) => void;
-  onProducerClick?: (producerId: string) => void;
+  onLike?: (postIdOrEvent?: string | React.MouseEvent) => void;
+  onComment?: (postIdOrEvent?: string | React.MouseEvent) => void;
+  onProducerClick?: (producerIdOrEvent?: string | React.MouseEvent) => void;
   hideContactButton?: boolean;
+  onCommentsCountUpdate?: (newCount: number) => void;
 }
 
 const formatDate = (dateString: string): string => {
@@ -64,12 +66,61 @@ const PostCard: React.FC<PostCardProps> = React.memo(
     onComment,
     onProducerClick,
     hideContactButton = false,
+    onCommentsCountUpdate,
   }) => {
+    const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+    const [localCommentsCount, setLocalCommentsCount] = useState(comments);
+    const [localIsLiked, setLocalIsLiked] = useState(isLiked);
+    const [localLikesCount, setLocalLikesCount] = useState(likes);
+    const [isAnimating, setIsAnimating] = useState(false);
+
     const locationIcon = "/icons/Location.svg";
-    const favouriteIcon = isLiked
+    const favouriteIcon = localIsLiked
       ? "/icons/red_heart_like.svg"
       : "/icons/dark_heart_outline_like.svg";
     const commentIcon = "/icons/messages-bottom-nav.svg";
+
+    // Like handler with optimistic updates
+    const handleLikeClick = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+
+      // Optimistic update
+      const wasLiked = localIsLiked;
+      const previousCount = localLikesCount;
+
+      setLocalIsLiked(!wasLiked);
+      setLocalLikesCount(wasLiked ? previousCount - 1 : previousCount + 1);
+      setIsAnimating(true);
+
+      // Call the parent onLike handler
+      try {
+        await onLike?.(e);
+      } catch (error) {
+        // Revert on error
+        setLocalIsLiked(wasLiked);
+        setLocalLikesCount(previousCount);
+      }
+
+      // Remove animation class after animation completes
+      setTimeout(() => setIsAnimating(false), 300);
+    };
+
+    // Comments handler
+    const handleCommentClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsCommentsOpen(true);
+      onComment?.(e);
+    };
+
+    const handleCommentsClose = () => {
+      setIsCommentsOpen(false);
+    };
+
+    // Update comments count when new comments are added
+    const handleCommentsUpdate = (newCount: number) => {
+      setLocalCommentsCount(newCount);
+      onCommentsCountUpdate?.(newCount);
+    };
 
     // WhatsApp contact handler
     const handleWhatsAppContact = () => {
@@ -123,7 +174,10 @@ const PostCard: React.FC<PostCardProps> = React.memo(
               marginRight: 12,
               cursor: "pointer",
             }}
-            onClick={() => onProducerClick?.(id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onProducerClick?.(e);
+            }}
             role="button"
             tabIndex={0}
             aria-label={`Voir le profil de ${producerName}`}
@@ -154,7 +208,10 @@ const PostCard: React.FC<PostCardProps> = React.memo(
                   color: "#222",
                   cursor: "pointer",
                 }}
-                onClick={() => onProducerClick?.(id)}
+                onClick={(e) => {
+              e.stopPropagation();
+              onProducerClick?.(e);
+            }}
               >
                 {producerName}
               </h3>
@@ -257,7 +314,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(
           }}
         >
           <button
-            onClick={() => onLike?.(id)}
+            onClick={handleLikeClick}
             style={{
               display: "flex",
               alignItems: "center",
@@ -265,8 +322,9 @@ const PostCard: React.FC<PostCardProps> = React.memo(
               border: "none",
               cursor: "pointer",
               padding: 0,
-              color: "#666",
+              color: localIsLiked ? "#FF4B4B" : "#666",
               fontSize: 14,
+              transition: "color 0.2s ease",
             }}
           >
             <img
@@ -276,13 +334,15 @@ const PostCard: React.FC<PostCardProps> = React.memo(
                 width: 20,
                 height: 20,
                 marginRight: 6,
+                transform: isAnimating ? "scale(1.3)" : "scale(1)",
+                transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
               }}
             />
-            <span>{likes}</span>
+            <span>{localLikesCount}</span>
           </button>
 
           <button
-            onClick={() => onComment?.(id)}
+            onClick={handleCommentClick}
             style={{
               display: "flex",
               alignItems: "center",
@@ -304,7 +364,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(
                 opacity: 0.7,
               }}
             />
-            <span>{comments}</span>
+            <span>{localCommentsCount}</span>
           </button>
         </div>
 
@@ -349,6 +409,14 @@ const PostCard: React.FC<PostCardProps> = React.memo(
             </button>
           </div>
         )}
+
+        {/* Comments Bottom Sheet */}
+        <CommentsBottomSheet
+          isOpen={isCommentsOpen}
+          onClose={handleCommentsClose}
+          publicationId={parseInt(id)}
+          publicationTitle={postTitle || description.substring(0, 50) + "..."}
+        />
       </div>
     );
   }
