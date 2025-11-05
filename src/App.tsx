@@ -159,36 +159,8 @@ function AppContent() {
     );
   }
 
-  // If user needs email verification, show EmailVerificationPage
-  if (needsEmailVerification && userData?.email) {
-    return (
-      <IonContent>
-        <GlobalStyle />
-        <ToastContainer
-          position="top-center"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        <EmailVerificationPage
-          email={userData.email}
-          onVerified={() => {
-            setNeedsEmailVerification(false);
-            // The useTokenValidation hook will handle updating authentication status
-          }}
-        />
-        <LoadingOverlay isVisible={isLoading} />
-      </IonContent>
-    );
-  }
-
-  // If user is authenticated, show HomePage
+  // IMPORTANT: Check authentication FIRST before email verification
+  // This ensures users go to HomePage after successful login from email verification
   if (isAuthenticated) {
     return (
       <IonContent>
@@ -211,6 +183,37 @@ function AppContent() {
     );
   }
 
+  // If user needs email verification (but not yet authenticated), show EmailVerificationPage
+  if (needsEmailVerification && userData?.email) {
+    return (
+      <IonContent>
+        <GlobalStyle />
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+        <EmailVerificationPage
+          email={userData.email}
+          onVerified={() => {
+            // Email verified and user logged in
+            // Login function already set isAuthenticated=true
+            setNeedsEmailVerification(false);
+          }}
+        />
+        <LoadingOverlay isVisible={isLoading} />
+      </IonContent>
+    );
+  }
+
+  // Non-authenticated flow (onboarding, login, signup)
   return (
     <IonContent>
         <GlobalStyle />
