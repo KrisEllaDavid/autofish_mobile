@@ -33,6 +33,7 @@ export const useApiWithLoading = () => {
     // Publication methods
     getPublications: () => withLoading(apiClient.getPublications()),
     getPublication: (id: number) => withLoading(apiClient.getPublication(id)),
+    getPublicationById: (id: number) => withLoading(apiClient.getPublicationById(id)),
     createPublication: (publicationData: any) => withLoading(apiClient.createPublication(publicationData)),
     updatePublication: (id: number, publicationData: any) => withLoading(apiClient.updatePublication(id, publicationData)),
     deletePublication: (id: number) => withLoading(apiClient.deletePublication(id)),
@@ -40,7 +41,15 @@ export const useApiWithLoading = () => {
     getPublicFeed: (params?: { page?: number; limit?: number; user_categories?: number[] }) =>
       withLoading(apiClient.getPublicFeed(params)),
     toggleLikePublication: (id: number) => withLoading(apiClient.toggleLikePublication(id)),
+    likePublication: (id: number) => withLoading(apiClient.toggleLikePublication(id)),
     validatePublication: (id: number) => withLoading(apiClient.validatePublication(id)),
+
+    // Comment methods
+    getPublicationComments: (publicationId: number, page?: number, limit?: number) =>
+      withLoading(apiClient.getPublicationComments(publicationId, page, limit)),
+    createComment: (publicationId: number, content: string) =>
+      withLoading(apiClient.createComment(publicationId, content)),
+    deleteComment: (commentId: number) => withLoading(apiClient.deleteComment(commentId)),
 
     // Product methods
     getProducts: () => withLoading(apiClient.getProducts()),

@@ -19,7 +19,15 @@ import { useAuth } from "../context/AuthContext";
 import { useApiWithLoading } from "../services/apiWithLoading";
 import { Publication, ProducerPage } from "../services/api";
 
-type MainTab = "home" | "messages" | "producers" | "profile" | "myPage" | "favorites" | "search" | "publication-preview";
+type MainTab =
+  | "home"
+  | "messages"
+  | "producers"
+  | "profile"
+  | "myPage"
+  | "favorites"
+  | "search"
+  | "publication-preview";
 
 enum Overlay {
   None = "none",
@@ -32,11 +40,14 @@ const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MainTab>("home");
   const [overlay, setOverlay] = useState<Overlay>(Overlay.None);
   const [publications, setPublications] = useState<Publication[]>([]);
-  const [producerPages, setProducerPages] = useState<{[key: number]: ProducerPage}>({});
+  const [producerPages, setProducerPages] = useState<{
+    [key: number]: ProducerPage;
+  }>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [lastPublicationCount, setLastPublicationCount] = useLocalStorage<number>('lastPublicationCount', 0);
+  const [lastPublicationCount, setLastPublicationCount] =
+    useLocalStorage<number>("lastPublicationCount", 0);
   const [hasNewPublications, setHasNewPublications] = useState<boolean>(false);
   const [likedPosts, setLikedPosts] = useLocalStorage<string[]>(
     "likedPosts",
@@ -44,7 +55,9 @@ const HomePage: React.FC = () => {
   );
   const [search, setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPublicationId, setSelectedPublicationId] = useState<number | null>(null);
+  const [selectedPublicationId, setSelectedPublicationId] = useState<
+    number | null
+  >(null);
 
   // Pagination state for lazy loading
   const [currentPage, setCurrentPage] = useState(1);
@@ -53,7 +66,8 @@ const HomePage: React.FC = () => {
   const observerTarget = React.useRef<HTMLDivElement>(null);
 
   // Verification status monitoring
-  const { showVerificationModal, closeVerificationModal } = useVerificationStatus();
+  const { showVerificationModal, closeVerificationModal } =
+    useVerificationStatus();
 
   // Debug logging
   useEffect(() => {
@@ -72,18 +86,20 @@ const HomePage: React.FC = () => {
       setError(null);
 
       // Get user's category IDs for preference sorting
-      const userCategoryIds = userData?.selectedCategories?.map(cat => parseInt(cat)) || [];
+      const userCategoryIds =
+        userData?.selectedCategories?.map((cat) => parseInt(cat)) || [];
 
       // Fetch paginated feed with user preferences
       const feedResponse = await api.getPublicFeed({
         page,
         limit: 20,
-        user_categories: userCategoryIds.length > 0 ? userCategoryIds : undefined
+        user_categories:
+          userCategoryIds.length > 0 ? userCategoryIds : undefined,
       });
 
       // Update publications (append for lazy loading, replace for initial)
       if (append) {
-        setPublications(prev => [...prev, ...feedResponse.results]);
+        setPublications((prev) => [...prev, ...feedResponse.results]);
       } else {
         setPublications(feedResponse.results);
       }
@@ -100,76 +116,87 @@ const HomePage: React.FC = () => {
 
       // Try to fetch producer page data if user is authenticated (only on initial load)
       if (!append) {
-        const producerPagesData: {[key: number]: ProducerPage} = {};
-        
+        const producerPagesData: { [key: number]: ProducerPage } = {};
+
         try {
           // Check if user is authenticated before making authenticated requests
           if (import.meta.env.DEV) {
-            console.log('🔍 Authentication check:', {
+            console.log("🔍 Authentication check:", {
               userData: !!userData,
               isAuthenticated: api.isAuthenticated(),
-              hasToken: !!api.getAccessToken()
+              hasToken: !!api.getAccessToken(),
             });
           }
-          
+
           if (userData && api.isAuthenticated()) {
             if (import.meta.env.DEV) {
-              console.log('🔑 User authenticated, fetching producer pages...');
+              console.log("🔑 User authenticated, fetching producer pages...");
             }
             const allProducerPages = await api.getProducerPages();
-            
+
             // Create a lookup map of page ID to producer page data
-            allProducerPages.forEach(page => {
+            allProducerPages.forEach((page) => {
               producerPagesData[page.id] = page;
             });
-            
+
             if (import.meta.env.DEV) {
-              console.log('✅ Loaded producer pages with authentication:', allProducerPages.length);
+              console.log(
+                "✅ Loaded producer pages with authentication:",
+                allProducerPages.length
+              );
             }
           } else {
             if (import.meta.env.DEV) {
-              console.log('⚠️ User not authenticated, creating minimal producer data from publications');
+              console.log(
+                "⚠️ User not authenticated, creating minimal producer data from publications"
+              );
             }
-            
+
             // Create minimal producer data from publication page IDs when not authenticated
-            const uniquePageIds = [...new Set(feedResponse.results.map((pub: Publication) => pub.page))];
+            const uniquePageIds = [
+              ...new Set(
+                feedResponse.results.map((pub: Publication) => pub.page)
+              ),
+            ];
             uniquePageIds.forEach((pageId: number) => {
               producerPagesData[pageId] = {
                 id: pageId,
                 producer: 0,
                 name: `Producteur #${pageId}`,
                 slug: `producer-${pageId}`,
-                country: '',
-                address: '',
-                telephone: '',
+                country: "",
+                address: "",
+                telephone: "",
                 categories: [],
-                city: '',
-                description: '',
+                city: "",
+                description: "",
                 is_validated: true,
-                created_at: '',
-                updated_at: '',
+                created_at: "",
+                updated_at: "",
               };
             });
           }
         } catch (producerError) {
           // If producer pages fail to load, continue with publications only
           if (import.meta.env.DEV) {
-            console.warn('⚠️ Failed to load producer pages, continuing with publications only:', producerError);
+            console.warn(
+              "⚠️ Failed to load producer pages, continuing with publications only:",
+              producerError
+            );
           }
         }
-        
+
         setProducerPages(producerPagesData);
       }
-
     } catch (err) {
       // Handle different types of errors more gracefully
-      let errorMessage = 'Failed to load publications';
+      let errorMessage = "Failed to load publications";
 
-      if (err && typeof err === 'object') {
+      if (err && typeof err === "object") {
         // Handle API error responses
-        if ('detail' in err && typeof err.detail === 'string') {
+        if ("detail" in err && typeof err.detail === "string") {
           errorMessage = err.detail;
-        } else if ('message' in err && typeof err.message === 'string') {
+        } else if ("message" in err && typeof err.message === "string") {
           errorMessage = err.message;
         }
       } else if (err instanceof Error) {
@@ -177,7 +204,7 @@ const HomePage: React.FC = () => {
       }
 
       setError(errorMessage);
-      console.error('Failed to load publications:', err);
+      console.error("Failed to load publications:", err);
 
       // Set empty arrays so the UI can still render
       if (!append) {
@@ -199,7 +226,7 @@ const HomePage: React.FC = () => {
     // Wait for auth context to be ready before making any requests
     if (userData === undefined) {
       if (import.meta.env.DEV) {
-        console.log('⏳ Waiting for auth context to initialize...');
+        console.log("⏳ Waiting for auth context to initialize...");
       }
       return;
     }
@@ -273,46 +300,63 @@ const HomePage: React.FC = () => {
     // Check if user is authenticated before attempting to like
     if (!userData || !userData.registrationComplete) {
       // TODO: Show login modal or redirect to login
-      console.log('User must be logged in to like posts');
-      alert('Veuillez vous connecter pour aimer cette publication.');
+      console.log("User must be logged in to like posts");
+      alert("Veuillez vous connecter pour aimer cette publication.");
       return;
     }
 
     try {
       const result = await api.toggleLikePublication(publicationId);
-      
+
       // Update the publication in the list
-      setPublications(prev => prev.map(pub => {
-        if (pub.id === publicationId) {
-          return {
-            ...pub,
-            likes: result.status === 'added to favorites' ? pub.likes + 1 : pub.likes - 1
-          };
-        }
-        return pub;
-      }));
+      setPublications((prev) =>
+        prev.map((pub) => {
+          if (pub.id === publicationId) {
+            const isLiked = result.status === "added to favorites";
+            return {
+              ...pub,
+              is_liked: isLiked,
+              likes_count: isLiked
+                ? (pub.likes_count || pub.likes || 0) + 1
+                : (pub.likes_count || pub.likes || 0) - 1,
+              likes: isLiked
+                ? (pub.likes_count || pub.likes || 0) + 1
+                : (pub.likes_count || pub.likes || 0) - 1,
+            };
+          }
+          return pub;
+        })
+      );
 
       // Update local storage for liked posts
-      if (result.status === 'added to favorites') {
+      if (result.status === "added to favorites") {
         setLikedPosts([...likedPosts, publicationId.toString()]);
       } else {
-        setLikedPosts(likedPosts.filter((id) => id !== publicationId.toString()));
+        setLikedPosts(
+          likedPosts.filter((id) => id !== publicationId.toString())
+        );
       }
 
-      console.log(result.status === 'added to favorites' ? 'Added to favorites!' : 'Removed from favorites');
+      console.log(
+        result.status === "added to favorites"
+          ? "Added to favorites!"
+          : "Removed from favorites"
+      );
     } catch (err) {
-      let errorMessage = 'Failed to update like';
-      
+      let errorMessage = "Failed to update like";
+
       // Handle authentication errors specifically
-      if (err && typeof err === 'object') {
-        if ('detail' in err) {
+      if (err && typeof err === "object") {
+        if ("detail" in err) {
           errorMessage = err.detail as string;
-          
+
           // If it's an authentication error, inform the user
-          if (errorMessage.toLowerCase().includes('authentication') || 
-              errorMessage.toLowerCase().includes('token') ||
-              errorMessage.toLowerCase().includes('unauthorized')) {
-            alert('Votre session a expiré. Veuillez vous reconnecter.');
+          if (
+            errorMessage.toLowerCase().includes("authentication") ||
+            errorMessage.toLowerCase().includes("token") ||
+            errorMessage.toLowerCase().includes("unauthorized")
+          ) {
+            alert("Votre session a expiré. Veuillez vous reconnecter.");
             // TODO: Redirect to login or refresh token
             return;
           }
@@ -320,20 +364,20 @@ const HomePage: React.FC = () => {
       } else if (err instanceof Error) {
         errorMessage = err.message;
       }
-      
-      console.error('Failed to update like:', errorMessage);
-      alert('Erreur lors de la mise à jour du like: ' + errorMessage);
+
+      console.error("Failed to update like:", errorMessage);
+      alert("Erreur lors de la mise à jour du like: " + errorMessage);
     }
   };
 
   const handleComment = (publicationId: number) => {
     // TODO: Implement comment functionality
-    console.log('Comment on publication:', publicationId);
+    console.log("Comment on publication:", publicationId);
   };
 
   const handleProducerClick = (producerId: number) => {
     // TODO: Navigate to producer profile
-    console.log('Navigate to producer:', producerId);
+    console.log("Navigate to producer:", producerId);
   };
 
   // --- Navigation Logic ---
@@ -450,7 +494,7 @@ const HomePage: React.FC = () => {
         onNotificationClick={handleNotificationClick}
         onMyPageClick={handleMyPageClick}
         onTabChange={handleTabChange}
-        activeTab="publication-preview"
+        activeTab="home"
         userAvatar={userData?.avatar}
         userName={userData?.name}
         userEmail={userData?.email}
@@ -471,6 +515,10 @@ const HomePage: React.FC = () => {
           userName={userData?.name}
           userEmail={userData?.email}
           userRole={userData?.userRole}
+          onPostClick={(postId) => {
+            setSelectedPublicationId(postId);
+            setActiveTab("publication-preview");
+          }}
         />
         <BottomNavBar activeTab="favorites" onTabChange={handleTabChange} />
       </div>
@@ -588,14 +636,21 @@ const HomePage: React.FC = () => {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "#00B2D6";
-              e.currentTarget.style.boxShadow = "0 0 0 2px rgba(0, 178, 214, 0.1)";
+              e.currentTarget.style.boxShadow =
+                "0 0 0 2px rgba(0, 178, 214, 0.1)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = "#e0e0e0";
               e.currentTarget.style.boxShadow = "none";
             }}
           >
-            <span style={{ fontSize: 18 }}>🔍</span>
+            <span style={{ width: "15px" }}>
+              <img
+                src="/icons/Search.svg"
+                alt="search"
+                className="search-icon"
+              />
+            </span>
             <span>Rechercher des produits...</span>
           </div>
         </div>
@@ -606,21 +661,20 @@ const HomePage: React.FC = () => {
 
       {/* Content */}
       <div className="content">
-        <div
-          className="posts-feed"
-          style={{ position: 'relative' }}
-        >
+        <div className="posts-feed" style={{ position: "relative" }}>
           {loading && initialLoad ? (
             <div style={{ textAlign: "center", padding: "20px" }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                border: '3px solid #f3f3f3',
-                borderTop: '3px solid #00B2D6',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite',
-                margin: '20px auto'
-              }} />
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  border: "3px solid #f3f3f3",
+                  borderTop: "3px solid #00B2D6",
+                  borderRadius: "50%",
+                  animation: "spin 1s linear infinite",
+                  margin: "20px auto",
+                }}
+              />
               <p>Chargement des publications...</p>
               <style>{`
                 @keyframes spin {
@@ -632,7 +686,7 @@ const HomePage: React.FC = () => {
           ) : error ? (
             <div style={{ textAlign: "center", padding: "20px", color: "red" }}>
               <p>Erreur: {error}</p>
-              <button 
+              <button
                 onClick={() => window.location.reload()}
                 style={{
                   padding: "8px 16px",
@@ -640,7 +694,7 @@ const HomePage: React.FC = () => {
                   color: "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
               >
                 Réessayer
@@ -652,7 +706,10 @@ const HomePage: React.FC = () => {
                 <img src="/icons/autofish_blue_logo.svg" alt="publications" />
               </div>
               <h2>Aucune publication disponible</h2>
-              <p>Il n'y a pas encore de publications à afficher. Revenez plus tard!</p>
+              <p>
+                Il n'y a pas encore de publications à afficher. Revenez plus
+                tard!
+              </p>
             </div>
           ) : (
             <div className="posts-container">
@@ -669,31 +726,57 @@ const HomePage: React.FC = () => {
                   >
                     <PostCard
                       id={publication.id.toString()}
-                      producerName={publication.page_name || producerPage?.name || 'Producteur inconnu'}
-                      producerAvatar={producerPage?.logo_url || producerPage?.logo || '/icons/account_icon.svg'}
-                      postImage={publication.picture_url || publication.picture || '/icons/autofish_blue_logo.svg'}
+                      producerName={
+                        publication.page_name ||
+                        producerPage?.name ||
+                        "Producteur inconnu"
+                      }
+                      producerAvatar={
+                        producerPage?.logo_url ||
+                        producerPage?.logo ||
+                        "/icons/account_icon.svg"
+                      }
+                      postImage={
+                        publication.picture_url ||
+                        publication.picture ||
+                        "/icons/autofish_blue_logo.svg"
+                      }
                       description={publication.description}
                       date={publication.date_posted}
                       likes={publication.likes_count || publication.likes || 0}
-                      comments={0} // TODO: Implement comments system
-                      category={publication.category_name || publication.category.name}
+                      comments={publication.comments_count || 0}
+                      category={
+                        publication.category_name || publication.category.name
+                      }
                       location={publication.location}
                       price={publication.price}
-                      producerPhone={publication.producer_phone || producerPage?.telephone}
+                      producerPhone={
+                        publication.producer_phone || producerPage?.telephone
+                      }
                       postTitle={publication.title}
                       onLike={(e) => {
-                        e?.stopPropagation();
+                        if (typeof e !== "string" && e) {
+                          e.stopPropagation();
+                        }
                         handleLike(publication.id);
                       }}
                       onComment={(e) => {
-                        e?.stopPropagation();
+                        if (typeof e !== "string" && e) {
+                          e.stopPropagation();
+                        }
                         handleComment(publication.id);
                       }}
                       onProducerClick={(e) => {
-                        e?.stopPropagation();
+                        if (typeof e !== "string" && e) {
+                          e.stopPropagation();
+                        }
                         handleProducerClick(publication.producer || 0);
                       }}
-                      isLiked={publication.is_liked !== undefined ? publication.is_liked : likedPosts.includes(publication.id.toString())}
+                      isLiked={
+                        publication.is_liked !== undefined
+                          ? publication.is_liked
+                          : likedPosts.includes(publication.id.toString())
+                      }
                     />
                   </div>
                 );
@@ -701,50 +784,73 @@ const HomePage: React.FC = () => {
 
               {/* Loading more indicator */}
               {loadingMore && (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  padding: '30px 0',
-                  color: '#009CB7'
-                }}>
-                  <div style={{
-                    border: '3px solid #f3f3f3',
-                    borderTop: '3px solid #009CB7',
-                    borderRadius: '50%',
-                    width: '40px',
-                    height: '40px',
-                    animation: 'spin 1s linear infinite'
-                  }} />
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: "30px 0",
+                    color: "#009CB7",
+                  }}
+                >
+                  <div
+                    style={{
+                      border: "3px solid #f3f3f3",
+                      borderTop: "3px solid #009CB7",
+                      borderRadius: "50%",
+                      width: "40px",
+                      height: "40px",
+                      animation: "spin 1s linear infinite",
+                    }}
+                  />
                 </div>
               )}
 
               {/* Intersection observer target for infinite scroll */}
               <div
                 ref={observerTarget}
-                style={{ height: '10px', width: '100%' }}
+                style={{ height: "10px", width: "100%" }}
                 aria-hidden="true"
               />
 
               {/* No more posts message */}
               {!hasMore && publications.length > 0 && (
-                <div style={{
-                  textAlign: 'center',
-                  padding: '20px 0',
-                  color: '#999',
-                  fontSize: '14px'
-                }}>
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "20px 0",
+                    color: "#999",
+                    fontSize: "14px",
+                  }}
+                >
                   Vous avez vu toutes les publications
                 </div>
               )}
 
               {/* Spacer element to add 100px after the last post */}
-              <div style={{ height: '100px', width: '100%' }} aria-hidden="true" />
+              <div
+                style={{ height: "100px", width: "100%" }}
+                aria-hidden="true"
+              />
             </div>
           )}
         </div>
       </div>
       {/* Bottom Navigation */}
-      <BottomNavBar activeTab={activeTab} onTabChange={handleTabChange} />
+      <BottomNavBar
+        activeTab={
+          (["home", "messages", "producers", "profile", "favorites"].includes(
+            activeTab
+          )
+            ? activeTab
+            : "home") as
+            | "home"
+            | "messages"
+            | "producers"
+            | "profile"
+            | "favorites"
+        }
+        onTabChange={handleTabChange}
+      />
 
       {/* Verification Success Modal */}
       <VerificationSuccessModal

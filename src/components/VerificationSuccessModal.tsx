@@ -76,7 +76,7 @@ const VerificationSuccessModal: React.FC<VerificationSuccessModalProps> = ({ isO
             border: 'none',
             background: 'linear-gradient(135deg, #009cb7 0%, #007a8f 100%)',
             color: '#fff',
-            fontSize: '16px',
+            fontSize: '14px',
             fontWeight: 700,
             cursor: 'pointer',
             transition: 'all 0.2s'

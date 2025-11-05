@@ -51,12 +51,16 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
 
     setLoading(true);
     try {
-      const response = await api.getPublicationComments(publicationId, pageNum, 20);
+      const response = await api.getPublicationComments(
+        publicationId,
+        pageNum,
+        20
+      );
 
       if (pageNum === 1) {
         setComments(response.results);
       } else {
-        setComments(prev => [...prev, ...response.results]);
+        setComments((prev) => [...prev, ...response.results]);
       }
 
       setHasMore(response.has_more);
@@ -79,8 +83,11 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
 
     setSending(true);
     try {
-      const newComment = await api.createComment(publicationId, commentText.trim());
-      setComments(prev => [newComment, ...prev]);
+      const newComment = await api.createComment(
+        publicationId,
+        commentText.trim()
+      );
+      setComments((prev) => [newComment, ...prev]);
       setCommentText("");
       toast.success("Commentaire ajouté !");
     } catch (error) {
@@ -94,7 +101,7 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
   const handleDeleteComment = async (commentId: number) => {
     try {
       await api.deleteComment(commentId);
-      setComments(prev => prev.filter(c => c.id !== commentId));
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
       toast.success("Commentaire supprimé");
     } catch (error) {
       console.error("Error deleting comment:", error);
@@ -182,7 +189,13 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
             }}
             onClick={onClose}
           />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <h2
               style={{
                 fontSize: 20,
@@ -269,7 +282,11 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                         <img
                           src={normalizeImageUrl(comment.user_avatar)}
                           alt={comment.user_name}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
                         />
                       ) : (
                         <div
@@ -410,6 +427,7 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                 resize: "none",
                 fontFamily: "inherit",
                 maxHeight: "100px",
+                backgroundColor: "white",
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = MAIN_BLUE;
@@ -429,8 +447,10 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                 borderRadius: "24px",
                 fontSize: 15,
                 fontWeight: 600,
-                cursor: commentText.trim() && !sending ? "pointer" : "not-allowed",
+                cursor:
+                  commentText.trim() && !sending ? "pointer" : "not-allowed",
                 transition: "background-color 0.2s",
+                height: "48.1px",
               }}
             >
               {sending ? "..." : "Envoyer"}

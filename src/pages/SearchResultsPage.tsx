@@ -14,7 +14,9 @@ interface SearchResultsPageProps {
   onBack: () => void;
   onNotificationClick?: () => void;
   onMyPageClick?: () => void;
-  onTabChange: (tab: "home" | "messages" | "producers" | "profile" | "favorites") => void;
+  onTabChange: (
+    tab: "home" | "messages" | "producers" | "profile" | "favorites"
+  ) => void;
   activeTab?: string;
   userAvatar?: string;
   userName?: string;
@@ -59,7 +61,13 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
     try {
       // Fetch all publications and filter client-side
       // In production, you'd want server-side search
-      const allPublications = await api.getPublicFeed(1, 100, userData?.selectedCategories);
+      const allPublications = await api.getPublicFeed({
+        page: 1,
+        limit: 100,
+        user_categories: userData?.selectedCategories?.map((cat) =>
+          parseInt(cat)
+        ),
+      });
 
       const query = searchInput.trim().toLowerCase();
       const filtered = allPublications.results.filter(
@@ -204,6 +212,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyPress={handleKeyPress}
               style={{
+                color: "black",
                 flex: 1,
                 padding: "14px 16px",
                 border: "2px solid #e0e0e0",
@@ -258,7 +267,11 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                   <img
                     src={searchIcon}
                     alt="search"
-                    style={{ width: 18, height: 18, filter: "brightness(0) invert(1)" }}
+                    style={{
+                      width: 18,
+                      height: 18,
+                      filter: "brightness(0) invert(1)",
+                    }}
                   />
                   Rechercher
                 </>
@@ -273,7 +286,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               marginTop: 8,
             }}
           >
-            💡 Astuce : Essayez de rechercher par catégorie (ex: Poisson, Manioc) ou par ville
+            💡 Astuce : Essayez de rechercher par catégorie (ex: Poisson,
+            Manioc) ou par ville
           </p>
         </div>
       </div>
@@ -315,7 +329,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               Trouvez les produits que vous cherchez
             </h2>
             <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-              Utilisez la barre de recherche ci-dessus pour trouver des produits par nom, catégorie ou localisation.
+              Utilisez la barre de recherche ci-dessus pour trouver des produits
+              par nom, catégorie ou localisation.
             </p>
           </div>
         ) : isLoading ? (
@@ -366,7 +381,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               Aucun résultat trouvé
             </h2>
             <p style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
-              Nous n'avons trouvé aucun produit correspondant à "<strong>{searchQuery}</strong>"
+              Nous n'avons trouvé aucun produit correspondant à "
+              <strong>{searchQuery}</strong>"
             </p>
             <p style={{ fontSize: 14, color: "#999" }}>
               Essayez avec d'autres mots-clés ou vérifiez l'orthographe
@@ -392,7 +408,8 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                 Résultats de recherche
               </h2>
               <p style={{ fontSize: 14, color: "#666" }}>
-                {results.length} produit{results.length > 1 ? "s" : ""} trouvé{results.length > 1 ? "s" : ""} pour "
+                {results.length} produit{results.length > 1 ? "s" : ""} trouvé
+                {results.length > 1 ? "s" : ""} pour "
                 <strong>{searchQuery}</strong>"
               </p>
             </div>
@@ -413,7 +430,9 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
                   <PostCard
                     id={pub.id.toString()}
                     producerName={pub.page_name || "Producteur"}
-                    producerAvatar={userAvatar || "/icons/autofish_blue_logo 1.png"}
+                    producerAvatar={
+                      userAvatar || "/icons/autofish_blue_logo 1.png"
+                    }
                     postImage={pub.picture_url || pub.picture || ""}
                     description={pub.description}
                     date={pub.date_posted}
@@ -436,7 +455,17 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         )}
       </div>
 
-      <BottomNavBar activeTab={activeTab || "home"} onTabChange={onTabChange} />
+      <BottomNavBar
+        activeTab={
+          (activeTab as
+            | "home"
+            | "messages"
+            | "producers"
+            | "profile"
+            | "favorites") || "home"
+        }
+        onTabChange={onTabChange}
+      />
 
       {/* Spinner Animation */}
       <style>{`
