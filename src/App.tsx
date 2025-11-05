@@ -61,7 +61,7 @@ function AppContent() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showResetPasswordPage, setShowResetPasswordPage] = useState(false);
   const [showSignupPage, setShowSignupPage] = useState(false);
-  const { isLoggingOut, isAuthenticated, needsEmailVerification, userData, setNeedsEmailVerification, updateUserData } = useAuth();
+  const { isLoggingOut, isAuthenticated, needsEmailVerification, userData, setNeedsEmailVerification, updateUserData, login } = useAuth();
   const { isLoading } = useLoading();
 
   // Add token validation
@@ -78,7 +78,23 @@ function AppContent() {
         toast.success('Email vérifié avec succès !');
         setNeedsEmailVerification(false);
 
-        // Refresh user data
+        // Try to auto-login if we have stored credentials
+        if (userData?.email && userData?.password) {
+          try {
+            console.log('🔑 Auto-logging in after email verification...');
+            await login({
+              email: userData.email,
+              password: userData.password
+            });
+            // Clear password after successful login
+            updateUserData({ password: undefined });
+            return;
+          } catch (error) {
+            console.error('Auto-login failed:', error);
+          }
+        }
+
+        // Fallback: Refresh user data
         try {
           const currentUser = await apiClient.getCurrentUser();
           if (currentUser) {
@@ -100,7 +116,7 @@ function AppContent() {
     return () => {
       CapacitorApp.removeAllListeners();
     };
-  }, [setNeedsEmailVerification, updateUserData]);
+  }, [setNeedsEmailVerification, updateUserData, login, userData]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

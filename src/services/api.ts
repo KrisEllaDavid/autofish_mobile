@@ -65,6 +65,7 @@ export interface UserRegistrationRequest {
   categories?: number[]; // Required for producers
   recto_id?: string | File; // Required for producers, will be converted to base64 string
   verso_id?: string | File; // Required for producers, will be converted to base64 string
+  background_image?: string | File; // Banner/background image for producer page
 }
 
 export interface LoginRequest {
@@ -793,6 +794,14 @@ class ApiClient {
     } else if (typeof userData.verso_id === 'string' && userData.verso_id.startsWith('data:image/')) {
       const versoFile = base64ToFile(userData.verso_id, 'verso_id.jpg');
       formData.append('verso_id', versoFile);
+    }
+
+    // Handle background_image (banner) - convert base64 to File if needed
+    if (userData.background_image instanceof File) {
+      formData.append('background_image', userData.background_image);
+    } else if (typeof userData.background_image === 'string' && userData.background_image.startsWith('data:image/')) {
+      const bannerFile = base64ToFile(userData.background_image, 'background_image.jpg');
+      formData.append('background_image', bannerFile);
     }
 
     // Debug logging for development

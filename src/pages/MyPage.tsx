@@ -115,6 +115,11 @@ const MyPage: React.FC<MyPageProps> = ({
       // Update local state with API data
       // Use background_image_url if available, fallback to background_image
       const bannerUrl = pageData.background_image_url || pageData.background_image || "";
+      console.log("🖼️ Banner URL from API:", {
+        background_image_url: pageData.background_image_url,
+        background_image: pageData.background_image,
+        finalBannerUrl: bannerUrl
+      });
       setBanner(bannerUrl);
       setPageName(pageData.name || userData?.name || "Ma Page");
       setLocation(pageData.address || "");
@@ -1248,6 +1253,7 @@ const MyPage: React.FC<MyPageProps> = ({
                 ? `url(${normalizeImageUrl(banner)}) center/cover no-repeat`
                 : 'linear-gradient(135deg, #00B2D6 0%, #009CB7 100%)'
             }}
+            onLoad={() => console.log("🎨 Banner rendered:", { originalBanner: banner, normalizedBanner: normalizeImageUrl(banner) })}
           >
             <div className="banner-overlay" />
 

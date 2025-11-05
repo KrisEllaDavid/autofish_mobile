@@ -49,6 +49,8 @@ const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
 
       // If login is successful and email is verified, user will be auto-navigated
       if (loginResult && loginResult.email_verified) {
+        // Clear password from userData after successful login
+        updateUserData({ password: undefined });
         toast.success("Email vérifié avec succès ! Connexion en cours...");
         onVerified();
       } else {

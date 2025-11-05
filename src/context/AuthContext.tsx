@@ -329,15 +329,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } : undefined
       };
       
-      // Don't include password in the stored user data after registration
-      delete (mappedUserData as any).password;
-      
       // Auto-login handling
       const hasTokens = (response as any)?.tokens?.access && (response as any)?.tokens?.refresh;
       if (hasTokens) {
         // Check if user needs email verification
         if (user?.email_verified === false) {
           // User is registered but needs email verification
+          // Store password temporarily so user can auto-login after email verification
+          (mappedUserData as any).password = registrationData.password;
           mappedUserData.registrationComplete = false;
           setUserDataState(mappedUserData);
           setIsAuthenticated(false);

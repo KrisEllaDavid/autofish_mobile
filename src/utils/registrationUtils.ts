@@ -265,10 +265,10 @@ export const parseUserDataForProducerRegistration = (
   if (!city && address) {
     city = address;
   }
-  
+
   // Prefer using category IDs if available; fallback to static name mapping
   const categoryIndices = userData.selectedCategories ? normalizeCategoryIds(userData.selectedCategories) : [];
-  
+
   // Handle ID verification images - keep as base64 strings, API service will convert
   let rectoIdFile: string | undefined;
   let versoIdFile: string | undefined;
@@ -279,6 +279,17 @@ export const parseUserDataForProducerRegistration = (
 
   if (userData.idVerso && userData.idVerso.startsWith('data:image/')) {
     versoIdFile = userData.idVerso; // Keep as base64 string
+  }
+
+  // Handle banner/background image - keep as base64 string, API service will convert
+  let bannerFile: string | undefined;
+  if (pageData.banner && pageData.banner.startsWith('data:image/')) {
+    bannerFile = pageData.banner; // Keep as base64 string
+    console.log('📷 Banner included in registration data (base64 size:', bannerFile.length, 'bytes)');
+  } else if (pageData.banner) {
+    console.log('⚠️  Banner exists but not in base64 format:', pageData.banner.substring(0, 50));
+  } else {
+    console.log('ℹ️  No banner provided in registration');
   }
   
   // Use personal phone first (required for producer verification), then page data as fallback
@@ -336,7 +347,8 @@ export const parseUserDataForProducerRegistration = (
     description: finalDescription, // Required for producers
     categories: finalCategories,
     recto_id: rectoIdFile, // Send as base64 string, API will convert
-    verso_id: versoIdFile  // Send as base64 string, API will convert
+    verso_id: versoIdFile,  // Send as base64 string, API will convert
+    background_image: bannerFile // Send banner as base64 string, API will convert
   };
   
   // Ensure all required fields are present and not empty
