@@ -288,8 +288,18 @@ export interface Notification {
 
 export interface Chat {
   id: number;
-  participants: UserType[];
-  last_message?: Message;
+  product: number;
+  product_details: Product;
+  producer: number;
+  producer_details: UserType;
+  consumer: number;
+  consumer_details: UserType;
+  last_message?: {
+    id: number;
+    content: string;
+    sender: string;
+    created_at: string;
+  };
   unread_count: number;
   created_at: string;
   updated_at: string;
@@ -299,6 +309,8 @@ export interface Message {
   id: number;
   chat: number;
   sender: number;
+  sender_email: string;
+  is_producer: boolean;
   content: string;
   is_read: boolean;
   created_at: string;
@@ -1080,8 +1092,8 @@ class ApiClient {
     return this.makePublicRequest<Publication>(`/api/producers/publications/${id}/`);
   }
 
-  async toggleLikePublication(id: number): Promise<{ status: string }> {
-    return this.makeRequest<{ status: string }>(`/api/producers/publications/${id}/toggle_like/`, {
+  async toggleLikePublication(id: number): Promise<{ status: string; liked: boolean }> {
+    return this.makeRequest<{ status: string; liked: boolean }>(`/api/producers/publications/${id}/toggle_like/`, {
       method: 'POST',
     });
   }

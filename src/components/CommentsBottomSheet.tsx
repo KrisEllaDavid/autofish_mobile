@@ -423,6 +423,7 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                 border: "1px solid #e0e0e0",
                 borderRadius: "24px",
                 fontSize: 15,
+                color: "#000",
                 outline: "none",
                 resize: "none",
                 fontFamily: "inherit",
