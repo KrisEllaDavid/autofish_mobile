@@ -26,10 +26,20 @@ const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
 
     setIsChecking(true);
     try {
+      console.log('🔍 Checking email verification status...');
+      console.log('🔍 userData:', { email: userData?.email, hasPassword: !!userData?.password });
+
       // Check if we have email and password in userData to login
       if (!userData?.email || !userData?.password) {
+        console.log('🔍 No stored password, checking current user status...');
         // Fallback: Just check verification status without auto-login
         const currentUser = await apiClient.getCurrentUser();
+        console.log('🔍 Current user data:', {
+          email: currentUser?.email,
+          email_verified: currentUser?.email_verified,
+          is_active: currentUser?.is_active
+        });
+
         if (currentUser && currentUser.email_verified) {
           updateUserData({ email_verified: true });
           toast.success("Email vérifié avec succès !");
@@ -41,10 +51,16 @@ const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
         return;
       }
 
+      console.log('🔍 Attempting login with stored credentials...');
       // Try to login with stored credentials
       const loginResult = await login({
         email: userData.email,
         password: userData.password
+      });
+
+      console.log('🔍 Login result:', {
+        success: !!loginResult,
+        email_verified: loginResult?.email_verified
       });
 
       // If login is successful and email is verified, user will be auto-navigated
@@ -56,9 +72,20 @@ const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
       } else {
         toast.info("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
       }
-    } catch (error) {
-      console.error("Verification/login error:", error);
-      toast.error("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
+    } catch (error: any) {
+      console.error("❌ Verification/login error:", error);
+      console.error("❌ Error details:", {
+        message: error?.message,
+        status: error?.status,
+        response: error?.response
+      });
+
+      // Check if the error is about email not being verified
+      if (error?.message?.includes('not activated') || error?.response?.detail?.includes('not activated')) {
+        toast.error("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
+      } else {
+        toast.error(`Erreur: ${error?.message || 'Erreur inconnue'}`);
+      }
     } finally {
       setIsChecking(false);
     }

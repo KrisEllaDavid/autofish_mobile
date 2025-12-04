@@ -192,16 +192,23 @@ export interface PaginatedCommentsResponse {
   has_more: boolean;
 }
 
+export interface ChatUser {
+  id: number;
+  email: string;
+  full_name: string;
+  profile_picture?: string;
+}
+
 export interface ChatMessage {
   id: number;
   chat: number;
-  sender: number;
-  sender_email: string;
-  sender_name: string;
-  is_producer: boolean;
+  sender: {
+    id: number;
+    full_name: string;
+  };
   content: string;
+  timestamp: string;
   is_read: boolean;
-  created_at: string;
 }
 
 export interface Chat {
@@ -210,23 +217,18 @@ export interface Chat {
   publication?: number;
   item_type: 'product' | 'publication';
   item_title: string;
-  item_price?: number;
+  item_price?: string;
   item_image?: string;
-  producer: number;
-  producer_details: User;
-  consumer: number;
-  consumer_details: User;
+  producer: ChatUser;
+  consumer: ChatUser;
   created_at: string;
-  updated_at: string;
+  unread_count: number;
   last_message?: {
     id: number;
     content: string;
-    sender: string;
-    sender_name: string;
-    is_mine: boolean;
-    created_at: string;
+    timestamp: string;
+    sender_id: number;
   };
-  unread_count: number;
 }
 
 export interface PaginatedFeedResponse {
@@ -1271,15 +1273,23 @@ class ApiClient {
   // ================================
 
   /**
-   * Get all chats for the current user
-   * Endpoint: GET /api/chats/
+   * Get all chats for the current user (as producer or consumer)
+   * Endpoint: GET /api/chats/my_chats/
    */
   async getChats(): Promise<Chat[]> {
-    return this.makeRequest<Chat[]>('/api/chats/');
+    return this.makeRequest<Chat[]>('/api/chats/my_chats/');
   }
 
   /**
-   * Get a specific chat by ID with its messages
+   * Get latest messages summary for all chats
+   * Endpoint: GET /api/chats/latest_messages/
+   */
+  async getLatestMessages(): Promise<{ results: Chat[] }> {
+    return this.makeRequest<{ results: Chat[] }>('/api/chats/latest_messages/');
+  }
+
+  /**
+   * Get a specific chat by ID
    * Endpoint: GET /api/chats/{id}/
    */
   async getChatById(chatId: number): Promise<Chat> {
@@ -1289,6 +1299,7 @@ class ApiClient {
   /**
    * Create a new chat for a publication or product
    * Endpoint: POST /api/chats/
+   * Note: Returns existing chat if already created
    */
   async createChat(publicationId?: number, productId?: number): Promise<Chat> {
     const data: any = {};
@@ -1303,10 +1314,11 @@ class ApiClient {
 
   /**
    * Get messages for a specific chat
-   * Endpoint: GET /api/messages/?chat={chatId}
+   * Endpoint: GET /api/chats/{id}/messages/
+   * Note: Marks messages as read automatically
    */
-  async getChatMessages(chatId: number, page: number = 1): Promise<ChatMessage[]> {
-    return this.makeRequest<ChatMessage[]>(`/api/messages/?chat=${chatId}&page=${page}`);
+  async getChatMessages(chatId: number): Promise<ChatMessage[]> {
+    return this.makeRequest<ChatMessage[]>(`/api/chats/${chatId}/messages/`);
   }
 
   /**
@@ -1321,12 +1333,13 @@ class ApiClient {
   }
 
   /**
-   * Mark all messages in a chat as read
-   * Endpoint: POST /api/chats/{id}/mark_read/
+   * Mark a specific message as read
+   * Endpoint: PATCH /api/messages/{id}/
    */
-  async markMessagesAsRead(chatId: number): Promise<void> {
-    await this.makeRequest<void>(`/api/chats/${chatId}/mark_read/`, {
-      method: 'POST',
+  async markMessageAsRead(messageId: number): Promise<ChatMessage> {
+    return this.makeRequest<ChatMessage>(`/api/messages/${messageId}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ is_read: true }),
     });
   }
 

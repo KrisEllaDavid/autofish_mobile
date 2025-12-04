@@ -57,17 +57,37 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
         20
       );
 
-      if (pageNum === 1) {
-        setComments(response.results);
-      } else {
-        setComments((prev) => [...prev, ...response.results]);
+      // Handle response - even if empty, it's valid
+      const results = response.results || [];
+
+      // Debug: Log comment data to check author information
+      if (results.length > 0) {
+        console.log('📝 First comment data:', results[0]);
+        console.log('📝 Author info:', {
+          author_name: results[0].author_name,
+          author_avatar: results[0].author_avatar,
+          author_type: results[0].author_type
+        });
       }
 
-      setHasMore(response.has_more);
+      if (pageNum === 1) {
+        setComments(results);
+      } else {
+        setComments((prev) => [...prev, ...results]);
+      }
+
+      setHasMore(response.has_more || false);
       setPage(pageNum);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching comments:", error);
-      toast.error("Erreur lors du chargement des commentaires");
+      // Set empty state on error
+      setComments([]);
+      setHasMore(false);
+
+      // Only show error toast if it's not a 404 (publication might just not exist)
+      if (error?.status !== 404) {
+        toast.error("Erreur lors du chargement des commentaires");
+      }
     } finally {
       setLoading(false);
     }
@@ -87,11 +107,25 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
         publicationId,
         commentText.trim()
       );
+
+      // Debug: Log the new comment to see what data we're getting
+      console.log('📤 New comment created:', newComment);
+      console.log('📤 Author info:', {
+        author_name: newComment.author_name,
+        author_avatar: newComment.author_avatar,
+        created_at: newComment.created_at
+      });
+
+      // Add the new comment to the top of the list
       setComments((prev) => [newComment, ...prev]);
       setCommentText("");
       toast.success("Commentaire ajouté !");
-    } catch (error) {
+
+      // Scroll to top to see the new comment
+      commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    } catch (error: any) {
       console.error("Error creating comment:", error);
+      console.error("Error details:", error?.response?.data || error?.message);
       toast.error("Erreur lors de l'envoi du commentaire");
     } finally {
       setSending(false);
@@ -106,6 +140,51 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
     } catch (error) {
       console.error("Error deleting comment:", error);
       toast.error("Erreur lors de la suppression");
+    }
+  };
+
+  const handleLikeComment = async (commentId: number) => {
+    if (!api.isAuthenticated()) {
+      toast.info("Veuillez vous connecter pour aimer un commentaire");
+      return;
+    }
+
+    // Optimistic update
+    setComments((prev) =>
+      prev.map((comment) => {
+        if (comment.id === commentId) {
+          return {
+            ...comment,
+            is_liked: !comment.is_liked,
+            likes_count: comment.is_liked
+              ? comment.likes_count - 1
+              : comment.likes_count + 1,
+          };
+        }
+        return comment;
+      })
+    );
+
+    try {
+      await api.toggleLikeComment(commentId);
+    } catch (error) {
+      // Revert on error
+      console.error("Error liking comment:", error);
+      setComments((prev) =>
+        prev.map((comment) => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              is_liked: !comment.is_liked,
+              likes_count: comment.is_liked
+                ? comment.likes_count - 1
+                : comment.likes_count + 1,
+            };
+          }
+          return comment;
+        })
+      );
+      toast.error("Erreur lors de l'ajout du like");
     }
   };
 
@@ -140,7 +219,10 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
     <>
       {/* Backdrop */}
       <div
-        onClick={onClose}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
         style={{
           position: "fixed",
           top: 0,
@@ -155,6 +237,7 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
 
       {/* Bottom Sheet */}
       <div
+        onClick={(e) => e.stopPropagation()}
         style={{
           position: "fixed",
           bottom: 0,
@@ -187,7 +270,10 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
               margin: "0 auto 16px auto",
               cursor: "pointer",
             }}
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
           />
           <div
             style={{
@@ -207,7 +293,10 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
               Commentaires
             </h2>
             <button
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
               style={{
                 background: "none",
                 border: "none",
@@ -278,10 +367,10 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                         overflow: "hidden",
                       }}
                     >
-                      {comment.user_avatar ? (
+                      {comment.author_avatar && comment.author_avatar.startsWith('http') ? (
                         <img
-                          src={normalizeImageUrl(comment.user_avatar)}
-                          alt={comment.user_name}
+                          src={normalizeImageUrl(comment.author_avatar)}
+                          alt={comment.author_name}
                           style={{
                             width: "100%",
                             height: "100%",
@@ -302,7 +391,7 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                             fontSize: 16,
                           }}
                         >
-                          {comment.user_name.charAt(0).toUpperCase()}
+                          {comment.author_avatar || (comment.author_name ? comment.author_name.charAt(0).toUpperCase() : '?')}
                         </div>
                       )}
                     </div>
@@ -326,15 +415,16 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                               marginBottom: 2,
                             }}
                           >
-                            {comment.user_name}
+                            {comment.author_name || 'Utilisateur'}
                           </div>
                           <div style={{ fontSize: 12, color: "#999" }}>
                             {formatDate(comment.created_at)}
+                            {comment.is_edited && " (modifié)"}
                           </div>
                         </div>
 
                         {/* Delete Button for Owner */}
-                        {comment.is_owner && (
+                        {comment.can_delete && (
                           <button
                             onClick={() => handleDeleteComment(comment.id)}
                             style={{
@@ -363,6 +453,49 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
                       >
                         {comment.content}
                       </p>
+
+                      {/* Like Button */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "16px",
+                          marginTop: "8px",
+                        }}
+                      >
+                        <button
+                          onClick={() => handleLikeComment(comment.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "4px 0",
+                            color: comment.is_liked ? "#ff4444" : "#999",
+                            fontSize: 13,
+                            fontWeight: 600,
+                          }}
+                        >
+                          <span style={{ fontSize: 16 }}>
+                            {comment.is_liked ? "❤️" : "🤍"}
+                          </span>
+                          <span>{comment.likes_count || 0}</span>
+                        </button>
+
+                        {/* Reply count indicator */}
+                        {comment.reply_count > 0 && (
+                          <span
+                            style={{
+                              fontSize: 13,
+                              color: "#999",
+                            }}
+                          >
+                            💬 {comment.reply_count} {comment.reply_count === 1 ? "réponse" : "réponses"}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

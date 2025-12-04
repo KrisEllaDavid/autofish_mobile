@@ -144,6 +144,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             } : undefined
           };
           setUserDataState(mappedUserData);
+
+          // Check if user needs email verification
+          if (currentUser?.email_verified === false) {
+            setNeedsEmailVerification(true);
+            setIsAuthenticated(false);
+            if (import.meta.env.DEV) {
+              console.log('📱 User needs email verification on app startup');
+            }
+          } else {
+            setNeedsEmailVerification(false);
+            // Authentication will be set by the effect that watches userData
+          }
         } catch (error) {
           if (import.meta.env.DEV) {
             console.error('📱 Error fetching current user:', error);
@@ -152,7 +164,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           apiClient.logout();
         }
       };
-      
+
       fetchCurrentUser();
     }
   }, [setUserDataState, userData]);
@@ -256,6 +268,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Check if email verification is needed
       if (!user.email_verified) {
+        // Store password temporarily for auto-login after email verification
+        (mappedUserData as any).password = credentials.password;
+        setUserDataState(mappedUserData);
         setNeedsEmailVerification(true);
         setIsAuthenticated(false);
         // Store partial user data for verification page

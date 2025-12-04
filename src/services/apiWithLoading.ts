@@ -47,9 +47,13 @@ export const useApiWithLoading = () => {
     // Comment methods
     getPublicationComments: (publicationId: number, page?: number, limit?: number) =>
       withLoading(apiClient.getPublicationComments(publicationId, page, limit)),
-    createComment: (publicationId: number, content: string) =>
-      withLoading(apiClient.createComment(publicationId, content)),
+    createComment: (publicationId: number, content: string, parentId?: number) =>
+      withLoading(apiClient.createComment(publicationId, content, parentId)),
+    updateComment: (commentId: number, content: string) =>
+      withLoading(apiClient.updateComment(commentId, content)),
     deleteComment: (commentId: number) => withLoading(apiClient.deleteComment(commentId)),
+    toggleLikeComment: (commentId: number) => withLoading(apiClient.toggleLikeComment(commentId)),
+    getCommentReplies: (commentId: number) => withLoading(apiClient.getCommentReplies(commentId)),
 
     // Product methods
     getProducts: () => withLoading(apiClient.getProducts()),

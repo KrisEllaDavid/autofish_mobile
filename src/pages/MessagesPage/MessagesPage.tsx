@@ -84,18 +84,13 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
       const messageList = await api.getChatMessages(chatId);
       setMessages(messageList);
 
-      // Mark messages as read
-      try {
-        await api.markMessagesAsRead(chatId);
-        // Update the chat's unread count in the list
-        setChats((prevChats) =>
-          prevChats.map((chat) =>
-            chat.id === chatId ? { ...chat, unread_count: 0 } : chat
-          )
-        );
-      } catch (error) {
-        console.error("Error marking messages as read:", error);
-      }
+      // Messages are automatically marked as read by the backend
+      // Update the chat's unread count in the list
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === chatId ? { ...chat, unread_count: 0 } : chat
+        )
+      );
     } catch (error) {
       console.error("Error fetching messages:", error);
       toast.error("Erreur lors du chargement des messages");
@@ -145,10 +140,10 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
 
   const getPartner = (chat: Chat) => {
     // Determine who is the chat partner based on current user email
-    if (chat.producer_details.email === userEmail) {
-      return chat.consumer_details;
+    if (chat.producer.email === userEmail) {
+      return chat.consumer;
     }
-    return chat.producer_details;
+    return chat.producer;
   };
 
   if (loading) {
@@ -214,20 +209,20 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
                       {partner.profile_picture ? (
                         <img
                           src={normalizeImageUrl(partner.profile_picture)}
-                          alt={partner.first_name}
+                          alt={partner.full_name}
                         />
                       ) : (
                         <div className="avatar-placeholder">
-                          {(partner.first_name || 'U').charAt(0).toUpperCase()}
+                          {(partner.full_name || 'U').charAt(0).toUpperCase()}
                         </div>
                       )}
                     </div>
                     <div className="chat-info">
                       <div className="chat-header">
-                        <h3>{`${partner.first_name || ''} ${partner.last_name || ''}`}</h3>
+                        <h3>{partner.full_name || 'Utilisateur'}</h3>
                         {chat.last_message && (
                           <span className="chat-time">
-                            {formatDate(chat.last_message.created_at)}
+                            {formatDate(chat.last_message.timestamp)}
                           </span>
                         )}
                       </div>
@@ -262,11 +257,11 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
                           src={normalizeImageUrl(
                             getPartner(selectedChat).profile_picture!
                           )}
-                          alt={getPartner(selectedChat).first_name}
+                          alt={getPartner(selectedChat).full_name}
                         />
                       ) : (
                         <div className="avatar-placeholder">
-                          {(getPartner(selectedChat).first_name || 'U')
+                          {(getPartner(selectedChat).full_name || 'U')
                             .charAt(0)
                             .toUpperCase()}
                         </div>
@@ -274,7 +269,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
                     </div>
                     <div>
                       <h3>
-                        {`${getPartner(selectedChat).first_name || ''} ${getPartner(selectedChat).last_name || ''}`}
+                        {getPartner(selectedChat).full_name || 'Utilisateur'}
                       </h3>
                       <p className="product-tag">
                         {selectedChat.item_title}
@@ -292,7 +287,11 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
                   ) : (
                     <>
                       {messages.map((message) => {
-                        const isMyMessage = message.sender_email === userEmail;
+                        // Check if sender is me by comparing with chat participants
+                        const isMyMessage = selectedChat
+                          ? (selectedChat.producer.email === userEmail && message.sender.id === selectedChat.producer.id) ||
+                            (selectedChat.consumer.email === userEmail && message.sender.id === selectedChat.consumer.id)
+                          : false;
                         return (
                           <div
                             key={message.id}
@@ -301,7 +300,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
                             <div className="message-bubble">
                               <p>{message.content}</p>
                               <span className="message-time">
-                                {formatDate(message.created_at)}
+                                {formatDate(message.timestamp)}
                               </span>
                             </div>
                           </div>

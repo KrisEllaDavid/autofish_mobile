@@ -159,31 +159,9 @@ function AppContent() {
     );
   }
 
-  // IMPORTANT: Check authentication FIRST before email verification
-  // This ensures users go to HomePage after successful login from email verification
-  if (isAuthenticated) {
-    return (
-      <IonContent>
-        <GlobalStyle />
-        <ToastContainer
-          position="top-center"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        <HomePage />
-        <LoadingOverlay isVisible={isLoading} />
-      </IonContent>
-    );
-  }
-
-  // If user needs email verification (but not yet authenticated), show EmailVerificationPage
+  // IMPORTANT: Check email verification FIRST before authentication
+  // Users MUST verify email before accessing HomePage, regardless of having tokens
+  // This blocks unverified users from accessing the app even if they close and reopen
   if (needsEmailVerification && userData?.email) {
     return (
       <IonContent>
@@ -204,10 +182,34 @@ function AppContent() {
           email={userData.email}
           onVerified={() => {
             // Email verified and user logged in
-            // Login function already set isAuthenticated=true
+            // This will trigger isAuthenticated to become true
             setNeedsEmailVerification(false);
           }}
         />
+        <LoadingOverlay isVisible={isLoading} />
+      </IonContent>
+    );
+  }
+
+  // Check authentication AFTER email verification check
+  // Only verified users can reach HomePage
+  if (isAuthenticated) {
+    return (
+      <IonContent>
+        <GlobalStyle />
+        <ToastContainer
+          position="top-center"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+        <HomePage />
         <LoadingOverlay isVisible={isLoading} />
       </IonContent>
     );
