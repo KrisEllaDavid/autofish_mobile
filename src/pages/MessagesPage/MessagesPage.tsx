@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import TopNavBar from "../../components/TopNavBar";
 import { useApiWithLoading } from "../../services/apiWithLoading";
-import { Chat, Message } from "../../services/api";
+import { Chat, ChatMessage } from "../../services/api";
 import { toast } from "react-toastify";
 import { normalizeImageUrl } from "../../utils/imageUtils";
 import "./MessagesPage.css";
@@ -30,7 +30,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
   const api = useApiWithLoading();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -39,6 +39,18 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
   useEffect(() => {
     fetchChats();
   }, []);
+
+  // Auto-select chat if coming from a publication or product page
+  useEffect(() => {
+    const selectedChatId = sessionStorage.getItem("selectedChatId");
+    if (selectedChatId && chats.length > 0) {
+      const chatToSelect = chats.find((c) => c.id === parseInt(selectedChatId));
+      if (chatToSelect) {
+        setSelectedChat(chatToSelect);
+        sessionStorage.removeItem("selectedChatId"); // Clear after using
+      }
+    }
+  }, [chats]);
 
   useEffect(() => {
     if (selectedChat) {
@@ -71,6 +83,19 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
     try {
       const messageList = await api.getChatMessages(chatId);
       setMessages(messageList);
+
+      // Mark messages as read
+      try {
+        await api.markMessagesAsRead(chatId);
+        // Update the chat's unread count in the list
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === chatId ? { ...chat, unread_count: 0 } : chat
+          )
+        );
+      } catch (error) {
+        console.error("Error marking messages as read:", error);
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
       toast.error("Erreur lors du chargement des messages");
@@ -82,10 +107,10 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
 
     setSending(true);
     try {
-      const newMessage = await api.sendMessage({
-        chat: selectedChat.id,
-        content: messageText.trim(),
-      });
+      const newMessage = await api.sendMessage(
+        selectedChat.id,
+        messageText.trim()
+      );
       setMessages([...messages, newMessage]);
       setMessageText("");
 
@@ -208,7 +233,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
                       </div>
                       <div className="chat-preview">
                         <p className="product-name">
-                          {chat.product_details.name}
+                          {chat.item_title}
                         </p>
                         {chat.last_message && (
                           <p className="last-message">
@@ -252,7 +277,7 @@ const MessagesPage: React.FC<MessagesPageProps> = ({
                         {`${getPartner(selectedChat).first_name || ''} ${getPartner(selectedChat).last_name || ''}`}
                       </h3>
                       <p className="product-tag">
-                        {selectedChat.product_details.name}
+                        {selectedChat.item_title}
                       </p>
                     </div>
                   </div>

@@ -167,14 +167,22 @@ export interface Publication {
 export interface Comment {
   id: number;
   publication: number;
-  user: number;
-  user_name: string;
-  user_avatar?: string;
-  user_email: string;
+  author: number;
+  author_name: string;
+  author_avatar?: string;
+  author_type: 'producer' | 'consumer';
+  parent?: number;
   content: string;
   created_at: string;
   updated_at: string;
-  is_owner: boolean;
+  is_edited: boolean;
+  is_deleted: boolean;
+  replies?: Comment[];
+  likes_count: number;
+  is_liked: boolean;
+  reply_count: number;
+  can_edit: boolean;
+  can_delete: boolean;
 }
 
 export interface PaginatedCommentsResponse {
@@ -182,6 +190,43 @@ export interface PaginatedCommentsResponse {
   count: number;
   page: number;
   has_more: boolean;
+}
+
+export interface ChatMessage {
+  id: number;
+  chat: number;
+  sender: number;
+  sender_email: string;
+  sender_name: string;
+  is_producer: boolean;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface Chat {
+  id: number;
+  product?: number;
+  publication?: number;
+  item_type: 'product' | 'publication';
+  item_title: string;
+  item_price?: number;
+  item_image?: string;
+  producer: number;
+  producer_details: User;
+  consumer: number;
+  consumer_details: User;
+  created_at: string;
+  updated_at: string;
+  last_message?: {
+    id: number;
+    content: string;
+    sender: string;
+    sender_name: string;
+    is_mine: boolean;
+    created_at: string;
+  };
+  unread_count: number;
 }
 
 export interface PaginatedFeedResponse {
@@ -288,8 +333,14 @@ export interface Notification {
 
 export interface Chat {
   id: number;
-  product: number;
-  product_details: Product;
+  product?: number;
+  product_details?: Product;
+  publication?: number;
+  publication_details?: Publication;
+  item_type: 'product' | 'publication';
+  item_title: string;
+  item_price?: number;
+  item_image?: string;
   producer: number;
   producer_details: UserType;
   consumer: number;
@@ -299,6 +350,7 @@ export interface Chat {
     content: string;
     sender: string;
     created_at: string;
+    is_mine?: boolean;
   };
   unread_count: number;
   created_at: string;
@@ -319,6 +371,11 @@ export interface Message {
 export interface SendMessageRequest {
   chat: number;
   content: string;
+}
+
+export interface CreateChatRequest {
+  product?: number;
+  publication?: number;
 }
 
 // ================================
@@ -452,7 +509,7 @@ class ApiClient {
     // Add authentication header if available and not for registration endpoint
     if (this.accessToken && !endpoint.includes('/api/auth/register/')) {
       defaultHeaders['Authorization'] = `Bearer ${this.accessToken}`;
-      
+
       // Log authentication status in development
       if (import.meta.env.DEV) {
         console.log(`🔑 Making authenticated request to ${endpoint} with token: ${this.accessToken.substring(0, 20)}...`);
@@ -967,7 +1024,7 @@ class ApiClient {
 
   async createProducerPage(pageData: Partial<ProducerPage>): Promise<ProducerPage> {
     const formData = new FormData();
-    
+
     Object.entries(pageData).forEach(([key, value]) => {
       if (value instanceof File) {
         formData.append(key, value);
@@ -988,7 +1045,7 @@ class ApiClient {
 
   async updateProducerPage(slug: string, pageData: Partial<ProducerPage>): Promise<ProducerPage> {
     const formData = new FormData();
-    
+
     Object.entries(pageData).forEach(([key, value]) => {
       if (value instanceof File) {
         formData.append(key, value);
@@ -1025,7 +1082,7 @@ class ApiClient {
 
   async createPublication(publicationData: CreatePublicationRequest): Promise<Publication> {
     const formData = new FormData();
-    
+
     Object.entries(publicationData).forEach(([key, value]) => {
       if (value instanceof File) {
         formData.append(key, value);
@@ -1042,7 +1099,7 @@ class ApiClient {
 
   async updatePublication(id: number, publicationData: UpdatePublicationRequest): Promise<Publication> {
     const formData = new FormData();
-    
+
     Object.entries(publicationData).forEach(([key, value]) => {
       if (value instanceof File) {
         formData.append(key, value);
@@ -1092,8 +1149,13 @@ class ApiClient {
     return this.makePublicRequest<Publication>(`/api/producers/publications/${id}/`);
   }
 
-  async toggleLikePublication(id: number): Promise<{ status: string; liked: boolean }> {
-    return this.makeRequest<{ status: string; liked: boolean }>(`/api/producers/publications/${id}/toggle_like/`, {
+  /**
+   * Like/Unlike a publication
+   * Endpoint: POST /producers/publications/{id}/toggle_like/
+   * As per API Documentation Section 4.3
+   */
+  async toggleLikePublication(id: number): Promise<{ liked: boolean; likes_count: number }> {
+    return this.makeRequest<{ liked: boolean; likes_count: number }>(`/api/producers/publications/${id}/toggle_like/`, {
       method: 'POST',
     });
   }
@@ -1108,33 +1170,164 @@ class ApiClient {
   // COMMENT METHODS
   // ================================
 
+  // ================================
+  // COMMENTS METHODS - As per API Documentation Section 5
+  // ================================
+
+  /**
+   * Get comments for a publication
+   * Endpoint: GET /producer-page/comments/?publication={id}
+   * Returns: Top-level comments with nested replies
+   */
   async getPublicationComments(publicationId: number, page: number = 1, limit: number = 20): Promise<PaginatedCommentsResponse> {
     const queryParams = new URLSearchParams();
+    queryParams.append('publication', publicationId.toString());
     queryParams.append('page', page.toString());
     queryParams.append('limit', limit.toString());
 
-    return this.makeRequest<PaginatedCommentsResponse>(
-      `/api/producers/publications/${publicationId}/comments/?${queryParams.toString()}`
+    return this.makePublicRequest<PaginatedCommentsResponse>(
+      `/api/producers/comments/?${queryParams.toString()}`
     );
   }
 
-  async createComment(publicationId: number, content: string): Promise<Comment> {
+  /**
+   * Create a new comment or reply
+   * Endpoint: POST /producer-page/comments/
+   * Can be a top-level comment or a reply (with parent ID)
+   */
+  async createComment(publicationId: number, content: string, parentId?: number): Promise<Comment> {
+    const body: any = {
+      publication: publicationId,
+      content: content
+    };
+
+    if (parentId) {
+      body.parent = parentId;
+    }
+
     return this.makeRequest<Comment>(
-      `/api/producers/publications/${publicationId}/comments/create/`,
+      `/api/producers/comments/`,
       {
         method: 'POST',
+        body: JSON.stringify(body),
+      }
+    );
+  }
+
+  /**
+   * Update a comment
+   * Endpoint: PATCH /producer-page/comments/{id}/
+   * Note: Sets is_edited=true automatically
+   */
+  async updateComment(commentId: number, content: string): Promise<Comment> {
+    return this.makeRequest<Comment>(
+      `/api/producers/comments/${commentId}/`,
+      {
+        method: 'PATCH',
         body: JSON.stringify({ content }),
       }
     );
   }
 
+  /**
+   * Delete a comment (soft delete)
+   * Endpoint: DELETE /producer-page/comments/{id}/
+   * Who can delete: Author, Publication owner, Admin
+   */
   async deleteComment(commentId: number): Promise<{ message: string }> {
     return this.makeRequest<{ message: string }>(
-      `/api/producers/publications/comments/${commentId}/`,
+      `/api/producers/comments/${commentId}/`,
       {
         method: 'DELETE',
       }
     );
+  }
+
+  /**
+   * Like/Unlike a comment
+   * Endpoint: POST /producer-page/comments/{id}/toggle_like/
+   */
+  async toggleLikeComment(commentId: number): Promise<{ liked: boolean; likes_count: number }> {
+    return this.makeRequest<{ liked: boolean; likes_count: number }>(
+      `/api/producers/comments/${commentId}/toggle_like/`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
+  /**
+   * Get all replies for a specific comment
+   * Endpoint: GET /producer-page/comments/{id}/replies/
+   */
+  async getCommentReplies(commentId: number): Promise<Comment[]> {
+    return this.makePublicRequest<Comment[]>(
+      `/api/producers/comments/${commentId}/replies/`
+    );
+  }
+
+  // ================================
+  // CHAT METHODS
+  // ================================
+
+  /**
+   * Get all chats for the current user
+   * Endpoint: GET /api/chats/
+   */
+  async getChats(): Promise<Chat[]> {
+    return this.makeRequest<Chat[]>('/api/chats/');
+  }
+
+  /**
+   * Get a specific chat by ID with its messages
+   * Endpoint: GET /api/chats/{id}/
+   */
+  async getChatById(chatId: number): Promise<Chat> {
+    return this.makeRequest<Chat>(`/api/chats/${chatId}/`);
+  }
+
+  /**
+   * Create a new chat for a publication or product
+   * Endpoint: POST /api/chats/
+   */
+  async createChat(publicationId?: number, productId?: number): Promise<Chat> {
+    const data: any = {};
+    if (publicationId) data.publication = publicationId;
+    if (productId) data.product = productId;
+
+    return this.makeRequest<Chat>('/api/chats/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Get messages for a specific chat
+   * Endpoint: GET /api/messages/?chat={chatId}
+   */
+  async getChatMessages(chatId: number, page: number = 1): Promise<ChatMessage[]> {
+    return this.makeRequest<ChatMessage[]>(`/api/messages/?chat=${chatId}&page=${page}`);
+  }
+
+  /**
+   * Send a message in a chat
+   * Endpoint: POST /api/messages/
+   */
+  async sendMessage(chatId: number, content: string): Promise<ChatMessage> {
+    return this.makeRequest<ChatMessage>('/api/messages/', {
+      method: 'POST',
+      body: JSON.stringify({ chat: chatId, content }),
+    });
+  }
+
+  /**
+   * Mark all messages in a chat as read
+   * Endpoint: POST /api/chats/{id}/mark_read/
+   */
+  async markMessagesAsRead(chatId: number): Promise<void> {
+    await this.makeRequest<void>(`/api/chats/${chatId}/mark_read/`, {
+      method: 'POST',
+    });
   }
 
   // ================================
@@ -1218,23 +1411,23 @@ class ApiClient {
   // ================================
 
   async getNotifications(): Promise<Notification[]> {
-    return this.makeRequest<Notification[]>('/api/notificationsnotifications/');
+    return this.makeRequest<Notification[]>('/api/notifications/notifications/');
   }
 
   async markNotificationAsRead(id: number): Promise<Notification> {
-    return this.makeRequest<Notification>(`/api/notifications/${id}/mark_read/`, {
+    return this.makeRequest<Notification>(`/api/notifications/notifications/${id}/mark_read/`, {
       method: 'POST',
     });
   }
 
   async markAllNotificationsAsRead(): Promise<{ message: string }> {
-    return this.makeRequest<{ message: string }>('/api/notifications/mark_all_read/', {
+    return this.makeRequest<{ message: string }>('/api/notifications/notifications/mark_all_read/', {
       method: 'POST',
     });
   }
 
   async deleteNotification(id: number): Promise<void> {
-    return this.makeRequest<void>(`/api/notifications/${id}/`, {
+    return this.makeRequest<void>(`/api/notifications/notifications/${id}/`, {
       method: 'DELETE',
     });
   }
@@ -1244,15 +1437,22 @@ class ApiClient {
   // ================================
 
   async getChats(): Promise<Chat[]> {
-    return this.makeRequest<Chat[]>('/api/chats/');
+    return this.makeRequest<Chat[]>('/api/chats/chats/');
   }
 
   async getChat(id: number): Promise<Chat> {
-    return this.makeRequest<Chat>(`/api/chats/${id}/`);
+    return this.makeRequest<Chat>(`/api/chats/chats/${id}/`);
+  }
+
+  async createChat(request: CreateChatRequest): Promise<Chat> {
+    return this.makeRequest<Chat>('/api/chats/chats/', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
   }
 
   async getChatMessages(chatId: number): Promise<Message[]> {
-    return this.makeRequest<Message[]>(`/api/chats/${chatId}/messages/`);
+    return this.makeRequest<Message[]>(`/api/chats/chats/${chatId}/messages/`);
   }
 
   async sendMessage(request: SendMessageRequest): Promise<Message> {
@@ -1493,6 +1693,7 @@ export const notificationService = {
 export const chatService = {
   getChats: () => apiClient.getChats(),
   getChat: (id: number) => apiClient.getChat(id),
+  createChat: (request: CreateChatRequest) => apiClient.createChat(request),
   getMessages: (chatId: number) => apiClient.getChatMessages(chatId),
   sendMessage: (request: SendMessageRequest) => apiClient.sendMessage(request),
   markMessageAsRead: (messageId: number) => apiClient.markMessageAsRead(messageId),
