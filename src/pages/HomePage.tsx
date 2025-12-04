@@ -380,6 +380,38 @@ const HomePage: React.FC = () => {
     console.log("Navigate to producer:", producerId);
   };
 
+  const handleMessageClick = async (publicationId: number) => {
+    // Check if user is authenticated
+    if (!userData || !userData.registrationComplete) {
+      alert("Veuillez vous connecter pour envoyer un message.");
+      return;
+    }
+
+    try {
+      // Create or get existing chat for this publication
+      const chat = await api.createChat(publicationId);
+
+      // Navigate to messages page with the chat selected
+      setActiveTab("messages");
+
+      // Store the chat ID in sessionStorage so MessagesPage can auto-select it
+      sessionStorage.setItem("selectedChatId", chat.id.toString());
+    } catch (error: any) {
+      console.error("Error creating chat:", error);
+
+      // If chat already exists, backend might return an error with the existing chat
+      if (error?.response?.data?.chat_id) {
+        setActiveTab("messages");
+        sessionStorage.setItem(
+          "selectedChatId",
+          error.response.data.chat_id.toString()
+        );
+      } else {
+        alert("Erreur lors de l'ouverture de la conversation");
+      }
+    }
+  };
+
   // --- Navigation Logic ---
   // Always go to home, clear overlays
   const goHome = () => {
@@ -777,6 +809,7 @@ const HomePage: React.FC = () => {
                           ? publication.is_liked
                           : likedPosts.includes(publication.id.toString())
                       }
+                      onMessageClick={handleMessageClick}
                     />
                   </div>
                 );
