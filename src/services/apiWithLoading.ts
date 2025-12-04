@@ -79,9 +79,11 @@ export const useApiWithLoading = () => {
 
     // Chat methods
     getChats: () => withLoading(apiClient.getChats()),
-    getChat: (id: number) => withLoading(apiClient.getChat(id)),
+    getLatestMessages: () => withLoading(apiClient.getLatestMessages()),
+    getChatById: (chatId: number) => withLoading(apiClient.getChatById(chatId)),
+    createChat: (publicationId?: number, productId?: number) => withLoading(apiClient.createChat(publicationId, productId)),
     getChatMessages: (chatId: number) => withLoading(apiClient.getChatMessages(chatId)),
-    sendMessage: (request: any) => withLoading(apiClient.sendMessage(request)),
+    sendMessage: (chatId: number, content: string) => withLoading(apiClient.sendMessage(chatId, content)),
     markMessageAsRead: (messageId: number) => withLoading(apiClient.markMessageAsRead(messageId)),
 
     // Evaluation methods
