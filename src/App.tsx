@@ -15,6 +15,7 @@ import HomePage from "./pages/HomePage";
 import { animations, fontFaces } from "./components/styles";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LoadingProvider, useLoading } from "./context/LoadingContext";
+import { ErrorHandlerProvider } from "./context/ErrorHandlerContext";
 import LoadingOverlay from "./components/LoadingOverlay";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useTokenValidation } from "./hooks/useTokenValidation";
@@ -66,6 +67,18 @@ function AppContent() {
 
   // Add token validation
   useTokenValidation();
+
+  // Handler for "go back to home" button
+  const handleGoHome = () => {
+    // Reset to login page if not authenticated
+    if (!isAuthenticated) {
+      setCurrentStep(2);
+      setShowForgotPassword(false);
+      setShowResetPasswordPage(false);
+      setShowSignupPage(false);
+    }
+    // If authenticated, HomePage is already showing, error popup just closes
+  };
 
   // Handle deep links when app is opened from email verification link
   useEffect(() => {
@@ -149,142 +162,140 @@ function AppContent() {
     setCurrentStep((prev) => prev - 1);
   };
 
-  if (showSplash) {
-    return (
-      <IonContent>
-        <GlobalStyle />
-        <SplashScreen />
-        <LoadingOverlay isVisible={isLoading} />
-      </IonContent>
-    );
-  }
-
-  // IMPORTANT: Check email verification FIRST before authentication
-  // Users MUST verify email before accessing HomePage, regardless of having tokens
-  // This blocks unverified users from accessing the app even if they close and reopen
-  if (needsEmailVerification && userData?.email) {
-    return (
-      <IonContent>
-        <GlobalStyle />
-        <ToastContainer
-          position="top-center"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        <EmailVerificationPage
-          email={userData.email}
-          onVerified={() => {
-            // Email verified and user logged in
-            // This will trigger isAuthenticated to become true
-            setNeedsEmailVerification(false);
-          }}
-        />
-        <LoadingOverlay isVisible={isLoading} />
-      </IonContent>
-    );
-  }
-
-  // Check authentication AFTER email verification check
-  // Only verified users can reach HomePage
-  if (isAuthenticated) {
-    return (
-      <IonContent>
-        <GlobalStyle />
-        <ToastContainer
-          position="top-center"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        <HomePage />
-        <LoadingOverlay isVisible={isLoading} />
-      </IonContent>
-    );
-  }
-
-  // Non-authenticated flow (onboarding, login, signup)
   return (
-    <IonContent>
-        <GlobalStyle />
-        <ToastContainer
-          position="top-center"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        {currentStep === 0 && (
-          <OnboardingPage1 activeIndex={0} onNext={handleNext} />
-        )}
-        {currentStep === 1 && (
-          <OnboardingPage2
-            activeIndex={1}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
+    <ErrorHandlerProvider onGoHome={handleGoHome}>
+      {showSplash && (
+        <IonContent>
+          <GlobalStyle />
+          <SplashScreen />
+          <LoadingOverlay isVisible={isLoading} />
+        </IonContent>
+      )}
+
+      {/* IMPORTANT: Check email verification FIRST before authentication */}
+      {/* Users MUST verify email before accessing HomePage, regardless of having tokens */}
+      {/* This blocks unverified users from accessing the app even if they close and reopen */}
+      {!showSplash && needsEmailVerification && userData?.email && (
+        <IonContent>
+          <GlobalStyle />
+          <ToastContainer
+            position="top-center"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
           />
-        )}
-        {currentStep === 2 && !showForgotPassword && !showSignupPage && (
-          <div
-            style={{
-              animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
+          <EmailVerificationPage
+            email={userData.email}
+            onVerified={() => {
+              // Email verified and user logged in
+              // This will trigger isAuthenticated to become true
+              setNeedsEmailVerification(false);
             }}
-          >
-            <LoginPage
-              onForgotPassword={() => setShowForgotPassword(true)}
-              onSignup={() => setShowSignupPage(true)}
+          />
+          <LoadingOverlay isVisible={isLoading} />
+        </IonContent>
+      )}
+
+      {/* Check authentication AFTER email verification check */}
+      {/* Only verified users can reach HomePage */}
+      {!showSplash && !needsEmailVerification && isAuthenticated && (
+        <IonContent>
+          <GlobalStyle />
+          <ToastContainer
+            position="top-center"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+          <HomePage />
+          <LoadingOverlay isVisible={isLoading} />
+        </IonContent>
+      )}
+
+      {/* Non-authenticated flow (onboarding, login, signup) */}
+      {!showSplash && !needsEmailVerification && !isAuthenticated && (
+        <IonContent>
+          <GlobalStyle />
+          <ToastContainer
+            position="top-center"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+          {currentStep === 0 && (
+            <OnboardingPage1 activeIndex={0} onNext={handleNext} />
+          )}
+          {currentStep === 1 && (
+            <OnboardingPage2
+              activeIndex={1}
+              onNext={handleNext}
+              onPrevious={handlePrevious}
             />
-          </div>
-        )}
-        {currentStep === 2 && showSignupPage && (
-          <div
-            style={{
-              animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
-            }}
-          >
-            <SignupPage onBack={() => setShowSignupPage(false)} />
-          </div>
-        )}
-        {currentStep === 2 && showForgotPassword && !showResetPasswordPage && (
-          <div
-            style={{
-              animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
-            }}
-          >
-            <ForgotPasswordPage
-              onBack={() => setShowForgotPassword(false)}
-              onSubmit={() => setShowResetPasswordPage(true)}
-            />
-          </div>
-        )}
-        {currentStep === 2 && showForgotPassword && showResetPasswordPage && (
-          <div
-            style={{
-              animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
-            }}
-          >
-            <ResetPasswordPage onBack={() => setShowResetPasswordPage(false)} />
-          </div>
-        )}
-        <LoadingOverlay isVisible={isLoading} />
-    </IonContent>
+          )}
+          {currentStep === 2 && !showForgotPassword && !showSignupPage && (
+            <div
+              style={{
+                animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
+              }}
+            >
+              <LoginPage
+                onForgotPassword={() => setShowForgotPassword(true)}
+                onSignup={() => setShowSignupPage(true)}
+              />
+            </div>
+          )}
+          {currentStep === 2 && showSignupPage && (
+            <div
+              style={{
+                animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
+              }}
+            >
+              <SignupPage onBack={() => setShowSignupPage(false)} />
+            </div>
+          )}
+          {currentStep === 2 && showForgotPassword && !showResetPasswordPage && (
+            <div
+              style={{
+                animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
+              }}
+            >
+              <ForgotPasswordPage
+                onBack={() => setShowForgotPassword(false)}
+                onSubmit={() => setShowResetPasswordPage(true)}
+              />
+            </div>
+          )}
+          {currentStep === 2 && showForgotPassword && showResetPasswordPage && (
+            <div
+              style={{
+                animation: "fadeInOnboard 0.7s cubic-bezier(.4,0,.2,1) both",
+              }}
+            >
+              <ResetPasswordPage onBack={() => setShowResetPasswordPage(false)} />
+            </div>
+          )}
+          <LoadingOverlay isVisible={isLoading} />
+        </IonContent>
+      )}
+    </ErrorHandlerProvider>
   );
 }
 

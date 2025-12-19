@@ -40,6 +40,7 @@ const HomePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MainTab>("home");
   const [overlay, setOverlay] = useState<Overlay>(Overlay.None);
   const [publications, setPublications] = useState<Publication[]>([]);
+  const [inChatConversation, setInChatConversation] = useState(false);
   const [producerPages, setProducerPages] = useState<{
     [key: number]: ProducerPage;
   }>({});
@@ -312,16 +313,11 @@ const HomePage: React.FC = () => {
       setPublications((prev) =>
         prev.map((pub) => {
           if (pub.id === publicationId) {
-            const isLiked = result.status === "added to favorites";
             return {
               ...pub,
-              is_liked: isLiked,
-              likes_count: isLiked
-                ? (pub.likes_count || pub.likes || 0) + 1
-                : (pub.likes_count || pub.likes || 0) - 1,
-              likes: isLiked
-                ? (pub.likes_count || pub.likes || 0) + 1
-                : (pub.likes_count || pub.likes || 0) - 1,
+              is_liked: result.liked,
+              likes_count: result.likes_count,
+              likes: result.likes_count,
             };
           }
           return pub;
@@ -329,7 +325,7 @@ const HomePage: React.FC = () => {
       );
 
       // Update local storage for liked posts
-      if (result.status === "added to favorites") {
+      if (result.liked) {
         setLikedPosts([...likedPosts, publicationId.toString()]);
       } else {
         setLikedPosts(
@@ -338,7 +334,7 @@ const HomePage: React.FC = () => {
       }
 
       console.log(
-        result.status === "added to favorites"
+        result.liked
           ? "Added to favorites!"
           : "Removed from favorites"
       );
@@ -381,14 +377,38 @@ const HomePage: React.FC = () => {
   };
 
   const handleMessageClick = async (publicationId: number) => {
+    console.log('📨 Message button clicked, publicationId:', publicationId);
+    console.log('📨 Type of publicationId:', typeof publicationId);
+
     // Check if user is authenticated
     if (!userData || !userData.registrationComplete) {
       alert("Veuillez vous connecter pour envoyer un message.");
       return;
     }
 
+    // Find the publication to check if user is the producer
+    const publication = publications.find((p) => p.id === publicationId);
+
+    console.log('🔍 Publication found:', publication);
+    console.log('🔍 Publication producer:', publication?.producer);
+    console.log('🔍 Current user ID:', userData.id);
+    console.log('🔍 Are they equal?', publication?.producer === userData.id);
+
+    if (publication && publication.producer === userData.id) {
+      alert("Vous ne pouvez pas envoyer un message sur votre propre publication.");
+      return;
+    }
+
+    // Additional check: if publication has no producer, show error
+    if (publication && !publication.producer) {
+      console.error('❌ Publication has no producer!', publication);
+      alert("Cette publication n'a pas de producteur associé. Impossible de créer une conversation.");
+      return;
+    }
+
     try {
       // Create or get existing chat for this publication
+      console.log('📨 Calling api.createChat with:', publicationId);
       const chat = await api.createChat(publicationId);
 
       // Navigate to messages page with the chat selected
@@ -569,8 +589,11 @@ const HomePage: React.FC = () => {
           userName={userData?.name}
           userEmail={userData?.email}
           userRole={userData?.userRole}
+          onChatStateChange={setInChatConversation}
         />
-        <BottomNavBar activeTab="messages" onTabChange={handleTabChange} />
+        {!inChatConversation && (
+          <BottomNavBar activeTab="messages" onTabChange={handleTabChange} />
+        )}
       </div>
     );
   }
@@ -764,6 +787,7 @@ const HomePage: React.FC = () => {
                         "Producteur inconnu"
                       }
                       producerAvatar={
+                        publication.producer_picture ||
                         producerPage?.logo_url ||
                         producerPage?.logo ||
                         "/icons/account_icon.svg"
@@ -809,6 +833,7 @@ const HomePage: React.FC = () => {
                           ? publication.is_liked
                           : likedPosts.includes(publication.id.toString())
                       }
+                      hideContactButton={!!(userData && publication.producer === userData.id)}
                       onMessageClick={handleMessageClick}
                     />
                   </div>

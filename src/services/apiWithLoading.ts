@@ -85,6 +85,7 @@ export const useApiWithLoading = () => {
     getChatMessages: (chatId: number) => withLoading(apiClient.getChatMessages(chatId)),
     sendMessage: (chatId: number, content: string) => withLoading(apiClient.sendMessage(chatId, content)),
     markMessageAsRead: (messageId: number) => withLoading(apiClient.markMessageAsRead(messageId)),
+    deleteChat: (chatId: number) => withLoading(apiClient.deleteChat(chatId)),
 
     // Evaluation methods
     getEvaluations: () => withLoading(apiClient.getEvaluations()),

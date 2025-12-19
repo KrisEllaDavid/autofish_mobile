@@ -120,6 +120,12 @@ const PublicationPreviewPage: React.FC<PublicationPreviewPageProps> = ({
       return;
     }
 
+    // Check if user is trying to message their own publication
+    if (publication && userData && publication.producer === userData.id) {
+      toast.info("Vous ne pouvez pas envoyer un message sur votre propre publication");
+      return;
+    }
+
     try {
       // Create or get existing chat for this publication
       const chat = await api.createChat(publicationId);
@@ -402,17 +408,38 @@ const PublicationPreviewPage: React.FC<PublicationPreviewPageProps> = ({
                   borderRadius: "50%",
                   backgroundColor: "#f0f0f0",
                   overflow: "hidden",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <img
-                  src={userAvatar || "/icons/autofish_blue_logo 1.png"}
-                  alt="producer"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                {publication.producer_picture ? (
+                  <img
+                    src={normalizeImageUrl(publication.producer_picture)}
+                    alt={publication.producer_name || "Producteur"}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "linear-gradient(135deg, #00b2d6 0%, #0099bb 100%)",
+                      color: "white",
+                      fontWeight: 600,
+                      fontSize: 20,
+                    }}
+                  >
+                    {(publication.producer_name || "P").charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 16, color: "#222" }}>
-                  {publication.page_name || "Producteur"}
+                  {publication.producer_name || publication.page_name || "Producteur"}
                 </div>
                 <div style={{ fontSize: 12, color: "#999" }}>
                   {formatDate(publication.date_posted)}

@@ -11,6 +11,7 @@ import { normalizeImageUrl } from '../utils/imageUtils';
 
 // Define the user data structure based on usage patterns in the app
 export interface UserData {
+  id?: number; // User ID from backend
   name?: string;
   email?: string;
   password?: string; // Store password for API registration
@@ -90,6 +91,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const [needsEmailVerification, setNeedsEmailVerification] = useState<boolean>(false);
 
+  // Setup automatic logout callback for API client
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.log('🔒 Token expired or invalid - automatically logging out');
+      // Clear all user data immediately
+      setUserDataState(null);
+      setIsAuthenticated(false);
+      setNeedsEmailVerification(false);
+
+      // Clear other app data from localStorage
+      localStorage.removeItem('myPosts');
+      localStorage.removeItem('likedPosts');
+      localStorage.removeItem('selectedCategories');
+
+      // Clear any other cached data
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('autofish_') || key.startsWith('app_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    };
+
+    apiClient.setUnauthorizedCallback(handleUnauthorized);
+  }, [setUserDataState]);
 
   useEffect(() => {
     // Check if user is authenticated based on both userData and stored tokens
@@ -114,6 +139,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           
           // Safely access user properties with comprehensive fallbacks
           const mappedUserData: UserData = {
+            id: currentUser?.id,
             name: currentUser ?
               `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() ||
               currentUser.email || 'User' : 'User',
@@ -226,8 +252,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!user) {
         throw new Error('Invalid login response: missing user data');
       }
-      
+
       const mappedUserData: UserData = {
+        id: user?.id,
         name: user ?
           `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
           user.email || 'User' : 'User',
@@ -311,8 +338,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!user) {
         throw new Error('Invalid registration response: missing user data');
       }
-      
+
       const mappedUserData: UserData = {
+        id: user?.id,
         name: user ?
           `${user.first_name || ''} ${user.last_name || ''}`.trim() ||
           user.email || 'User' : 'User',

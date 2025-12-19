@@ -49,7 +49,11 @@ class ErrorBoundary extends Component<Props, State> {
               Une erreur inattendue s'est produite. Veuillez rafraîchir la page.
             </p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                // Reset error state and go to home
+                this.setState({ hasError: false });
+                window.location.href = '/';
+              }}
               style={{
                 background: "#00B2D6",
                 color: "white",
@@ -61,7 +65,7 @@ class ErrorBoundary extends Component<Props, State> {
                 fontWeight: "600",
               }}
             >
-              Rafraîchir la page
+              Retour à l'accueil
             </button>
           </div>
         )

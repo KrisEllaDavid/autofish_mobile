@@ -139,6 +139,7 @@ export interface Publication {
   page: number;
   page_name?: string;
   producer_name?: string;
+  producer_picture?: string;  // Profile picture URL of the producer
   producer_phone?: string;  // For WhatsApp contact
   title: string;
   description: string;
@@ -192,13 +193,6 @@ export interface PaginatedCommentsResponse {
   has_more: boolean;
 }
 
-export interface ChatUser {
-  id: number;
-  email: string;
-  full_name: string;
-  profile_picture?: string;
-}
-
 export interface ChatMessage {
   id: number;
   chat: number;
@@ -207,28 +201,8 @@ export interface ChatMessage {
     full_name: string;
   };
   content: string;
-  timestamp: string;
-  is_read: boolean;
-}
-
-export interface Chat {
-  id: number;
-  product?: number;
-  publication?: number;
-  item_type: 'product' | 'publication';
-  item_title: string;
-  item_price?: string;
-  item_image?: string;
-  producer: ChatUser;
-  consumer: ChatUser;
   created_at: string;
-  unread_count: number;
-  last_message?: {
-    id: number;
-    content: string;
-    timestamp: string;
-    sender_id: number;
-  };
+  is_read: boolean;
 }
 
 export interface PaginatedFeedResponse {
@@ -345,8 +319,8 @@ export interface Chat {
   item_image?: string;
   producer: number;
   producer_details: UserType;
-  consumer: number;
-  consumer_details: UserType;
+  consumer: number | null;
+  consumer_details: UserType | null;
   last_message?: {
     id: number;
     content: string;
@@ -467,12 +441,18 @@ class ApiClient {
   private baseURL: string;
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private onUnauthorizedCallback: (() => void) | null = null;
 
   constructor() {
     this.baseURL = baseURL;
-    
+
     // Load tokens from localStorage on initialization
     this.loadTokensFromStorage();
+  }
+
+  // Set callback for when token becomes invalid
+  public setUnauthorizedCallback(callback: () => void) {
+    this.onUnauthorizedCallback = callback;
   }
 
   private loadTokensFromStorage() {
@@ -582,6 +562,16 @@ class ApiClient {
           ...options,
           headers,
         };
+
+        if (import.meta.env.DEV) {
+          console.log('🌐 Making fetch request:', {
+            url,
+            method: config.method || 'GET',
+            headers: config.headers,
+            body: config.body
+          });
+        }
+
         response = await fetch(url, config);
       }
       
@@ -792,6 +782,10 @@ class ApiClient {
   private async refreshAccessToken(): Promise<boolean> {
     if (!this.refreshToken) {
       this.clearTokensFromStorage();
+      // Trigger logout callback when no refresh token available
+      if (this.onUnauthorizedCallback) {
+        this.onUnauthorizedCallback();
+      }
       return false;
     }
 
@@ -812,10 +806,18 @@ class ApiClient {
         return true;
       } else {
         this.clearTokensFromStorage();
+        // Trigger logout callback when refresh token is invalid
+        if (this.onUnauthorizedCallback) {
+          this.onUnauthorizedCallback();
+        }
         return false;
       }
     } catch {
       this.clearTokensFromStorage();
+      // Trigger logout callback on refresh failure
+      if (this.onUnauthorizedCallback) {
+        this.onUnauthorizedCallback();
+      }
       return false;
     }
   }
@@ -1302,13 +1304,34 @@ class ApiClient {
    * Note: Returns existing chat if already created
    */
   async createChat(publicationId?: number, productId?: number): Promise<Chat> {
+    console.log('=== CREATE CHAT START ===');
+    console.log('publicationId param:', publicationId, typeof publicationId);
+    console.log('productId param:', productId, typeof productId);
+
     const data: any = {};
-    if (publicationId) data.publication = publicationId;
-    if (productId) data.product = productId;
+    console.log('Empty data object created:', data);
+
+    if (publicationId) {
+      console.log('Adding publication to data...');
+      data.publication = publicationId;
+      console.log('data after adding publication:', data);
+    }
+
+    if (productId) {
+      console.log('Adding product to data...');
+      data.product = productId;
+      console.log('data after adding product:', data);
+    }
+
+    const jsonBody = JSON.stringify(data);
+    console.log('Final data object:', data);
+    console.log('JSON stringified body:', jsonBody);
+    console.log('Body length:', jsonBody.length);
+    console.log('=== CREATE CHAT END ===');
 
     return this.makeRequest<Chat>('/api/chats/chats/', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: jsonBody,
     });
   }
 
@@ -1340,6 +1363,16 @@ class ApiClient {
     return this.makeRequest<ChatMessage>(`/api/chats/messages/${messageId}/`, {
       method: 'PATCH',
       body: JSON.stringify({ is_read: true }),
+    });
+  }
+
+  /**
+   * Delete a chat conversation
+   * Endpoint: DELETE /api/chats/chats/{id}/
+   */
+  async deleteChat(chatId: number): Promise<void> {
+    return this.makeRequest<void>(`/api/chats/chats/${chatId}/`, {
+      method: 'DELETE',
     });
   }
 
@@ -1442,42 +1475,6 @@ class ApiClient {
   async deleteNotification(id: number): Promise<void> {
     return this.makeRequest<void>(`/api/notifications/notifications/${id}/`, {
       method: 'DELETE',
-    });
-  }
-
-  // ================================
-  // CHAT METHODS
-  // ================================
-
-  async getChats(): Promise<Chat[]> {
-    return this.makeRequest<Chat[]>('/api/chats/chats/');
-  }
-
-  async getChat(id: number): Promise<Chat> {
-    return this.makeRequest<Chat>(`/api/chats/chats/${id}/`);
-  }
-
-  async createChat(request: CreateChatRequest): Promise<Chat> {
-    return this.makeRequest<Chat>('/api/chats/chats/', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  async getChatMessages(chatId: number): Promise<Message[]> {
-    return this.makeRequest<Message[]>(`/api/chats/chats/${chatId}/messages/`);
-  }
-
-  async sendMessage(request: SendMessageRequest): Promise<Message> {
-    return this.makeRequest<Message>('/api/chats/messages/', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
-  }
-
-  async markMessageAsRead(messageId: number): Promise<Message> {
-    return this.makeRequest<Message>(`/api/chats/messages/${messageId}/mark_read/`, {
-      method: 'POST',
     });
   }
 
@@ -1705,11 +1702,12 @@ export const notificationService = {
 // Chat service
 export const chatService = {
   getChats: () => apiClient.getChats(),
-  getChat: (id: number) => apiClient.getChat(id),
-  createChat: (request: CreateChatRequest) => apiClient.createChat(request),
+  getChatById: (id: number) => apiClient.getChatById(id),
+  createChat: (publicationId?: number, productId?: number) => apiClient.createChat(publicationId, productId),
   getMessages: (chatId: number) => apiClient.getChatMessages(chatId),
-  sendMessage: (request: SendMessageRequest) => apiClient.sendMessage(request),
+  sendMessage: (chatId: number, content: string) => apiClient.sendMessage(chatId, content),
   markMessageAsRead: (messageId: number) => apiClient.markMessageAsRead(messageId),
+  deleteChat: (chatId: number) => apiClient.deleteChat(chatId),
 };
 
 // Evaluation service

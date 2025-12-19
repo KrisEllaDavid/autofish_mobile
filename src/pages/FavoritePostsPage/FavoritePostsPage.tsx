@@ -99,33 +99,12 @@ const FavoritePostsPage: React.FC<FavoritePostsPageProps> = ({
             }} />
           </div>
         ) : likedPublications.length === 0 ? (
-          <div className="empty-state" style={{
-            textAlign: "center",
-            padding: "60px 20px",
-            color: "#666"
-          }}>
-            <div className="empty-state-icon" style={{
-              fontSize: "64px",
-              marginBottom: "20px"
-            }}>
-              ❤️
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <img src="/icons/dark_heart_outline_like.svg" alt="favorites" />
             </div>
-            <h2 style={{
-              fontSize: "20px",
-              fontWeight: 600,
-              marginBottom: "12px",
-              color: "#222"
-            }}>
-              Aucune publication favorite
-            </h2>
-            <p style={{
-              fontSize: "14px",
-              lineHeight: 1.6,
-              maxWidth: "400px",
-              margin: "0 auto"
-            }}>
-              Vos publications favorites apparaîtront ici une fois que vous commencerez à aimer des posts.
-            </p>
+            <h2>Aucune publication favorite</h2>
+            <p>Vos publications favorites apparaîtront ici une fois que vous commencerez à aimer des posts.</p>
           </div>
         ) : (
           <div style={{
