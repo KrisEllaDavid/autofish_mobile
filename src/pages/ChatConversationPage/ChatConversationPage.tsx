@@ -21,11 +21,11 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
   const [chat, setChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
-  const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousMessageCountRef = useRef(0);
+  const [failedMessageIds, setFailedMessageIds] = useState<Set<number | string>>(new Set());
 
   useEffect(() => {
     fetchChatData(true);
@@ -89,21 +89,57 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
   const handleSendMessage = async () => {
     if (!messageText.trim() || sending) return;
 
-    setSending(true);
-    try {
-      const newMessage = await api.sendMessage(chatId, messageText.trim());
-      setMessages([...messages, newMessage]);
-      setMessageText("");
+    const messageContent = messageText.trim();
+    const tempId = `temp-${Date.now()}`;
 
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-      }
+    // Create optimistic message immediately
+    const optimisticMessage: ChatMessage = {
+      id: tempId as any,
+      chat: chatId,
+      sender: {
+        id: chat?.producer_details?.email === userEmail ? chat.producer_details.id : chat?.consumer_details?.id || 0,
+        email: userEmail || '',
+        first_name: '',
+        last_name: '',
+      },
+      sender_email: userEmail || '',
+      is_producer: chat?.producer_details?.email === userEmail,
+      content: messageContent,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    };
+
+    // Add message to UI immediately (optimistic update)
+    setMessages([...messages, optimisticMessage]);
+    setMessageText("");
+
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+
+    // Send in background using directApi (no loading screen)
+    try {
+      const sentMessage = await directApi.sendMessage(chatId, messageContent);
+
+      // Replace optimistic message with real message
+      setMessages(prev =>
+        prev.map(msg => msg.id === tempId ? sentMessage : msg)
+      );
+
+      // Remove from failed list if it was there
+      setFailedMessageIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(tempId);
+        return newSet;
+      });
     } catch (error) {
       console.error("Error sending message:", error);
-      toast.error("Erreur lors de l'envoi du message");
-    } finally {
-      setSending(false);
+
+      // Mark message as failed
+      setFailedMessageIds(prev => new Set(prev).add(tempId));
+
+      // Don't show toast - user will see error icon on message
     }
   };
 
@@ -228,7 +264,7 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
           </div>
         ) : (
           <>
-            {messages.map((message) => {
+            {messages.map((message, index) => {
               const isMyMessage = chat
                 ? (chat.producer_details.email === userEmail &&
                     message.sender.id === chat.producer_details.id) ||
@@ -236,18 +272,73 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
                     message.sender.id === chat.consumer_details.id)
                 : false;
 
+              const isFailed = failedMessageIds.has(message.id);
+              const isFirstMessage = index === 0;
+              const hasPublicationContext = isFirstMessage && chat?.publication_details;
+
               return (
-                <div
-                  key={message.id}
-                  className={`message-wrapper ${
-                    isMyMessage ? "my-message" : "their-message"
-                  }`}
-                >
-                  <div className="message-content">
-                    <p className="message-text">{message.content}</p>
-                    <span className="message-timestamp">
-                      {formatMessageTime(message.created_at)}
-                    </span>
+                <div key={message.id}>
+                  {/* Show publication context card for first message if available */}
+                  {hasPublicationContext && (
+                    <div className="message-context-card">
+                      <div className="context-header">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M8 1v14M1 8h14" stroke="#666" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        <span>Conversation à propos de:</span>
+                      </div>
+                      <div className="context-content">
+                        {chat.publication_details.picture_url && (
+                          <img
+                            src={normalizeImageUrl(chat.publication_details.picture_url)}
+                            alt={chat.publication_details.title || 'Publication'}
+                            className="context-image"
+                          />
+                        )}
+                        <div className="context-details">
+                          <h4 className="context-title">
+                            {chat.publication_details.title || chat.publication_details.description?.substring(0, 50) + '...'}
+                          </h4>
+                          <p className="context-price">
+                            {chat.publication_details.price?.toLocaleString('fr-FR')} FCFA
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Regular message */}
+                  <div
+                    className={`message-wrapper ${
+                      isMyMessage ? "my-message" : "their-message"
+                    }`}
+                  >
+                    <div className="message-content">
+                      <p className="message-text">{message.content}</p>
+                      <div className="message-footer">
+                        <span className="message-timestamp">
+                          {formatMessageTime(message.created_at)}
+                        </span>
+                        {isFailed && isMyMessage && (
+                          <svg
+                            className="message-error-icon"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <circle cx="8" cy="8" r="7" fill="#ff4444" />
+                            <path
+                              d="M8 4v5M8 11h.01"
+                              stroke="white"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -275,26 +366,22 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
         />
         <button
           onClick={handleSendMessage}
-          disabled={!messageText.trim() || sending}
+          disabled={!messageText.trim()}
           className="send-button"
           style={{
             backgroundColor: messageText.trim() ? "#00b2d6" : "#d0d0d0",
           }}
         >
-          {sending ? (
-            <div className="sending-spinner"></div>
-          ) : (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </svg>
-          )}
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </svg>
         </button>
       </div>
     </div>
