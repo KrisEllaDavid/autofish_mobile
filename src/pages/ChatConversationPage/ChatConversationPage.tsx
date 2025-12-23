@@ -97,17 +97,15 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
     setSending(true);
 
     // Create optimistic message immediately
+    if (!chat) return;
+
     const optimisticMessage: ChatMessage = {
       id: tempId as any,
       chat: chatId,
       sender: {
-        id: chat?.producer_details?.email === userEmail ? chat.producer_details.id : chat?.consumer_details?.id || 0,
-        email: userEmail || '',
-        first_name: '',
-        last_name: '',
+        id: chat.producer_details?.email === userEmail ? chat.producer_details.id : chat.consumer_details?.id || 0,
+        full_name: '',
       },
-      sender_email: userEmail || '',
-      is_producer: chat?.producer_details?.email === userEmail,
       content: messageContent,
       is_read: false,
       created_at: new Date().toISOString(),
@@ -128,7 +126,7 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
 
       // Replace optimistic message with real message
       setMessages(prev =>
-        prev.map(msg => msg.id === tempId ? sentMessage : msg)
+        prev.map(msg => String(msg.id) === tempId ? sentMessage : msg)
       );
 
       // Remove from failed list if it was there
@@ -307,7 +305,7 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
                         <span>Conversation à propos de:</span>
                       </div>
                       <div className="context-content">
-                        {chat.publication_details.picture_url && (
+                        {chat.publication_details?.picture_url && (
                           <img
                             src={normalizeImageUrl(chat.publication_details.picture_url)}
                             alt={chat.publication_details.title || 'Publication'}
@@ -316,10 +314,10 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
                         )}
                         <div className="context-details">
                           <h4 className="context-title">
-                            {chat.publication_details.title || chat.publication_details.description?.substring(0, 50) + '...'}
+                            {chat.publication_details?.title || chat.publication_details?.description?.substring(0, 50) + '...'}
                           </h4>
                           <p className="context-price">
-                            {chat.publication_details.price?.toLocaleString('fr-FR')} FCFA
+                            {chat.publication_details?.price?.toLocaleString('fr-FR')} FCFA
                           </p>
                         </div>
                       </div>
