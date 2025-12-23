@@ -22,6 +22,7 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousMessageCountRef = useRef(0);
@@ -92,6 +93,9 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
     const messageContent = messageText.trim();
     const tempId = `temp-${Date.now()}`;
 
+    // Set sending state to prevent double-sends
+    setSending(true);
+
     // Create optimistic message immediately
     const optimisticMessage: ChatMessage = {
       id: tempId as any,
@@ -140,6 +144,9 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
       setFailedMessageIds(prev => new Set(prev).add(tempId));
 
       // Don't show toast - user will see error icon on message
+    } finally {
+      // Reset sending state
+      setSending(false);
     }
   };
 
@@ -273,13 +280,25 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
                 : false;
 
               const isFailed = failedMessageIds.has(message.id);
+
+              // Show publication context at the start of conversation
+              // OR when this is the most recent message and chat was just updated with new publication
               const isFirstMessage = index === 0;
-              const hasPublicationContext = isFirstMessage && chat?.publication_details;
+              const isLatestMessage = index === messages.length - 1;
+
+              // Show context for first message, or for latest message if it's recent (within 10 seconds)
+              // This catches cases where user just clicked to message about a new publication
+              const messageAge = new Date().getTime() - new Date(message.created_at).getTime();
+              const isRecentMessage = messageAge < 10000; // 10 seconds
+
+              const shouldShowContext = chat?.publication_details && (
+                isFirstMessage || (isLatestMessage && isRecentMessage && messages.length > 1)
+              );
 
               return (
                 <div key={message.id}>
-                  {/* Show publication context card for first message if available */}
-                  {hasPublicationContext && (
+                  {/* Show publication context card */}
+                  {shouldShowContext && (
                     <div className="message-context-card">
                       <div className="context-header">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

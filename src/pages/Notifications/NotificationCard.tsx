@@ -1,5 +1,6 @@
 import React from "react";
 import { Notification } from "./notificationsMock";
+import { normalizeImageUrl } from "../../utils/imageUtils";
 
 const mainBlue = "#00B2D6";
 
@@ -40,7 +41,7 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
       {/* Avatar or initials */}
       {notification.user.avatar ? (
         <img
-          src={notification.user.avatar}
+          src={normalizeImageUrl(notification.user.avatar)}
           alt={notification.user.name}
           style={{
             width: 44,

@@ -7,6 +7,7 @@ import "./CategoriesPage/CategoriesPage.css";
 // ContactInfoPage removed from flow; collect all required client fields here
 import IDVerificationPage from "./IDVerificationPage";
 import CategoriesPage from "./CategoriesPage/CategoriesPage";
+import TermsOfUsePage from "./TermsOfUsePage";
 import { useAuth } from "../context/AuthContext";
 import { compressImage, validateImage } from "../utils/imageCompression";
 const userIcon = "/icons/account.svg";
@@ -109,6 +110,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [showValidationErrors, setShowValidationErrors] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [goToCategories, setGoToCategories] = useState(false);
+  const [showTermsPage, setShowTermsPage] = useState(false);
 
   // Country and code options
   const countryOptions = [
@@ -266,6 +268,15 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       }
     }
   };
+  // Show Terms of Use page
+  if (showTermsPage) {
+    return (
+      <TermsOfUsePage
+        onBack={() => setShowTermsPage(false)}
+      />
+    );
+  }
+
   // Contact info page removed
   if (goToIDVerification) {
     return (
@@ -759,8 +770,22 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               />
             </span>
             <span style={{ fontSize: 13, color: "#222", lineHeight: 1.4 }}>
-              J'accepte les conditions d'utilisation et la politique de
-              confidentialité de AutoFish-store
+              J'accepte les{" "}
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowTermsPage(true);
+                }}
+                style={{
+                  color: "#009CB7",
+                  fontWeight: 600,
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                }}
+              >
+                conditions d'utilisation
+              </span>{" "}
+              et la politique de confidentialité de AutoFish-store
             </span>
           </div>
           <div

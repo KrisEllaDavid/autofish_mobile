@@ -6,9 +6,9 @@ import { useAuth } from "../context/AuthContext";
 
 const autofishBlueLogo = "/icons/autofish_blue_logo.svg";
 const lockIcon = "/icons/Password.svg";
+const lockIconBlue = "/icons/Password_blue.svg";
 const eyeIcon = "/icons/Eye Slash.svg";
 const eyeOpenIcon = "/icons/Eye Open.svg";
-const lockIconBlue = "/icons/Password_blue.svg";
 
 const getInputStyle = (
   hasContent: boolean,
@@ -59,15 +59,20 @@ const eyeIconStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
+interface ChangePasswordPageProps {
+  onBack?: () => void;
+}
+
+const ChangePasswordPage: React.FC<ChangePasswordPageProps> = ({ onBack }) => {
   const { logout } = useAuth();
 
-  const [code, setCode] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [resetComplete, setResetComplete] = useState(false);
+  const [changeComplete, setChangeComplete] = useState(false);
   const [savedPassword, setSavedPassword] = useState("");
 
   const passwordsMatch =
@@ -101,8 +106,8 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!code.trim()) {
-      toast.error("Code de réinitialisation manquant");
+    if (!currentPassword.trim()) {
+      toast.error("Veuillez entrer votre mot de passe actuel");
       return;
     }
 
@@ -120,39 +125,34 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       return;
     }
 
+    if (currentPassword === newPassword) {
+      toast.error("Le nouveau mot de passe doit être différent de l'ancien");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await apiClient.resetPassword(code.trim(), newPassword, confirmPassword);
+      await apiClient.changePassword(currentPassword, newPassword, confirmPassword);
 
       // Save the new password to display it to the user
       setSavedPassword(newPassword);
-      setResetComplete(true);
-      toast.success("Mot de passe réinitialisé avec succès");
+      setChangeComplete(true);
+      toast.success("Mot de passe modifié avec succès");
 
-      // Wait 5 seconds to show the password, then logout and redirect
+      // Log out user after successful password change (more time to read password)
       setTimeout(async () => {
-        // Log out user if they're logged in
-        try {
-          await logout();
-        } catch (error) {
-          console.log("User was not logged in");
-        }
-
-        // Redirect to login
-        if (onBack) {
-          onBack();
-        }
+        await logout();
       }, 5000);
     } catch (error: any) {
-      console.error("Error resetting password:", error);
-      toast.error(error?.message || "Erreur lors de la réinitialisation du mot de passe");
+      console.error("Error changing password:", error);
+      toast.error(error?.message || "Erreur lors de la modification du mot de passe");
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (resetComplete) {
+  if (changeComplete) {
     return (
       <>
         <style>{`
@@ -175,7 +175,7 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             paddingTop: 64,
           }}
         >
-          <NavBar title="Réinitialisation réussie" onBack={onBack} />
+          <NavBar title="Modification réussie" onBack={onBack} />
           <div style={{ height: 16 }} />
           <img
             src={autofishBlueLogo}
@@ -191,7 +191,7 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               fontFamily: "Arial Rounded MT Bold",
             }}
           >
-            Mot de passe réinitialisé !
+            Mot de passe modifié !
           </div>
           <div
             style={{
@@ -205,7 +205,7 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               lineHeight: 1.5,
             }}
           >
-            Votre mot de passe a été réinitialisé avec succès.
+            Votre mot de passe a été modifié avec succès.
           </div>
 
           {/* Display the new password with warning */}
@@ -275,7 +275,7 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               lineHeight: 1.5,
             }}
           >
-            Vous allez être redirigé vers la page de connexion dans quelques secondes...
+            Vous allez être déconnecté pour des raisons de sécurité dans quelques secondes...
           </div>
         </div>
       </>
@@ -305,11 +305,10 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          paddingTop: 10,
-          paddingBottom: 80,
+          paddingTop: 64,
         }}
       >
-        <NavBar title="Réinitialiser le mot de passe" onBack={onBack} />
+        <NavBar title="Modifier le mot de passe" onBack={onBack} />
         <div style={{ height: 16 }} />
         <img
           src={autofishBlueLogo}
@@ -325,7 +324,7 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             fontFamily: "Arial Rounded MT Bold",
           }}
         >
-          Autofish Store
+          Modifier mon mot de passe
         </div>
         <div
           style={{
@@ -337,8 +336,9 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             fontFamily: "Arial, sans-serif",
           }}
         >
-          Saisissez le code que vous avez reçu par email et entrez votre nouveau
-          mot de passe
+          Entrez votre mot de passe actuel
+          <br />
+          puis votre nouveau mot de passe
         </div>
         <form
           onSubmit={handleSubmit}
@@ -353,18 +353,33 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
               <img
-                src={code ? lockIconBlue : lockIcon}
+                src={currentPassword ? lockIconBlue : lockIcon}
                 alt="lock"
-                style={{ width: 22, height: 22, opacity: code ? 1 : 0.6 }}
+                style={{
+                  width: 22,
+                  height: 22,
+                  opacity: currentPassword ? 1 : 0.6,
+                }}
               />
             </span>
             <input
-              type="text"
-              placeholder="Entrez le code ici"
-              style={getInputStyle(!!code)}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
+              type={showCurrentPassword ? "text" : "password"}
+              placeholder="Mot de passe actuel"
+              style={getInputStyle(!!currentPassword)}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              autoComplete="current-password"
             />
+            <span
+              style={eyeIconStyle}
+              onClick={() => setShowCurrentPassword((s) => !s)}
+            >
+              <img
+                src={showCurrentPassword ? eyeOpenIcon : eyeIcon}
+                alt="toggle password visibility"
+                style={{ width: 22, height: 22, opacity: 1 }}
+              />
+            </span>
           </div>
           <div style={inputContainerStyle}>
             <span style={iconStyle}>
@@ -384,6 +399,7 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               style={getInputStyle(!!newPassword, passwordBorderColor)}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
             />
             <span
               style={eyeIconStyle}
@@ -410,10 +426,11 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </span>
             <input
               type={showNewPassword ? "text" : "password"}
-              placeholder="Confirmez le mot de passe"
+              placeholder="Confirmer le mot de passe"
               style={getInputStyle(!!confirmPassword, passwordBorderColor)}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
             />
           </div>
           {message && (
@@ -432,45 +449,40 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
           )}
           <button
             type="submit"
-            disabled={isLoading || !code}
+            disabled={isLoading}
             style={{
               width: "100%",
-              background: isLoading || !code ? "#ccc" : "#009CB7",
+              background: isLoading ? "#ccc" : "#009CB7",
               color: "#fff",
               fontWeight: 700,
               fontSize: 18,
               borderRadius: 15,
               border: "none",
               padding: "16px 0",
-              marginBottom: 18,
-              cursor: isLoading || !code ? "not-allowed" : "pointer",
-              opacity: isLoading || !code ? 0.7 : 1,
+              marginTop: 18,
+              cursor: isLoading ? "not-allowed" : "pointer",
+              opacity: isLoading ? 0.7 : 1,
             }}
           >
-            {isLoading ? "Réinitialisation en cours..." : "Réinitialiser"}
+            {isLoading ? "Modification en cours..." : "Modifier le mot de passe"}
           </button>
-          <button
-            type="button"
+        </form>
+        <div style={{ marginTop: 18, fontSize: 15, color: "#b0b0b0" }}>
+          <span
             onClick={onBack}
             style={{
-              width: "100%",
-              background: "#fff",
-              color: "#222",
-              fontWeight: 700,
-              fontSize: 18,
-              borderRadius: 15,
-              border: "1.2px solid #e0e0e0",
-              padding: "12px 0",
-              marginBottom: 18,
+              color: "#009CB7",
+              fontWeight: 600,
+              textDecoration: "none",
               cursor: "pointer",
             }}
           >
-            Retour à la connexion
-          </button>
-        </form>
+            Annuler
+          </span>
+        </div>
       </div>
     </>
   );
 };
 
-export default ResetPasswordPage;
+export default ChangePasswordPage;

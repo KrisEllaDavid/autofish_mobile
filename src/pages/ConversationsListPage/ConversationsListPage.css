@@ -88,7 +88,7 @@
 .conversation-item {
   display: flex;
   align-items: center;
-  padding: 14px 16px;
+  padding: 14px 30px;
   background: #ffffff;
   border-bottom: 1px solid #f0f0f0;
   cursor: pointer;
@@ -180,13 +180,14 @@
 }
 
 .unread-count {
-  min-width: 8px;
-  height: 8px;
+  min-width: 20px;
+  height: 20px;
   padding: 0;
   border-radius: 50%;
   background-color: #00b2d6;
   flex-shrink: 0;
   margin-left: 8px;
+  text-align: center;
 }
 
 .conversation-indicator {

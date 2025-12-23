@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import AccountMenu from "./AccountMenu";
+import { normalizeImageUrl } from "../utils/imageUtils";
 
 interface TopNavBarProps {
   title: string;
@@ -8,6 +9,7 @@ interface TopNavBarProps {
   userRole?: string;
   onNotificationClick?: () => void;
   onMyPageClick?: () => void;
+  onChangePassword?: () => void;
   activeTab?: string;
   userName?: string;
   hasNewPublications?: boolean; // Indicator for new publications
@@ -29,6 +31,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
   userRole,
   onNotificationClick,
   onMyPageClick,
+  onChangePassword,
   activeTab,
   hasNewPublications = false,
 }) => {
@@ -85,7 +88,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
           }}
         >
           <img
-            src={userAvatar || defaultAvatar}
+            src={normalizeImageUrl(userAvatar) || defaultAvatar}
             alt="User"
             style={{
               width: "100%",
@@ -202,6 +205,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({
           open={menuOpen}
           anchorRef={menuButtonRef as React.RefObject<HTMLButtonElement>}
           onClose={() => setMenuOpen(false)}
+          onChangePassword={onChangePassword}
         />
       </div>
     </div>

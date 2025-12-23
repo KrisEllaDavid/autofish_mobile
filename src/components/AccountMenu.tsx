@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import Modal from "./Modal";
+import { normalizeImageUrl } from "../utils/imageUtils";
 
 interface AccountMenuProps {
   open: boolean;
   anchorRef: React.RefObject<HTMLButtonElement>;
   onClose: () => void;
+  onChangePassword?: () => void;
 }
 
 const mainBlue = "#00B2D6";
@@ -15,6 +17,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   open,
   anchorRef,
   onClose,
+  onChangePassword,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const { userData, logout } = useAuth();
@@ -124,7 +127,7 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
               }}
             >
               <img
-                src={userData?.avatar || "/icons/autofish_blue_logo.svg"}
+                src={normalizeImageUrl(userData?.avatar) || "/icons/autofish_blue_logo.svg"}
                 alt={userData?.name}
                 style={{
                   width: 54,
@@ -181,7 +184,12 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
                 cursor: "pointer",
                 textAlign: "left",
               }}
-              onClick={() => alert("Change password")}
+              onClick={() => {
+                onClose();
+                if (onChangePassword) {
+                  onChangePassword();
+                }
+              }}
             >
               Modifier mon mot de passe
             </button>

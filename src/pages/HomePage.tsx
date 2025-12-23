@@ -15,6 +15,7 @@ import MessagesPage from "./MessagesPage/MessagesPage";
 import MyAccountPage from "./MyAccountPage/MyAccountPage";
 import SearchResultsPage from "./SearchResultsPage";
 import PublicationPreviewPage from "./PublicationPreviewPage";
+import ChangePasswordPage from "./ChangePasswordPage";
 import { useAuth } from "../context/AuthContext";
 import { useApiWithLoading } from "../services/apiWithLoading";
 import { Publication, ProducerPage } from "../services/api";
@@ -32,6 +33,7 @@ type MainTab =
 enum Overlay {
   None = "none",
   Notifications = "notifications",
+  ChangePassword = "change-password",
 }
 
 const HomePage: React.FC = () => {
@@ -462,6 +464,11 @@ const HomePage: React.FC = () => {
     setActiveTab("myPage");
   };
 
+  // TopNavBar change password click
+  const handleChangePasswordClick = () => {
+    setOverlay(Overlay.ChangePassword);
+  };
+
   // TODO: Connect to pull-to-refresh functionality
   // const refreshFeed = () => {
   //   setIsRefreshing(true);
@@ -491,6 +498,15 @@ const HomePage: React.FC = () => {
         userName={userData?.name}
         userEmail={userData?.email}
         userRole={userData?.userRole}
+      />
+    );
+  }
+
+  // Show change password overlay
+  if (overlay === Overlay.ChangePassword) {
+    return (
+      <ChangePasswordPage
+        onBack={() => setOverlay(Overlay.None)}
       />
     );
   }
@@ -646,6 +662,7 @@ const HomePage: React.FC = () => {
         onNotificationClick={handleNotificationClick}
         userRole={userData?.userRole}
         onMyPageClick={handleMyPageClick}
+        onChangePassword={handleChangePasswordClick}
         activeTab={activeTab}
         hasNewPublications={hasNewPublications}
       />

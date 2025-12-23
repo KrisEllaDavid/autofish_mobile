@@ -959,6 +959,44 @@ class ApiClient {
     return this.makeRequest<UserType>('/api/users/me/');
   }
 
+  async updateCurrentUser(userData: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    description?: string;
+    profile_picture?: File | string;
+  }): Promise<UserType> {
+    // If profile_picture is provided, use FormData
+    if (userData.profile_picture) {
+      const formData = new FormData();
+
+      // Add all text fields
+      Object.entries(userData).forEach(([key, value]) => {
+        if (key === 'profile_picture') {
+          if (value instanceof File) {
+            formData.append('profile_picture', value);
+          }
+        } else if (value !== undefined && value !== null) {
+          formData.append(key, value.toString());
+        }
+      });
+
+      return this.makeRequest<UserType>('/api/users/update_me/', {
+        method: 'PATCH',
+        body: formData,
+      });
+    }
+
+    // Otherwise use JSON
+    return this.makeRequest<UserType>('/api/users/update_me/', {
+      method: 'PATCH',
+      body: JSON.stringify(userData),
+    });
+  }
+
   async deleteAccount(): Promise<{ message: string }> {
     const result = await this.makeRequest<{ message: string }>('/api/auth/delete-account/', {
       method: 'DELETE',
@@ -1638,11 +1676,21 @@ export const authService = {
   login: (credentials: LoginRequest) => apiClient.login(credentials),
   logout: () => apiClient.logout(),
   getCurrentUser: () => apiClient.getCurrentUser(),
+  updateCurrentUser: (userData: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    description?: string;
+    profile_picture?: File | string;
+  }) => apiClient.updateCurrentUser(userData),
   isAuthenticated: () => apiClient.isAuthenticated(),
-  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) => 
+  changePassword: (currentPassword: string, newPassword: string, confirmPassword: string) =>
     apiClient.changePassword(currentPassword, newPassword, confirmPassword),
   forgotPassword: (email: string) => apiClient.forgotPassword(email),
-  resetPassword: (token: string, newPassword: string, confirmPassword: string) => 
+  resetPassword: (token: string, newPassword: string, confirmPassword: string) =>
     apiClient.resetPassword(token, newPassword, confirmPassword),
   verifyEmail: (token: string) => apiClient.verifyEmail(token),
   resendVerificationEmail: (email: string) => apiClient.resendVerificationEmail(email),
