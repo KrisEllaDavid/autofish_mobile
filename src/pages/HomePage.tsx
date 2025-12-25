@@ -19,6 +19,8 @@ import ChangePasswordPage from "./ChangePasswordPage";
 import { useAuth } from "../context/AuthContext";
 import { useApiWithLoading } from "../services/apiWithLoading";
 import { Publication, ProducerPage } from "../services/api";
+import { useData } from "../context/DataContext";
+import { appEvents, APP_EVENTS } from "../utils/eventEmitter";
 
 type MainTab =
   | "home"
@@ -39,6 +41,7 @@ enum Overlay {
 const HomePage: React.FC = () => {
   const { userData } = useAuth();
   const api = useApiWithLoading();
+  const dataContext = useData();
   const [activeTab, setActiveTab] = useState<MainTab>("home");
   const [overlay, setOverlay] = useState<Overlay>(Overlay.None);
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -71,6 +74,7 @@ const HomePage: React.FC = () => {
   // Verification status monitoring
   const { showVerificationModal, closeVerificationModal } =
     useVerificationStatus();
+
 
   // Debug logging
   useEffect(() => {
@@ -308,10 +312,28 @@ const HomePage: React.FC = () => {
       return;
     }
 
+    // Optimistic update - update UI immediately
+    const publication = publications.find(p => p.id === publicationId);
+    const wasLiked = publication?.is_liked || false;
+
+    setPublications((prev) =>
+      prev.map((pub) => {
+        if (pub.id === publicationId) {
+          return {
+            ...pub,
+            is_liked: !wasLiked,
+            likes_count: wasLiked ? (pub.likes_count || 0) - 1 : (pub.likes_count || 0) + 1,
+            likes: wasLiked ? (pub.likes || 0) - 1 : (pub.likes || 0) + 1,
+          };
+        }
+        return pub;
+      })
+    );
+
     try {
       const result = await api.toggleLikePublication(publicationId);
 
-      // Update the publication in the list
+      // Update with actual result from server
       setPublications((prev) =>
         prev.map((pub) => {
           if (pub.id === publicationId) {
@@ -324,6 +346,12 @@ const HomePage: React.FC = () => {
           }
           return pub;
         })
+      );
+
+      // Emit event to notify other components
+      appEvents.emit(
+        result.liked ? APP_EVENTS.PUBLICATION_LIKED : APP_EVENTS.PUBLICATION_UNLIKED,
+        { publicationId, isLiked: result.liked }
       );
 
       // Update local storage for liked posts
@@ -341,6 +369,21 @@ const HomePage: React.FC = () => {
           : "Removed from favorites"
       );
     } catch (err) {
+      // Revert optimistic update on error
+      setPublications((prev) =>
+        prev.map((pub) => {
+          if (pub.id === publicationId) {
+            return {
+              ...pub,
+              is_liked: wasLiked,
+              likes_count: publication?.likes_count || 0,
+              likes: publication?.likes || 0,
+            };
+          }
+          return pub;
+        })
+      );
+
       let errorMessage = "Failed to update like";
 
       // Handle authentication errors specifically
@@ -369,8 +412,8 @@ const HomePage: React.FC = () => {
   };
 
   const handleComment = (publicationId: number) => {
-    // TODO: Implement comment functionality
-    console.log("Comment on publication:", publicationId);
+    // PostCard handles opening its own comments sheet
+    console.log("Comment clicked for publication:", publicationId);
   };
 
   const handleProducerClick = (producerId: number) => {

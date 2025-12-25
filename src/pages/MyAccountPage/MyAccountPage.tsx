@@ -4,8 +4,9 @@ import { useApiWithLoading } from "../../services/apiWithLoading";
 import { useLoading } from "../../context/LoadingContext";
 import { apiClient } from "../../services/api";
 import { normalizeImageUrl } from "../../utils/imageUtils";
-import useLocalStorage from "../../hooks/useLocalStorage";
 import TopNavBar from "../../components/TopNavBar";
+import { appEvents, APP_EVENTS } from "../../utils/eventEmitter";
+import { useData } from "../../context/DataContext";
 import "./MyAccountPage.css";
 
 interface MyAccountPageProps {
@@ -32,10 +33,9 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
   const { userData, updateUserData } = useAuth();
   const api = useApiWithLoading();
   const { withLoading } = useLoading();
+  const { favoritePublications, loadFavorites } = useData();
   const [isEditing, setIsEditing] = useState(false);
   const [producersContactedCount, setProducersContactedCount] = useState(0);
-  const [likedPublicationsCount, setLikedPublicationsCount] = useState(0);
-  const [likedPosts] = useLocalStorage<string[]>("likedPosts", []);
 
   // Fetch statistics on mount
   useEffect(() => {
@@ -56,11 +56,10 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
 
     if (userData?.id) {
       fetchStats();
+      // Load favorites from backend
+      loadFavorites();
     }
-
-    // Set liked publications count from local storage
-    setLikedPublicationsCount(likedPosts.length);
-  }, [userData?.id, likedPosts.length]);
+  }, [userData?.id]);
 
   // Use real user data from AuthContext, with fallbacks from props
   const userAvatar = userData?.avatar || propsUserAvatar;
@@ -93,8 +92,18 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
   useEffect(() => {
     if (userData) {
       setName(userData.name || "");
-      setPhone(userData.phone || "");
-      setAddress(userData.address || "");
+
+      // For producers, use page data if available, otherwise user data
+      const isProducer = userData.userRole === 'producteur';
+      const phoneValue = isProducer
+        ? (userData.page?.phone || userData.phone || "")
+        : (userData.phone || "");
+      const addressValue = isProducer
+        ? (userData.page?.address || userData.address || "")
+        : (userData.address || "");
+
+      setPhone(phoneValue);
+      setAddress(addressValue);
     }
   }, [userData]);
 
@@ -138,6 +147,9 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
         avatar: response.profile_picture_url || response.profile_picture,
       });
 
+      // Emit event to notify other components
+      appEvents.emit(APP_EVENTS.AVATAR_UPDATED);
+
       alert("Photo de profil mise à jour avec succès!");
     } catch (error) {
       console.error("Error uploading profile picture:", error);
@@ -163,11 +175,25 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
       });
 
       // Update local context with new data
-      updateUserData({
+      const updates: any = {
         name: `${response.first_name || ''} ${response.last_name || ''}`.trim(),
         phone: response.phone,
         address: response.address,
-      });
+      };
+
+      // If user is a producer, also update the page data
+      if (userData.userRole === 'producteur') {
+        updates.page = {
+          ...userData.page,
+          phone: response.phone,
+          address: response.address,
+        };
+      }
+
+      updateUserData(updates);
+
+      // Emit event to notify other components
+      appEvents.emit(APP_EVENTS.PROFILE_UPDATED);
 
       setIsEditing(false);
       alert("Profil mis à jour avec succès!");
@@ -234,7 +260,7 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
             <div className="profile-stat-label">Producteurs<br/>contactés</div>
           </div>
           <div className="profile-stat">
-            <div className="profile-stat-value">{likedPublicationsCount}</div>
+            <div className="profile-stat-value">{favoritePublications.length}</div>
             <div className="profile-stat-label">Publications<br/>likées</div>
           </div>
         </div>

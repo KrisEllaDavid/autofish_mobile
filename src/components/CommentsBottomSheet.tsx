@@ -4,6 +4,7 @@ import { useApiWithLoading } from "../services/apiWithLoading";
 import { Comment } from "../services/api";
 import { toast } from "react-toastify";
 import { normalizeImageUrl } from "../utils/imageUtils";
+import { appEvents, APP_EVENTS } from "../utils/eventEmitter";
 
 const MAIN_BLUE = "#00B2D6";
 
@@ -121,6 +122,9 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
       setCommentText("");
       toast.success("Commentaire ajouté !");
 
+      // Emit event to notify other components (e.g., HomePage to update comment count)
+      appEvents.emit(APP_EVENTS.PUBLICATION_COMMENTED, { publicationId, comment: newComment });
+
       // Scroll to top to see the new comment
       commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
     } catch (error: any) {
@@ -137,6 +141,9 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
       await api.deleteComment(commentId);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
       toast.success("Commentaire supprimé");
+
+      // Emit event to notify other components (e.g., HomePage to update comment count)
+      appEvents.emit(APP_EVENTS.PUBLICATION_COMMENTED, { publicationId, commentDeleted: true });
     } catch (error) {
       console.error("Error deleting comment:", error);
       toast.error("Erreur lors de la suppression");

@@ -16,6 +16,7 @@ import { animations, fontFaces } from "./components/styles";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LoadingProvider, useLoading } from "./context/LoadingContext";
 import { ErrorHandlerProvider } from "./context/ErrorHandlerContext";
+import { DataProvider } from "./context/DataContext";
 import LoadingOverlay from "./components/LoadingOverlay";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useTokenValidation } from "./hooks/useTokenValidation";
@@ -306,7 +307,9 @@ function App() {
       <ErrorBoundary>
         <AuthProvider>
           <LoadingProvider>
-            <AppContent />
+            <DataProvider>
+              <AppContent />
+            </DataProvider>
           </LoadingProvider>
         </AuthProvider>
       </ErrorBoundary>

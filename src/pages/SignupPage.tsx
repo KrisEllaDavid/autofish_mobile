@@ -10,6 +10,15 @@ import CategoriesPage from "./CategoriesPage/CategoriesPage";
 import TermsOfUsePage from "./TermsOfUsePage";
 import { useAuth } from "../context/AuthContext";
 import { compressImage, validateImage } from "../utils/imageCompression";
+import {
+  validateEmail,
+  validatePhone,
+  validateName,
+  validatePassword,
+  validatePasswordConfirmation,
+  validateCity,
+  validateCountry
+} from "../utils/formValidation";
 const userIcon = "/icons/account.svg";
 const cameraIcon = "/icons/camera_icon.svg";
 const emailIcon = "/icons/Email.svg";
@@ -123,28 +132,35 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     { value: '+242', label: '+242' }
   ];
   
-  // Validation functions
+  // Validation functions using comprehensive validation utilities
   const validateField = (field: string, value: string): string => {
+    let result;
+
     switch (field) {
       case 'first_name':
-        return value.trim() ? '' : 'Le prénom est requis';
+        result = validateName(value, 'Prénom');
+        return result.isValid ? '' : (result.error || '');
       case 'last_name':
-        return value.trim() ? '' : 'Le nom de famille est requis';
-      case 'email': {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return value.trim() ? (emailRegex.test(value) ? '' : 'Format d\'email invalide') : 'L\'email est requis';
-      }
+        result = validateName(value, 'Nom');
+        return result.isValid ? '' : (result.error || '');
+      case 'email':
+        result = validateEmail(value);
+        return result.isValid ? '' : (result.error || '');
       case 'phone':
-        return value.trim() ? '' : 'Le numéro de téléphone est requis';
+        result = validatePhone(value);
+        return result.isValid ? '' : (result.error || '');
       case 'city':
-        return value.trim() ? '' : 'La ville est requise';
+        result = validateCity(value);
+        return result.isValid ? '' : (result.error || '');
       case 'password':
-        if (!value.trim()) return 'Le mot de passe est requis';
-        if (value.length < 8) return 'Le mot de passe doit contenir au moins 8 caractères';
-        if (!/(?=.*[a-zA-Z])(?=.*\d)/.test(value)) return 'Le mot de passe doit contenir des lettres et des chiffres';
-        return '';
+        result = validatePassword(value);
+        return result.isValid ? '' : (result.error || '');
       case 'password2':
-        return value === formData.password ? '' : 'Les mots de passe ne correspondent pas';
+        result = validatePasswordConfirmation(formData.password, value);
+        return result.isValid ? '' : (result.error || '');
+      case 'country':
+        result = validateCountry(value);
+        return result.isValid ? '' : (result.error || '');
       default:
         return '';
     }
@@ -168,32 +184,33 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   })();
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate all fields and collect errors
     const errors: Record<string, string> = {};
-    const fieldsToValidate = ['first_name', 'last_name', 'email', 'phone', 'city', 'password', 'password2'];
-    
+    const fieldsToValidate = ['first_name', 'last_name', 'email', 'phone', 'city', 'country', 'password', 'password2'];
+
     fieldsToValidate.forEach(field => {
       const error = validateField(field, formData[field as keyof FormData] as string);
       if (error) errors[field] = error;
     });
-    
+
     // Check terms acceptance
     if (!acceptTerms) {
       errors.terms = 'Vous devez accepter les conditions d\'utilisation';
     }
-    
+
     // Check user type selection
     if (!formData.user_type) {
       errors.user_type = 'Veuillez sélectionner un type de compte';
     }
-    
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       setShowValidationErrors(true);
+      toast.error('Veuillez corriger les erreurs dans le formulaire');
       return;
     }
-    
+
     // Clear validation errors if form is valid
     setValidationErrors({});
     setShowValidationErrors(false);
@@ -483,6 +500,17 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, first_name: e.target.value }))
               }
+              onBlur={(e) => {
+                const error = validateField('first_name', e.target.value);
+                if (error) {
+                  setValidationErrors(prev => ({ ...prev, first_name: error }));
+                } else {
+                  setValidationErrors(prev => {
+                    const { first_name, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
             />
           </div>
 
@@ -507,6 +535,17 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, last_name: e.target.value }))
               }
+              onBlur={(e) => {
+                const error = validateField('last_name', e.target.value);
+                if (error) {
+                  setValidationErrors(prev => ({ ...prev, last_name: error }));
+                } else {
+                  setValidationErrors(prev => {
+                    const { last_name, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
             />
           </div>
           {/* Email Field */}
@@ -530,6 +569,17 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, email: e.target.value }))
               }
+              onBlur={(e) => {
+                const error = validateField('email', e.target.value);
+                if (error) {
+                  setValidationErrors(prev => ({ ...prev, email: error }));
+                } else {
+                  setValidationErrors(prev => {
+                    const { email, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
               autoComplete="email"
             />
           </div>
@@ -560,6 +610,17 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   style={getInputStyle(!!formData.phone)}
                   value={formData.phone}
                   onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                  onBlur={(e) => {
+                    const error = validateField('phone', e.target.value);
+                    if (error) {
+                      setValidationErrors(prev => ({ ...prev, phone: error }));
+                    } else {
+                      setValidationErrors(prev => {
+                        const { phone, ...rest } = prev;
+                        return rest;
+                      });
+                    }
+                  }}
                   autoComplete="tel"
                 />
               </div>
@@ -581,12 +642,23 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </span>
             <input
               type="text"
-                placeholder="Entrez votre ville/quartier *"
+              placeholder="Entrez votre ville/quartier *"
               style={getInputStyle(!!formData.city)}
               value={formData.city}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, city: e.target.value }))
               }
+              onBlur={(e) => {
+                const error = validateField('city', e.target.value);
+                if (error) {
+                  setValidationErrors(prev => ({ ...prev, city: error }));
+                } else {
+                  setValidationErrors(prev => {
+                    const { city, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
               autoComplete="address-level2"
             />
           </div>
@@ -624,6 +696,17 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   password: e.target.value,
                 }))
               }
+              onBlur={(e) => {
+                const error = validateField('password', e.target.value);
+                if (error) {
+                  setValidationErrors(prev => ({ ...prev, password: error }));
+                } else {
+                  setValidationErrors(prev => {
+                    const { password, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
               autoComplete="new-password"
             />
             <span
@@ -675,6 +758,17 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   password2: e.target.value,
                 }))
               }
+              onBlur={(e) => {
+                const error = validateField('password2', e.target.value);
+                if (error) {
+                  setValidationErrors(prev => ({ ...prev, password2: error }));
+                } else {
+                  setValidationErrors(prev => {
+                    const { password2, ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
               autoComplete="new-password"
             />
           </div>

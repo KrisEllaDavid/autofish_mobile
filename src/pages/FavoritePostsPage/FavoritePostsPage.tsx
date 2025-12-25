@@ -4,6 +4,8 @@ import PostCard from "../../components/PostCard";
 import { useApiWithLoading } from "../../services/apiWithLoading";
 import { Publication } from "../../services/api";
 import { toast } from "react-toastify";
+import { useData } from "../../context/DataContext";
+import { appEvents, APP_EVENTS } from "../../utils/eventEmitter";
 import "./FavoritePostsPage.css";
 
 const MAIN_BLUE = "#00B2D6";
@@ -30,37 +32,59 @@ const FavoritePostsPage: React.FC<FavoritePostsPageProps> = ({
   onPostClick,
 }) => {
   const api = useApiWithLoading();
+  const { favoritePublications, loadFavorites, isLoadingFavorites } = useData();
   const [likedPublications, setLikedPublications] = useState<Publication[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Load favorites from DataContext on mount
   useEffect(() => {
-    fetchLikedPublications();
-  }, []);
+    loadFavorites();
+  }, [loadFavorites]);
 
-  const fetchLikedPublications = async () => {
-    setLoading(true);
-    try {
-      // Fetch all publications and filter for liked ones
-      const response = await api.getPublicFeed({ page: 1, limit: 100 });
-      const liked = response.results.filter(pub => pub.is_liked === true);
-      setLikedPublications(liked);
-    } catch (error) {
-      console.error("Error fetching liked publications:", error);
-      toast.error("Erreur lors du chargement des favoris");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Sync local state with DataContext
+  useEffect(() => {
+    setLikedPublications(favoritePublications);
+    setLoading(isLoadingFavorites);
+  }, [favoritePublications, isLoadingFavorites]);
+
+  // Listen for like/unlike events from other components
+  useEffect(() => {
+    const handlePublicationUnliked = ({ publicationId }: { publicationId: number }) => {
+      // Remove from local list when unliked
+      setLikedPublications(prev => prev.filter(pub => pub.id !== publicationId));
+    };
+
+    const handleFavoritesRefresh = () => {
+      loadFavorites();
+    };
+
+    // Subscribe to events
+    const unsubUnliked = appEvents.on(APP_EVENTS.PUBLICATION_UNLIKED, handlePublicationUnliked);
+    const unsubRefresh = appEvents.on(APP_EVENTS.FAVORITES_REFRESH, handleFavoritesRefresh);
+
+    // Cleanup
+    return () => {
+      unsubUnliked();
+      unsubRefresh();
+    };
+  }, [loadFavorites]);
 
   const handleLike = async (publicationId: number) => {
+    // Optimistic update
+    setLikedPublications(prev => prev.filter(pub => pub.id !== publicationId));
+
     try {
       await api.likePublication(publicationId);
-      // Remove from the list since it's been unliked
-      setLikedPublications(prev => prev.filter(pub => pub.id !== publicationId));
+
+      // Emit event to notify other components
+      appEvents.emit(APP_EVENTS.PUBLICATION_UNLIKED, { publicationId, isLiked: false });
+
       toast.success("Retiré des favoris");
     } catch (error) {
       console.error("Error unliking publication:", error);
       toast.error("Erreur lors de la mise à jour");
+      // Revert optimistic update on error
+      loadFavorites();
     }
   };
 
@@ -133,7 +157,7 @@ const FavoritePostsPage: React.FC<FavoritePostsPageProps> = ({
                   <PostCard
                     id={pub.id.toString()}
                     producerName={pub.page_name || "Producteur"}
-                    producerAvatar={userAvatar || "/icons/autofish_blue_logo 1.png"}
+                    producerAvatar={pub.producer_picture || "/icons/autofish_blue_logo 1.png"}
                     postImage={pub.picture_url || pub.picture || ""}
                     description={pub.description}
                     date={pub.date_posted}

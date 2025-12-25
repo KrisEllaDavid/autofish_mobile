@@ -3,6 +3,7 @@ import { useApiWithLoading } from "../../services/apiWithLoading";
 import { Chat, ChatMessage, apiClient } from "../../services/api";
 import { toast } from "react-toastify";
 import { normalizeImageUrl } from "../../utils/imageUtils";
+import { appEvents, APP_EVENTS } from "../../utils/eventEmitter";
 import "./ChatConversationPage.css";
 
 interface ChatConversationPageProps {
@@ -135,6 +136,9 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
         newSet.delete(tempId);
         return newSet;
       });
+
+      // Emit event to notify other components (e.g., chat list)
+      appEvents.emit(APP_EVENTS.CHAT_NEW_MESSAGE, { chatId, message: sentMessage });
     } catch (error) {
       console.error("Error sending message:", error);
 

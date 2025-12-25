@@ -12,6 +12,8 @@
     "generate-icons": "node generate-icons.cjs",
     "build-apk": "npm run generate-icons && npm run build && cap sync && cd android && gradlew.bat assembleDebug && cd ..",
     "build-apk-full": "node -e \"require('child_process').execSync(process.platform === 'win32' ? 'build-apk.bat' : './build-apk.sh', {stdio: 'inherit'})\"",
+    "build-aab": "npm run generate-icons && npm run build && cap sync && cd android && gradlew.bat bundleRelease && cd ..",
+    "build-aab-full": "node -e \"require('child_process').execSync(process.platform === 'win32' ? 'build-aab.bat' : './build-aab.sh', {stdio: 'inherit'})\"",
     "android": "cap open android",
     "ios": "cap open ios",
     "sync": "cap sync"

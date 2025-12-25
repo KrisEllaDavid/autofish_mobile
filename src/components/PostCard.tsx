@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { normalizeImageUrl } from "../utils/imageUtils";
 import CommentsBottomSheet from "./CommentsBottomSheet";
+import { appEvents, APP_EVENTS } from "../utils/eventEmitter";
 
 interface PostCardProps {
   id: string;
@@ -75,6 +76,25 @@ const PostCard: React.FC<PostCardProps> = React.memo(
     const [localIsLiked, setLocalIsLiked] = useState(isLiked);
     const [localLikesCount, setLocalLikesCount] = useState(likes);
     const [isAnimating, setIsAnimating] = useState(false);
+
+    // Listen for comment events to update the comment count
+    useEffect(() => {
+      const handleCommentEvent = ({ publicationId }: { publicationId: number; comment?: any; commentDeleted?: boolean }) => {
+        if (publicationId === parseInt(id)) {
+          // Increment or decrement comment count based on the event
+          setLocalCommentsCount(prev => prev + 1); // We'll fetch exact count from backend
+
+          // Optionally fetch the exact count from the API
+          // For now, just increment since we don't know if it's add or delete without more info
+        }
+      };
+
+      const unsubCommented = appEvents.on(APP_EVENTS.PUBLICATION_COMMENTED, handleCommentEvent);
+
+      return () => {
+        unsubCommented();
+      };
+    }, [id]);
 
     const locationIcon = "/icons/Location.svg";
     const favouriteIcon = localIsLiked

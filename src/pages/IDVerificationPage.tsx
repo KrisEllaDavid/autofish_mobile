@@ -357,9 +357,10 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
                   flex: 1,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent: "flex-end",
                   position: "relative",
                   flexDirection: "column",
+                  paddingBottom: 24,
                 }}
               >
                 {cameraError ? (
@@ -380,41 +381,43 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
                         height: { ideal: 1080, min: 720 },
                         aspectRatio: { ideal: 16/9 }
                       }}
-                      style={{ width: "100%", maxWidth: 400, borderRadius: 16 }}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
                       onUserMediaError={handleCameraError}
                       mirrored={false}
                     />
                     <div className="id-frame" />
+                    {/* Capture button overlay - always visible at bottom */}
+                    <button
+                      onClick={handleCapture}
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: "50%",
+                        background: "#fff",
+                        border: "4px solid #009cb7",
+                        cursor: cameraError ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 28,
+                        fontWeight: 700,
+                        color: "#009cb7",
+                        zIndex: 20,
+                        position: "relative",
+                      }}
+                      disabled={!!cameraError}
+                    >
+                      📷
+                    </button>
                   </>
                 )}
-              </div>
-              <div
-                style={{
-                  padding: 24,
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              >
-                <button
-                  onClick={handleCapture}
-                  style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: "50%",
-                    background: "#fff",
-                    border: "4px solid #009cb7",
-                    cursor: cameraError ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 28,
-                    fontWeight: 700,
-                    color: "#009cb7",
-                  }}
-                  disabled={!!cameraError}
-                >
-                  ��
-                </button>
               </div>
             </div>
           </>
