@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(npm:*)",
+      "Bash(echo:*)",
+      "Bash(powershell.exe -Command \"npm --version\")",
+      "Bash(powershell.exe -Command \"Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source\")",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" run lint)",
+      "Bash(\"/c/Program Files/nodejs/npm.cmd\" install)",
+      "Bash(./gradlew.bat assembleDebug)",
+      "Bash(ping:*)",
+      "Bash(./gradlew.bat assembleDebug:*)",
+      "Bash(./gradlew.bat bundleRelease:*)"
+    ]
+  }
+}

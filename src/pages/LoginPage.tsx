@@ -70,8 +70,9 @@ const LoginPage: React.FC<LoginPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showHomePage, setShowHomePage] = useState(false);
-  
+
   const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,7 +93,11 @@ const LoginPage: React.FC<LoginPageProps> = ({
     }
     
     try {
-      const loginResult = await login({ email: email.trim(), password });
+      const loginResult = await login({
+        email: email.trim(),
+        password,
+        remember_me: rememberMe
+      });
 
       // Show success message and any status messages from backend
       toast.success("Connexion réussie!");
@@ -228,6 +233,38 @@ const LoginPage: React.FC<LoginPageProps> = ({
                 style={{ width: 22, height: 22, opacity: 0.6 }}
               />
             </span>
+          </div>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              style={{
+                width: 18,
+                height: 18,
+                cursor: "pointer",
+                marginRight: 8,
+              }}
+            />
+            <label
+              htmlFor="rememberMe"
+              style={{
+                fontSize: 15,
+                color: "#222",
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
+              Se souvenir de moi (30 jours)
+            </label>
           </div>
           <div style={{ width: "100%", textAlign: "right", marginBottom: 18 }}>
             <span
