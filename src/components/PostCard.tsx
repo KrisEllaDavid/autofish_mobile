@@ -292,18 +292,23 @@ const PostCard: React.FC<PostCardProps> = React.memo(
               borderRadius: 0,
             }}
           />
+          {/* Category pill — top-right to avoid overlap with price */}
           <div
             style={{
               position: "absolute",
-              bottom: 12,
-              right: 12,
-              background: "#F3FAFF",
-              color: "#00B2D6",
+              top: 10,
+              right: 10,
+              background: "rgba(0, 178, 214, 0.85)",
+              color: "#fff",
               fontWeight: 500,
-              fontSize: 14,
-              borderRadius: 16,
-              padding: "4px 16px",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              fontSize: 12,
+              borderRadius: 12,
+              padding: "3px 10px",
+              backdropFilter: "blur(4px)",
+              maxWidth: "45%",
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
             }}
           >
             {category}

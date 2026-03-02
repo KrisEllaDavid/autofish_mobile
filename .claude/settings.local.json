@@ -11,7 +11,19 @@
       "Bash(./gradlew.bat assembleDebug)",
       "Bash(ping:*)",
       "Bash(./gradlew.bat assembleDebug:*)",
-      "Bash(./gradlew.bat bundleRelease:*)"
+      "Bash(./gradlew.bat bundleRelease:*)",
+      "Bash(keytool -version)",
+      "Bash(java -version)",
+      "Bash(where java)",
+      "Bash(\"/c/Program Files/Java/jdk-21/bin/keytool.exe\" -genkeypair -v -keystore autofish-release.keystore -alias autofish-release -keyalg RSA -keysize 2048 -validity 10000 -dname \"CN=Autofish-Mobile, OU=Autofish, O=Autofish organisation, L=Sangmelima, ST=South, C=CM\" -storepass \"Autofish.camerouncongo2025\" -keypass \"Autofish.camerouncongo2025\")",
+      "Bash(./node_modules/.bin/tsc -b)",
+      "Bash(./node_modules/.bin/vite build)",
+      "Bash(node_modules/.bin/tsc -b)",
+      "Bash(node_modules/.bin/vite build)",
+      "Bash(node_modules/.bin/cap sync)",
+      "Bash(./gradlew bundleRelease)",
+      "Bash(./gradlew assembleRelease)",
+      "Bash(\"/c/Program Files/Java/jdk-21/bin/keytool.exe\" -printcert -jarfile \"c:/Users/DR/Documents/Dev Projects/autofish_mobile/android/app/build/outputs/apk/release/app-release.apk\")"
     ]
   }
 }
