@@ -23,7 +23,9 @@
       "Bash(node_modules/.bin/cap sync)",
       "Bash(./gradlew bundleRelease)",
       "Bash(./gradlew assembleRelease)",
-      "Bash(\"/c/Program Files/Java/jdk-21/bin/keytool.exe\" -printcert -jarfile \"c:/Users/DR/Documents/Dev Projects/autofish_mobile/android/app/build/outputs/apk/release/app-release.apk\")"
+      "Bash(\"/c/Program Files/Java/jdk-21/bin/keytool.exe\" -printcert -jarfile \"c:/Users/DR/Documents/Dev Projects/autofish_mobile/android/app/build/outputs/apk/release/app-release.apk\")",
+      "Bash(xxd backfill_commits.ps1)",
+      "Bash(python3 -c \":*)"
     ]
   }
 }
