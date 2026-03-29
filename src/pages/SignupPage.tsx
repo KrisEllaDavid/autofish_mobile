@@ -506,7 +506,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   setValidationErrors(prev => ({ ...prev, first_name: error }));
                 } else {
                   setValidationErrors(prev => {
-                    const { first_name, ...rest } = prev;
+                    const { first_name: _first_name, ...rest } = prev;
                     return rest;
                   });
                 }
@@ -541,7 +541,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   setValidationErrors(prev => ({ ...prev, last_name: error }));
                 } else {
                   setValidationErrors(prev => {
-                    const { last_name, ...rest } = prev;
+                    const { last_name: _last_name, ...rest } = prev;
                     return rest;
                   });
                 }
@@ -575,7 +575,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   setValidationErrors(prev => ({ ...prev, email: error }));
                 } else {
                   setValidationErrors(prev => {
-                    const { email, ...rest } = prev;
+                    const { email: _email, ...rest } = prev;
                     return rest;
                   });
                 }
@@ -616,7 +616,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                       setValidationErrors(prev => ({ ...prev, phone: error }));
                     } else {
                       setValidationErrors(prev => {
-                        const { phone, ...rest } = prev;
+                        const { phone: _phone, ...rest } = prev;
                         return rest;
                       });
                     }
@@ -654,7 +654,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   setValidationErrors(prev => ({ ...prev, city: error }));
                 } else {
                   setValidationErrors(prev => {
-                    const { city, ...rest } = prev;
+                    const { city: _city, ...rest } = prev;
                     return rest;
                   });
                 }
@@ -702,7 +702,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   setValidationErrors(prev => ({ ...prev, password: error }));
                 } else {
                   setValidationErrors(prev => {
-                    const { password, ...rest } = prev;
+                    const { password: _password, ...rest } = prev;
                     return rest;
                   });
                 }
@@ -764,7 +764,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                   setValidationErrors(prev => ({ ...prev, password2: error }));
                 } else {
                   setValidationErrors(prev => {
-                    const { password2, ...rest } = prev;
+                    const { password2: _password2, ...rest } = prev;
                     return rest;
                   });
                 }

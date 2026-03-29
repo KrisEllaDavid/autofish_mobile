@@ -41,7 +41,7 @@ enum Overlay {
 const HomePage: React.FC = () => {
   const { userData } = useAuth();
   const api = useApiWithLoading();
-  const dataContext = useData();
+  const _dataContext = useData();
   const [activeTab, setActiveTab] = useState<MainTab>("home");
   const [overlay, setOverlay] = useState<Overlay>(Overlay.None);
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -59,7 +59,7 @@ const HomePage: React.FC = () => {
     "likedPosts",
     []
   );
-  const [search, setSearch] = useState("");
+  const [search, _setSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPublicationId, setSelectedPublicationId] = useState<
     number | null

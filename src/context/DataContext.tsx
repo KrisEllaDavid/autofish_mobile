@@ -1,14 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
-import { apiClient, Publication, Chat, PaginatedFeedResponse } from '../services/api';
+import { apiClient, Publication, Chat } from '../services/api';
 import { appEvents, APP_EVENTS } from '../utils/eventEmitter';
 import { useAuth } from './AuthContext';
 
-// Cache entry with TTL (Time To Live)
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-  ttl: number; // milliseconds
-}
 
 interface DataContextType {
   // Publications
@@ -56,7 +50,7 @@ const CACHE_TTL = {
 };
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { userData, updateUserData } = useAuth();
+  const { updateUserData } = useAuth();
 
   // State
   const [publications, setPublications] = useState<Publication[]>([]);

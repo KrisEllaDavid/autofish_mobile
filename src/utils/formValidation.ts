@@ -135,7 +135,7 @@ export const validateCity = (city: string): ValidationResult => {
   }
 
   // Only letters, numbers, spaces, hyphens, and common punctuation
-  const cityRegex = /^[a-zA-ZÀ-ÿ0-9\s',-\.]+$/;
+  const cityRegex = /^[a-zA-ZÀ-ÿ0-9\s',-.]+$/;
 
   if (!cityRegex.test(city)) {
     return { isValid: false, error: 'Format de ville invalide' };

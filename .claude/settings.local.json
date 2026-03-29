@@ -25,7 +25,11 @@
       "Bash(./gradlew assembleRelease)",
       "Bash(\"/c/Program Files/Java/jdk-21/bin/keytool.exe\" -printcert -jarfile \"c:/Users/DR/Documents/Dev Projects/autofish_mobile/android/app/build/outputs/apk/release/app-release.apk\")",
       "Bash(xxd backfill_commits.ps1)",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(grep -r \"deleteAccount\\\\|delete.*user\\\\|delete.*account\" '/c/Users/DR/Documents/Dev Projects/autofish_mobile/src' --include=*.tsx --include=*.ts)",
+      "Bash(wc -l \"/c/Users/DR/Documents/Dev Projects/autofish_mobile/src\"/**/*.tsx)",
+      "Bash(npx cap:*)",
+      "Bash(./gradlew assembleDebug)"
     ]
   }
 }

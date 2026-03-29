@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supprimer mon compte - AutoFish</title>
+  <link rel="icon" href="/icons/autofish_blue_logo.svg" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    @font-face {
+      font-family: 'Arial Rounded MT Bold';
+      src: url('/Fonts/Arial-Rounded-MT-Bold-Bold.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 0 40px 0;
+    }
+
+    /* ── Header bar ── */
+    .header {
+      width: 100%;
+      background: #fff;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .header img {
+      width: 36px;
+      height: 36px;
+      margin-right: 10px;
+    }
+
+    .header-title {
+      font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #009CB7;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Card container ── */
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 36px 32px 32px 32px;
+      width: 90vw;
+      max-width: 400px;
+      margin-top: 36px;
+      animation: fadeInUp 0.5s cubic-bezier(.4,0,.2,1) both;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Logo + title block ── */
+    .logo-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .logo-block img {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 14px;
+    }
+
+    .page-title {
+      font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #009CB7;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      color: #888;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── Warning banner ── */
+    .warning-banner {
+      background: #fff3f3;
+      border: 1px solid #ffdbdb;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .warning-banner .icon {
+      font-size: 18px;
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+
+    .warning-banner p {
+      font-size: 13px;
+      color: #c0392b;
+      line-height: 1.6;
+    }
+
+    .warning-banner strong {
+      font-weight: 700;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .divider span {
+      flex: 1;
+      height: 1px;
+      background: #e0e0e0;
+    }
+
+    .divider p {
+      font-size: 13px;
+      color: #aaa;
+      white-space: nowrap;
+    }
+
+    /* ── Form ── */
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+      margin-left: 4px;
+    }
+
+    .input-wrap {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .input-wrap .input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .input-wrap .eye-icon {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      opacity: 0.5;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 15px 48px 15px 46px;
+      border-radius: 14px;
+      border: 1.2px solid #e0e0e0;
+      background: #fafbfc;
+      font-size: 15px;
+      color: #222;
+      font-family: inherit;
+      font-weight: 500;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+
+    input:focus {
+      border-color: #009CB7;
+    }
+
+    input::placeholder {
+      color: #222;
+      opacity: 0.3;
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      width: 100%;
+      background: #009CB7;
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+      border-radius: 14px;
+      border: none;
+      padding: 16px 0;
+      margin-top: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.2px;
+      transition: opacity 0.2s, background 0.2s;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #007fa0;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      background: #fff;
+      color: #666;
+      font-weight: 600;
+      font-size: 15px;
+      border-radius: 14px;
+      border: 1.5px solid #ddd;
+      padding: 14px 0;
+      margin-top: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #f5f7fa;
+    }
+
+    .btn-danger {
+      width: 100%;
+      background: #e74c3c;
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+      border-radius: 14px;
+      border: none;
+      padding: 16px 0;
+      margin-top: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s, background 0.2s;
+    }
+
+    .btn-danger:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #c0392b;
+    }
+
+    /* ── Error / success messages ── */
+    .msg {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 11px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .msg-error {
+      background: #fff3f3;
+      color: #e74c3c;
+      border: 1px solid #ffdbdb;
+    }
+
+    .msg-success {
+      background: #f0fdf4;
+      color: #2e7d32;
+      border: 1px solid #c8e6c9;
+    }
+
+    /* ── Step: confirm delete ── */
+    .confirm-block {
+      text-align: center;
+    }
+
+    .confirm-block .user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #f5f7fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 40px;
+      padding: 8px 18px 8px 8px;
+      margin-bottom: 22px;
+    }
+
+    .confirm-block .user-badge img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .confirm-block .user-badge span {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333;
+    }
+
+    /* ── Success state ── */
+    .success-block {
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .success-icon {
+      font-size: 56px;
+      margin-bottom: 18px;
+      display: block;
+    }
+
+    .success-title {
+      font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #009CB7;
+      margin-bottom: 10px;
+    }
+
+    .success-body {
+      font-size: 14px;
+      color: #777;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* ── Footer note ── */
+    .footer-note {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #b0b0b0;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.5);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 440px) {
+      .card {
+        padding: 28px 20px 24px 20px;
+        margin-top: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <img src="/icons/autofish_blue_logo.svg" alt="AutoFish" />
+    <span class="header-title">AutoFish</span>
+  </div>
+
+  <!-- Card -->
+  <div class="card" id="card">
+
+    <!-- STEP 1: Login -->
+    <div id="step-login">
+      <div class="logo-block">
+        <img src="/icons/autofish_blue_logo.svg" alt="AutoFish Logo" />
+        <div class="page-title">Supprimer mon compte</div>
+        <div class="page-subtitle">Connectez-vous pour confirmer<br>la suppression de votre compte</div>
+      </div>
+
+      <div class="warning-banner">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>Cette action est irréversible.</strong><br>
+          Toutes vos données, publications, messages et informations personnelles seront définitivement supprimées.
+        </p>
+      </div>
+
+      <div id="login-error" class="msg msg-error" style="display:none;"></div>
+
+      <form id="form-login" novalidate>
+        <label class="form-label" for="email">Adresse e-mail</label>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="#009CB7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+          <input type="email" id="email" name="email" placeholder="votre@email.com" autocomplete="email" required />
+        </div>
+
+        <label class="form-label" for="password">Mot de passe</label>
+        <div class="input-wrap">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="#009CB7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <input type="password" id="password" name="password" placeholder="Mot de passe" autocomplete="current-password" required />
+          <button type="button" class="eye-icon" id="toggle-password" aria-label="Afficher/masquer le mot de passe">
+            <svg id="eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+              <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+            <svg id="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btn-login">
+          Continuer
+        </button>
+      </form>
+
+      <p class="footer-note">
+        Vous pouvez également supprimer votre compte directement<br>
+        depuis l'application : <strong>Menu compte &rarr; Supprimer mon compte</strong>
+      </p>
+    </div>
+
+    <!-- STEP 2: Confirm deletion -->
+    <div id="step-confirm" style="display:none;">
+      <div class="logo-block">
+        <img src="/icons/autofish_blue_logo.svg" alt="AutoFish Logo" />
+        <div class="page-title">Confirmer la suppression</div>
+        <div class="page-subtitle">Cette action est définitive et ne peut pas être annulée</div>
+      </div>
+
+      <div class="confirm-block">
+        <div class="user-badge">
+          <img id="confirm-avatar" src="/icons/autofish_blue_logo.svg" alt="Avatar" />
+          <span id="confirm-name">Chargement...</span>
+        </div>
+      </div>
+
+      <div class="warning-banner">
+        <span class="icon">⚠️</span>
+        <p>
+          <strong>Seront supprimés de façon permanente :</strong><br>
+          votre profil, vos publications, vos messages, vos favoris et toutes vos données personnelles.
+        </p>
+      </div>
+
+      <div id="confirm-error" class="msg msg-error" style="display:none;"></div>
+
+      <button class="btn-danger" id="btn-delete">
+        Supprimer définitivement mon compte
+      </button>
+      <button class="btn-secondary" id="btn-cancel">
+        Annuler
+      </button>
+    </div>
+
+    <!-- STEP 3: Success -->
+    <div id="step-success" style="display:none;">
+      <div class="success-block">
+        <span class="success-icon">✅</span>
+        <div class="success-title">Compte supprimé</div>
+        <p class="success-body">
+          Votre compte AutoFish a été supprimé avec succès.<br>
+          Toutes vos données ont été définitivement effacées.<br><br>
+          Nous sommes désolés de vous voir partir. À bientôt !
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const API_BASE = 'https://api.autofish.store';
+    let accessToken = null;
+
+    // ── Password visibility toggle ──
+    document.getElementById('toggle-password').addEventListener('click', () => {
+      const input = document.getElementById('password');
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      document.getElementById('eye-closed').style.display = isPassword ? 'none' : 'block';
+      document.getElementById('eye-open').style.display  = isPassword ? 'block' : 'none';
+    });
+
+    // ── Show/hide steps ──
+    function showStep(step) {
+      ['step-login', 'step-confirm', 'step-success'].forEach(id => {
+        document.getElementById(id).style.display = id === step ? 'block' : 'none';
+      });
+    }
+
+    function showError(elementId, message) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.style.display = 'block';
+    }
+
+    function hideError(elementId) {
+      document.getElementById(elementId).style.display = 'none';
+    }
+
+    function setLoading(btnId, loading, defaultText, loadingText) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = loading;
+      btn.innerHTML = loading
+        ? '<span class="spinner"></span>' + loadingText
+        : defaultText;
+    }
+
+    // ── Step 1: Login ──
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError('login-error');
+
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        showError('login-error', 'Veuillez remplir tous les champs.');
+        return;
+      }
+
+      setLoading('btn-login', true, 'Continuer', 'Connexion en cours...');
+
+      try {
+        const res = await fetch(API_BASE + '/api/auth/login/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          const msg = data?.detail || data?.non_field_errors?.[0] || data?.error || 'Email ou mot de passe incorrect.';
+          showError('login-error', msg);
+          return;
+        }
+
+        accessToken = data.access || data.token || data.access_token;
+
+        if (!accessToken) {
+          showError('login-error', 'Erreur de connexion. Veuillez réessayer.');
+          return;
+        }
+
+        // Populate confirm step with user info
+        const name  = data.user?.name || data.user?.username || data.name || email;
+        const avatar = data.user?.avatar || data.user?.profile_picture || null;
+
+        document.getElementById('confirm-name').textContent = name;
+        if (avatar) {
+          const img = document.getElementById('confirm-avatar');
+          // Normalise relative URLs
+          img.src = avatar.startsWith('http') ? avatar : API_BASE + avatar;
+          img.onerror = () => { img.src = '/icons/autofish_blue_logo.svg'; };
+        }
+
+        showStep('step-confirm');
+
+      } catch (err) {
+        showError('login-error', 'Erreur réseau. Vérifiez votre connexion et réessayez.');
+      } finally {
+        setLoading('btn-login', false, 'Continuer', 'Connexion en cours...');
+      }
+    });
+
+    // ── Step 2: Confirm deletion ──
+    document.getElementById('btn-delete').addEventListener('click', async () => {
+      hideError('confirm-error');
+      setLoading('btn-delete', true, 'Supprimer définitivement mon compte', 'Suppression en cours...');
+
+      try {
+        const res = await fetch(API_BASE + '/api/auth/delete-account/', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!res.ok) {
+          let msg = 'Erreur lors de la suppression. Veuillez réessayer.';
+          try {
+            const data = await res.json();
+            msg = data?.detail || data?.error || msg;
+          } catch (_) {}
+          showError('confirm-error', msg);
+          return;
+        }
+
+        showStep('step-success');
+
+      } catch (err) {
+        showError('confirm-error', 'Erreur réseau. Vérifiez votre connexion et réessayez.');
+      } finally {
+        setLoading('btn-delete', false, 'Supprimer définitivement mon compte', 'Suppression en cours...');
+      }
+    });
+
+    document.getElementById('btn-cancel').addEventListener('click', () => {
+      accessToken = null;
+      document.getElementById('password').value = '';
+      hideError('confirm-error');
+      showStep('step-login');
+    });
+  </script>
+</body>
+</html>

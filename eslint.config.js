@@ -26,7 +26,7 @@ export default tseslint.config(
       // Allow unused variables if they start with underscore
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }
       ],
       // Allow any type in some cases (can be gradually removed)
       '@typescript-eslint/no-explicit-any': 'warn',

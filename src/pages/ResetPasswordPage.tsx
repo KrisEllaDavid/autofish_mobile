@@ -135,7 +135,7 @@ const ResetPasswordPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         // Log out user if they're logged in
         try {
           await logout();
-        } catch (error) {
+        } catch (_error) {
           console.log("User was not logged in");
         }
 

@@ -117,7 +117,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(
       // Call the parent onLike handler
       try {
         await onLike?.(e);
-      } catch (error) {
+      } catch (_error) {
         // Revert on error
         setLocalIsLiked(wasLiked);
         setLocalLikesCount(previousCount);
@@ -139,7 +139,7 @@ const PostCard: React.FC<PostCardProps> = React.memo(
     };
 
     // Update comments count when new comments are added
-    const handleCommentsUpdate = (newCount: number) => {
+    const _handleCommentsUpdate = (newCount: number) => {
       setLocalCommentsCount(newCount);
       onCommentsCountUpdate?.(newCount);
     };
