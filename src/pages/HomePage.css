@@ -7,10 +7,37 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100dvh;
+  height: 100dvh;
   background: var(--surface-page);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
+}
+
+@keyframes home-page-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.home-container--navigating {
+  animation: none;
+}
+
+/* Only the scrollable page content enters. Headers and bottom navigation
+   stay spatially stable while the active page changes. */
+.home-container--navigating > .home-scroll,
+.home-container--navigating > .favorite-posts-page > .favorite-posts-content,
+.home-container--navigating > .top-producers-page > .producers-content,
+.home-container--navigating
+  > .conversations-list-page
+  > .conversations-content,
+.home-container--navigating > .my-account-page > .profile-content {
+  animation: home-page-enter var(--dur-base) var(--ease-out) both;
 }
 
 /* The one scroll container on the screen. The header sits above it and the
@@ -135,24 +162,15 @@
   color: var(--text-secondary);
 }
 
-/* ── Tablet: two feed columns once one is wider than it should be ────── */
-
+/* ── Wider screens: the column stays single, just a little wider ─────────
+   A feed is read top to bottom in order; splitting it into a 2-up grid
+   breaks that order (which card comes "next" is ambiguous) and — since
+   card height depends on caption length — produces a visibly uneven,
+   misaligned wall of cards. LinkedIn's own feed never does this: it stays
+   one column at every width. */
 @media (min-width: 760px) {
   .posts-container,
   .home-search__button {
-    max-width: 720px;
-  }
-
-  .posts-container {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-6);
-    align-items: start;
-  }
-
-  .posts-container > .feed-status,
-  .posts-container > .feed-end,
-  .posts-container > .feed-sentinel {
-    grid-column: 1 / -1;
+    max-width: 560px;
   }
 }

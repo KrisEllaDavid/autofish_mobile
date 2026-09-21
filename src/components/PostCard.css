@@ -83,7 +83,7 @@
 /* ── Body ────────────────────────────────────────────────────────────── */
 
 .post-card__text {
-  padding: 0 var(--space-6) var(--space-5);
+  padding: 0 var(--space-6) var(--space-3);
   font-size: var(--text-base);
   line-height: var(--leading-relaxed);
   color: var(--ink-800);
@@ -94,6 +94,25 @@
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.post-card__text-block {
+  padding-bottom: var(--space-5);
+}
+
+.post-card__text--expanded {
+  display: block;
+  overflow: visible;
+}
+
+.post-card__more {
+  display: block;
+  margin: 0 var(--space-6);
+  padding: var(--space-2) 0;
+  color: var(--brand-700);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  text-align: start;
 }
 
 /* ── Media ───────────────────────────────────────────────────────────── */
@@ -114,91 +133,106 @@
   object-fit: cover;
 }
 
-/* A short scrim under the price so white numerals hold on a bright photo. */
-.post-card__media::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 42%;
-  background: linear-gradient(
-    to top,
-    rgba(8, 24, 30, 0.55),
-    rgba(8, 24, 30, 0)
-  );
-  pointer-events: none;
-}
+/* ── Listing row — price and category, married to the card body ───────
+   Sitting here instead of overlaid on the photo means it stays legible
+   against any image and reads as one structured listing, not a floating
+   panel that happens to sit on top of a picture. */
 
-.post-card__category {
-  position: absolute;
-  top: var(--space-5);
-  right: var(--space-5);
-  z-index: 1;
-  max-width: 55%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.post-card__listing {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+  padding: var(--space-5) var(--space-6) 0;
 }
 
 .post-card__price {
-  position: absolute;
-  left: var(--space-6);
-  bottom: var(--space-5);
-  z-index: 1;
-  color: #fff;
+  color: var(--brand-800);
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
   letter-spacing: var(--tracking-tight);
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 8px rgba(8, 24, 30, 0.4);
 }
 
 .post-card__price small {
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-wide);
-  opacity: 0.85;
+  color: var(--text-tertiary);
   margin-inline-start: var(--space-2);
 }
 
-/* ── Social row ──────────────────────────────────────────────────────── */
+.post-card__category {
+  flex: 0 0 auto;
+  max-width: 100%;
+  white-space: normal;
+  text-align: end;
+}
+
+/* ── Engagement summary — a thin LinkedIn-style stat line, not a pair of
+   loose icon+number buttons with dead space between them. ────────────── */
+
+.post-card__stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6) 0;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+.post-card__stats-likes {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.post-card__stats-likes img {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Action row — two equal-width ghost buttons split by a hairline,
+   the pattern under every LinkedIn/Facebook post. ─────────────────────── */
 
 .post-card__actions {
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
+  align-items: stretch;
+  margin: var(--space-4) var(--space-6) 0;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .post-card__action {
+  flex: 1;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-3);
-  min-height: 40px;
-  padding: var(--space-3) var(--space-5);
-  border-radius: var(--radius-pill);
-  font-size: var(--text-base);
-  font-weight: var(--weight-medium);
-  font-variant-numeric: tabular-nums;
+  min-height: 44px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
   color: var(--text-secondary);
   transition: background-color var(--dur-press) var(--ease-out),
     color var(--dur-press) var(--ease-out);
 }
 
+.post-card__action + .post-card__action {
+  box-shadow: inset 1px 0 0 var(--border-subtle);
+}
+
 .post-card__action:active {
-  background: var(--ink-a08);
+  background: var(--ink-a04);
 }
 
 .post-card__action img {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
   transition: transform var(--dur-base) var(--ease-spring);
 }
 
 .post-card__action--liked {
   color: var(--like-500);
-}
-
-.post-card__action--liked:active {
-  background: var(--like-soft);
 }
 
 /* The heart overshoots once on the tap that sets it, and not otherwise. */
@@ -224,8 +258,14 @@
 @media (max-width: 360px) {
   .post-card__header,
   .post-card__text,
-  .post-card__contact {
+  .post-card__more,
+  .post-card__contact,
+  .post-card__listing,
+  .post-card__stats {
     padding-inline: var(--space-5);
+  }
+  .post-card__actions {
+    margin-inline: var(--space-5);
   }
   .post-card__price {
     font-size: var(--text-lg);

@@ -236,39 +236,39 @@ const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
           </span>
           <ChevronIcon open={isOpen} />
         </button>
-      </div>
 
-      {isOpen && (
-        <ul
-          id={listId}
-          ref={listRef}
-          className="af-select__list"
-          role="listbox"
-          aria-label={label || placeholder}
-          tabIndex={-1}
-        >
-          {options.map((option, index) => {
-            const isSelected = option.value === value;
-            return (
-              <li key={option.value} role="none">
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  className={`af-select__option${
-                    index === activeIndex ? " af-select__option--active" : ""
-                  }`}
-                  onClick={() => commit(index)}
-                  onMouseEnter={() => setActiveIndex(index)}
-                >
-                  <span>{option.label}</span>
-                  {isSelected && <CheckIcon />}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+        {isOpen && (
+          <ul
+            id={listId}
+            ref={listRef}
+            className="af-select__list"
+            role="listbox"
+            aria-label={label || placeholder}
+            tabIndex={-1}
+          >
+            {options.map((option, index) => {
+              const isSelected = option.value === value;
+              return (
+                <li key={option.value} role="none">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    className={`af-select__option${
+                      index === activeIndex ? " af-select__option--active" : ""
+                    }`}
+                    onClick={() => commit(index)}
+                    onMouseEnter={() => setActiveIndex(index)}
+                  >
+                    <span>{option.label}</span>
+                    {isSelected && <CheckIcon />}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       {(error || hint) && (
         <div

@@ -1,7 +1,11 @@
 // AutoFish Image Service
 // Handles image uploads, retrieval, and management with the dedicated image server
 
-const IMAGE_SERVER_URL = import.meta.env.VITE_IMAGE_SERVER_URL || 'http://31.97.178.131:3001';
+// Uploads go straight to the image server; the API host does not expose
+// these routes. Serving, by contrast, always goes through the API proxy
+// (see getImageProxyBaseUrl) because this host has no TLS certificate.
+const IMAGE_SERVER_URL =
+  import.meta.env.VITE_IMAGE_SERVER_URL || 'http://169.58.128.180:3001';
 const isDev = import.meta.env.DEV;
 const isMobile = typeof window !== 'undefined' && window.location.protocol === 'capacitor:';
 
@@ -11,7 +15,7 @@ const getImageServerBaseUrl = () => {
 };
 
 const getImageProxyBaseUrl = () => {
-  return 'https://api.autofish.store/api/image-proxy';
+  return 'https://api.autofish.online/api/image-proxy';
 };
 
 export interface ImageUploadResponse {

@@ -36,15 +36,23 @@
 
     <title>AutoFish</title>
 
-    <!-- Allow HTTP images from our image server to bypass mixed content blocking -->
-    <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https: http://31.97.178.131 http://31.97.178.131:3001 blob:;">
+    <!--
+      Images come from the API host over HTTPS. The plain-HTTP image server
+      is gone, so no http: source is allowed here any more — anything still
+      arriving as http: is upgraded in normalizeImageUrl().
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="img-src 'self' data: https: blob:;"
+    />
 
-    <!-- The brand display face is used above the fold on every auth screen. -->
+    <!-- Body text weight is on screen from the very first paint (splash,
+         then every screen after it), so it is worth the preload hint. -->
     <link
       rel="preload"
-      href="/Fonts/Arial-Rounded-MT-Bold-Bold.ttf"
+      href="/Fonts/PlusJakartaSans/plus-jakarta-sans-latin-400.woff2"
       as="font"
-      type="font/ttf"
+      type="font/woff2"
       crossorigin
     />
 

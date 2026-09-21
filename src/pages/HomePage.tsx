@@ -46,6 +46,8 @@ const HomePage: React.FC = () => {
   const _dataContext = useData();
   const [activeTab, setActiveTab] = useState<MainTab>("home");
   const [overlay, setOverlay] = useState<Overlay>(Overlay.None);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const hasMounted = React.useRef(false);
   const [publications, setPublications] = useState<Publication[]>([]);
   const [inChatConversation, setInChatConversation] = useState(false);
   const [producerPages, setProducerPages] = useState<{
@@ -72,6 +74,21 @@ const HomePage: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
+
+    setIsNavigating(true);
+    const timer = window.setTimeout(() => setIsNavigating(false), 260);
+    return () => window.clearTimeout(timer);
+  }, [activeTab, overlay]);
+
+  const pageClassName = isNavigating
+    ? "home-container home-container--navigating"
+    : "home-container";
 
   // Verification status monitoring
   const { showVerificationModal, closeVerificationModal } =
@@ -619,7 +636,7 @@ const HomePage: React.FC = () => {
   // Show favorites page
   if (activeTab === "favorites") {
     return (
-      <div className="home-container">
+      <div className={pageClassName}>
         <FavoritePostsPage
           onNotificationClick={handleNotificationClick}
           onMyPageClick={handleMyPageClick}
@@ -641,7 +658,7 @@ const HomePage: React.FC = () => {
   // Show messages page
   if (activeTab === "messages") {
     return (
-      <div className="home-container">
+      <div className={pageClassName}>
         <MessagesPage
           onNotificationClick={handleNotificationClick}
           onMyPageClick={handleMyPageClick}
@@ -662,7 +679,7 @@ const HomePage: React.FC = () => {
   // Show profile/account page
   if (activeTab === "profile") {
     return (
-      <div className="home-container">
+      <div className={pageClassName}>
         <MyAccountPage
           onNotificationClick={handleNotificationClick}
           onMyPageClick={handleMyPageClick}
@@ -680,7 +697,7 @@ const HomePage: React.FC = () => {
   // Show producers page
   if (activeTab === "producers") {
     return (
-      <div className="home-container">
+      <div className={pageClassName}>
         <TopProducersPage
           onBackToHome={goHome}
           onNotificationClick={handleNotificationClick}
@@ -697,7 +714,7 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="home-container">
+    <div className={pageClassName}>
       {/* Top Navigation */}
       <TopNavBar
         title="Accueil"

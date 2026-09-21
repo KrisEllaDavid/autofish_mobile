@@ -125,7 +125,7 @@
   --space-13: 80px;
 
   /* Horizontal page gutter — the one value that sets the app margin. */
-  --gutter: 20px;
+  --gutter: 24px;
 
   /* ---------------------------------------------------------------------
      RADIUS — soft and consistent. `lg` is the card language.
@@ -142,9 +142,12 @@
   /* ---------------------------------------------------------------------
      TYPE
      --------------------------------------------------------------------- */
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --font-display: "Arial Rounded MT Bold", var(--font-body);
+  --font-body: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* One family for everything, at a heavier weight for display use — the
+     LinkedIn-style approach: no separate novelty display face, just weight
+     doing the work. Components set font-weight: 800 where this is used. */
+  --font-display: var(--font-body);
 
   --text-2xs: 11px;
   --text-xs: 12px;
@@ -218,13 +221,13 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
 
-  --header-h: 56px;
+  --header-h: 68px;
   --header-total: calc(var(--header-h) + var(--safe-top));
-  --tabbar-h: 62px;
+  --tabbar-h: 72px;
   --tabbar-total: calc(var(--tabbar-h) + var(--safe-bottom));
-  /* Clearance a scroll container leaves so content clears the tab bar and
-     the floating home button that rises above it. */
-  --tabbar-clearance: calc(var(--tabbar-total) + var(--space-7));
+  /* Clearance a scroll container leaves so its last row clears the flat
+     tab bar, plus a little breathing room. */
+  --tabbar-clearance: calc(var(--tabbar-total) + var(--space-4));
 
   --content-max: 480px;
   --reading-max: 68ch;
@@ -253,8 +256,8 @@
 @media (min-width: 600px) {
   :root {
     --gutter: 28px;
-    --header-h: 60px;
-    --tabbar-h: 66px;
+    --header-h: 68px;
+    --tabbar-h: 72px;
   }
 }
 

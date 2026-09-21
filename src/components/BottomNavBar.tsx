@@ -16,11 +16,12 @@ interface BottomNavBarProps {
 }
 
 const icons = {
+  home: "/icons/home-2-bottom-nav-inactive.svg",
+  homeActive: "/icons/home-2-bottom-nav-blue.svg",
   producers: "/icons/profile-2user-bottom-nav.svg",
   producersActive: "/icons/profile-2user.svg",
   favorites: "/icons/dark_heart_outline_like.svg",
   favoritesActive: "/icons/favourite_blue.svg",
-  home: "/icons/home-2-bottom-nav.svg",
   messages: "/icons/messages-bottom-nav.svg",
   messagesActive: "/icons/messages-bottom-nav-blue.svg",
   profile: "/icons/profile-bottom-nav.svg",
@@ -28,13 +29,21 @@ const icons = {
 } as const;
 
 type TabSpec = {
-  id: Exclude<NavTab, "home">;
+  id: NavTab;
   label: string;
   icon: string;
   iconActive: string;
 };
 
-const startTabs: TabSpec[] = [
+// Home first, in reading order — the flat bar this became is read left to
+// right, so the primary destination leads it instead of sitting apart.
+const tabs: TabSpec[] = [
+  {
+    id: "home",
+    label: "Accueil",
+    icon: icons.home,
+    iconActive: icons.homeActive,
+  },
   {
     id: "producers",
     label: "Producteurs",
@@ -47,9 +56,6 @@ const startTabs: TabSpec[] = [
     icon: icons.favorites,
     iconActive: icons.favoritesActive,
   },
-];
-
-const endTabs: TabSpec[] = [
   {
     id: "messages",
     label: "Messages",
@@ -67,74 +73,48 @@ const endTabs: TabSpec[] = [
 /**
  * The app's primary navigation.
  *
- * Five destinations: four flanking tabs plus the home button raised into a
- * notch in the bar. The notch is a CSS mask (see BottomNavBar.css) so the
- * silhouette holds its shape from a 320px phone to a tablet column, and the
- * whole bar sits above the home indicator via env(safe-area-inset-bottom).
+ * A flat, equal-weight five-tab bar — the pattern every mainstream feed app
+ * (LinkedIn included) actually ships, not a floating notch-and-badge affair.
+ * One accent colour marks the active tab; nothing else competes with it.
  */
 const BottomNavBar: React.FC<BottomNavBarProps> = ({
   activeTab,
   onTabChange,
   messageCount = 0,
-}) => {
-  const renderTab = (tab: TabSpec) => {
-    const active = activeTab === tab.id;
-    const unread = tab.id === "messages" && messageCount > 0;
+}) => (
+  <nav className="af-tabbar" aria-label="Navigation principale">
+    {tabs.map((tab) => {
+      const active = activeTab === tab.id;
+      const unread = tab.id === "messages" && messageCount > 0;
 
-    return (
-      <button
-        key={tab.id}
-        type="button"
-        className={`af-tab${active ? " af-tab--active" : ""}`}
-        onClick={() => onTabChange(tab.id)}
-        aria-current={active ? "page" : undefined}
-        aria-label={
-          unread
-            ? `${tab.label}, ${messageCount} non lus`
-            : tab.label
-        }
-      >
-        <span className="af-tab__icon">
-          <img src={active ? tab.iconActive : tab.icon} alt="" aria-hidden="true" />
-          {unread && (
-            <span className="af-badge af-tab__badge" aria-hidden="true">
-              {messageCount > 99 ? "99+" : messageCount}
-            </span>
-          )}
-        </span>
-        <span className="af-tab__label">{tab.label}</span>
-      </button>
-    );
-  };
-
-  const homeActive = activeTab === "home";
-
-  return (
-    <nav className="af-tabbar" aria-label="Navigation principale">
-      <div className="af-tabbar__inner">
-        <div className="af-tabbar__veil" aria-hidden="true" />
-        <div className="af-tabbar__surface" aria-hidden="true" />
-
-        <div className="af-tabbar__group af-tabbar__group--start">
-          {startTabs.map(renderTab)}
-        </div>
-
-        <div className="af-tabbar__group af-tabbar__group--end">
-          {endTabs.map(renderTab)}
-        </div>
-
+      return (
         <button
+          key={tab.id}
           type="button"
-          className={`af-tabbar__home${homeActive ? " af-tabbar__home--active" : ""}`}
-          onClick={() => onTabChange("home")}
-          aria-label="Accueil"
-          aria-current={homeActive ? "page" : undefined}
+          className={`af-tab${active ? " af-tab--active" : ""}`}
+          onClick={() => onTabChange(tab.id)}
+          aria-current={active ? "page" : undefined}
+          aria-label={
+            unread ? `${tab.label}, ${messageCount} non lus` : tab.label
+          }
         >
-          <img src={icons.home} alt="" aria-hidden="true" />
+          <span className="af-tab__icon">
+            <img
+              src={active ? tab.iconActive : tab.icon}
+              alt=""
+              aria-hidden="true"
+            />
+            {unread && (
+              <span className="af-badge af-tab__badge" aria-hidden="true">
+                {messageCount > 99 ? "99+" : messageCount}
+              </span>
+            )}
+          </span>
+          <span className="af-tab__label">{tab.label}</span>
         </button>
-      </div>
-    </nav>
-  );
-};
+      );
+    })}
+  </nav>
+);
 
 export default BottomNavBar;

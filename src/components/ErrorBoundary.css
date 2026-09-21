@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-5);
-  min-height: 100dvh;
+  height: 100dvh;
   padding: var(--space-10) var(--gutter);
   padding-top: calc(var(--space-10) + var(--safe-top));
   padding-bottom: calc(var(--space-10) + var(--safe-bottom));

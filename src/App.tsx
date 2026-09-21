@@ -15,10 +15,9 @@ import EmailVerificationPage from "./pages/EmailVerificationPage";
 import HomePage from "./pages/HomePage";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { LoadingProvider, useLoading } from "./context/LoadingContext";
+import { LoadingProvider } from "./context/LoadingContext";
 import { ErrorHandlerProvider } from "./context/ErrorHandlerContext";
 import { DataProvider } from "./context/DataContext";
-import LoadingOverlay from "./components/LoadingOverlay";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { useTokenValidation } from "./hooks/useTokenValidation";
 import { apiClient } from "./services/api";
@@ -61,8 +60,6 @@ function AppContent() {
     updateUserData,
     login,
   } = useAuth();
-  const { isLoading } = useLoading();
-
   useTokenValidation();
 
   const handleGoHome = useCallback(() => {
@@ -193,7 +190,6 @@ function AppContent() {
       <IonContent>
         {!showSplash && <Toasts />}
         {renderScreen()}
-        <LoadingOverlay isVisible={isLoading} />
       </IonContent>
     </ErrorHandlerProvider>
   );

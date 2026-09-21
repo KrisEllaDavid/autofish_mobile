@@ -8,7 +8,7 @@ import { CapacitorHttp } from '@capacitor/core';
 const isMobile = typeof window !== 'undefined' && window.location.protocol === 'capacitor:';
 
 // API Configuration - Always use production API directly
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.autofish.store';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.autofish.online';
 
 // Base URL resolved above depending on environment
 const baseURL = API_BASE_URL;

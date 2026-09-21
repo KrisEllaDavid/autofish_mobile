@@ -26,7 +26,14 @@ html {
 body {
   margin: 0;
   padding: 0;
-  min-height: 100%;
+  /* Hard height, not min-height. Every screen is built as a fixed-height
+     shell (header + one internal `flex: 1` scroll region + tab bar) that
+     overflows against this box. `min-height` lets the box grow to fit its
+     content instead of capping at the viewport — the internal scroll
+     region then has nothing to overflow against (scrollHeight ends up
+     equal to clientHeight) and the whole app stops scrolling anywhere. */
+  height: 100%;
+  overflow: hidden;
   font-family: var(--font-body);
   font-size: var(--text-base);
   line-height: var(--leading-normal);
@@ -37,15 +44,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-synthesis: none;
-  /* The app never scrolls horizontally; pages own their own vertical scroll. */
-  overflow-x: hidden;
 }
 
 #root {
   position: relative;
   width: 100%;
-  /* dvh tracks the visible area as the URL bar collapses. */
-  min-height: 100dvh;
+  /* dvh tracks the visible area as the URL bar collapses. Hard height (see
+     body above) — screens clip to this box and scroll internally. */
+  height: 100dvh;
+  overflow: hidden;
   isolation: isolate;
 }
 
@@ -140,7 +147,10 @@ hr {
 button,
 input,
 select,
-textarea {
+textarea,
+ion-app,
+ion-content,
+ion-content * {
   font-family: inherit;
   color: inherit;
 }

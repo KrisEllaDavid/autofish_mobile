@@ -8,6 +8,7 @@ import { Publication } from "../services/api";
 import { normalizeImageUrl } from "../utils/imageUtils";
 import { toast } from "react-toastify";
 import { Avatar, Button, Chip, EmptyState, Skeleton } from "../components/ui";
+import { formatPrice } from "../utils/formatPrice";
 import "./PublicationPreviewPage.css";
 
 const locationIcon = "/icons/Location.svg";
@@ -283,7 +284,7 @@ const PublicationPreviewPage: React.FC<PublicationPreviewPageProps> = ({
             <h1 className="pub-title">{publication.title}</h1>
 
             <p className="pub-price">
-              {publication.price.toLocaleString("fr-FR")}
+              {formatPrice(publication.price)}
               <small>FCFA</small>
             </p>
 

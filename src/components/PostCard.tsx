@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { normalizeImageUrl } from "../utils/imageUtils";
 import CommentsBottomSheet from "./CommentsBottomSheet";
 import { appEvents, APP_EVENTS } from "../utils/eventEmitter";
 import { Avatar, Button, Chip } from "./ui";
+import { formatPrice } from "../utils/formatPrice";
 import "./PostCard.css";
 
 interface PostCardProps {
@@ -16,7 +17,9 @@ interface PostCardProps {
   comments: number;
   category: string;
   location: string;
-  price: number;
+  /** The API serialises this as a decimal string ("3500.00"), not a
+   *  number — format through formatPrice, never .toLocaleString() directly. */
+  price: number | string;
   isLiked?: boolean;
   producerPhone?: string;
   postTitle?: string;
@@ -91,12 +94,32 @@ const PostCard: React.FC<PostCardProps> = React.memo(
     const [localIsLiked, setLocalIsLiked] = useState(isLiked);
     const [localLikesCount, setLocalLikesCount] = useState(likes);
     const [isPulsing, setIsPulsing] = useState(false);
+    const [isTextExpanded, setIsTextExpanded] = useState(false);
+    const [isTextOverflowing, setIsTextOverflowing] = useState(false);
+    const textRef = useRef<HTMLParagraphElement>(null);
 
     // The feed re-fetches after a like or a refresh; without this the card
     // kept showing its own stale optimistic value.
     useEffect(() => setLocalIsLiked(isLiked), [isLiked]);
     useEffect(() => setLocalLikesCount(likes), [likes]);
     useEffect(() => setLocalCommentsCount(comments), [comments]);
+
+    useEffect(() => setIsTextExpanded(false), [description]);
+
+    useLayoutEffect(() => {
+      const textElement = textRef.current;
+      if (!textElement || isTextExpanded) return;
+
+      const measureOverflow = () => {
+        setIsTextOverflowing(textElement.scrollHeight > textElement.clientHeight + 1);
+      };
+
+      measureOverflow();
+      const observer = new ResizeObserver(measureOverflow);
+      observer.observe(textElement);
+
+      return () => observer.disconnect();
+    }, [description, isTextExpanded]);
 
     useEffect(() => {
       const handleCommentEvent = ({
@@ -204,7 +227,26 @@ const PostCard: React.FC<PostCardProps> = React.memo(
           </div>
         </header>
 
-        <p className="post-card__text">{description}</p>
+        <div className="post-card__text-block">
+          <p
+            ref={textRef}
+            className={`post-card__text${
+              isTextExpanded ? " post-card__text--expanded" : ""
+            }`}
+          >
+            {description}
+          </p>
+          {isTextOverflowing && (
+            <button
+              type="button"
+              className="post-card__more"
+              onClick={() => setIsTextExpanded((expanded) => !expanded)}
+              aria-expanded={isTextExpanded}
+            >
+              {isTextExpanded ? "Afficher moins" : "Afficher plus"}
+            </button>
+          )}
+        </div>
 
         <div className="post-card__media">
           <img
@@ -214,16 +256,40 @@ const PostCard: React.FC<PostCardProps> = React.memo(
             loading="lazy"
             decoding="async"
           />
+        </div>
 
-          <Chip as="span" tone="onimage" className="post-card__category">
-            {category}
-          </Chip>
-
+        {/* Price and category live in the card body, not floating on top of
+            the photo — legible against any image, and read as part of the
+            same structured listing rather than a detached overlay. */}
+        <div className="post-card__listing">
           <p className="post-card__price">
-            {price.toLocaleString("fr-FR")}
+            {formatPrice(price)}
             <small>FCFA</small>
           </p>
+          <Chip as="span" tone="brand" className="post-card__category">
+            {category}
+          </Chip>
         </div>
+
+        {(localLikesCount > 0 || localCommentsCount > 0) && (
+          <p className="post-card__stats">
+            {localLikesCount > 0 && (
+              <span className="post-card__stats-likes">
+                <img src="/icons/red_heart_like.svg" alt="" aria-hidden="true" />
+                {localLikesCount}
+              </span>
+            )}
+            {localLikesCount > 0 && localCommentsCount > 0 && (
+              <span aria-hidden="true">·</span>
+            )}
+            {localCommentsCount > 0 && (
+              <span>
+                {localCommentsCount}{" "}
+                {localCommentsCount > 1 ? "commentaires" : "commentaire"}
+              </span>
+            )}
+          </p>
+        )}
 
         <div className="post-card__actions">
           <button
@@ -237,17 +303,17 @@ const PostCard: React.FC<PostCardProps> = React.memo(
             }`}
           >
             <img src={favouriteIcon} alt="" aria-hidden="true" />
-            <span>{localLikesCount}</span>
+            <span>J&apos;aime</span>
           </button>
 
           <button
             type="button"
             onClick={handleCommentClick}
             className="post-card__action"
-            aria-label={`Commentaires, ${localCommentsCount}`}
+            aria-label="Commenter"
           >
             <img src={commentIcon} alt="" aria-hidden="true" />
-            <span>{localCommentsCount}</span>
+            <span>Commenter</span>
           </button>
         </div>
 

@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     // Allow external server access for API calls
-    allowNavigation: ['https://api.autofish.store', 'https://autofish.store'],
+    allowNavigation: ['https://api.autofish.online', 'https://autofish.online'],
     // Allow all origins for development
     hostname: '0.0.0.0',
     androidScheme: 'https'

@@ -7,7 +7,7 @@
 .auth-screen {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
   background: var(--surface-card);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);

@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100dvh;
+  height: 100dvh;
   background: var(--surface-page);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
@@ -379,21 +379,13 @@
   }
 }
 
-/* Two columns once one would be wider than a card needs to be. */
+/* A single, slightly wider column — a directory list reads top to bottom
+   just like the feed does, and a 2-up grid would break that order. */
 @media (min-width: 760px) {
   .producers-list,
   .search-input-container,
   .category-select {
-    max-width: 720px;
-  }
-  .producers-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-5);
-  }
-  .producers-list > .empty-state,
-  .producers-list > .no-results {
-    grid-column: 1 / -1;
+    max-width: 560px;
   }
 }
 

@@ -1,43 +1,43 @@
 /**
- * Image utility functions for handling HTTP to HTTPS conversion
- * to bypass mixed content policies while keeping image server on HTTP
+ * Image URL normalisation.
+ *
+ * The API hands back image URLs pointing at plain-HTTP image servers by IP
+ * (currently 169.58.128.180:3001; older records still reference the retired
+ * 31.97.178.131:3001). Neither can be loaded directly from an HTTPS page:
+ * http:// is blocked as mixed content, and https:// fails the TLS handshake
+ * because those hosts serve no certificate.
+ *
+ * Every one of them is reachable through the API's own HTTPS image proxy, so
+ * this matches on the /images/<path> shape rather than on a hostname — a new
+ * image host appearing in API responses keeps working without a code change.
  */
 
-/**
- * Converts HTTP image server URLs to use Django HTTPS proxy
- * This allows HTTPS frontend to load images from HTTP image server
- * without triggering mixed content blocking
- */
+const API_ORIGIN =
+  import.meta.env.VITE_API_BASE_URL || "https://api.autofish.online";
+
+const IMAGE_PROXY = `${API_ORIGIN}/api/image-proxy`;
+
 export const normalizeImageUrl = (url?: string): string => {
-  if (!url) return '';
+  if (!url) return "";
 
   try {
-    // Convert any HTTP URL from the image server to HTTPS proxy
-    // Handle multiple formats that might come from the backend
-    if (url.includes('31.97.178.131') && url.includes('/images/')) {
-      // Extract just the path after /images/
-      const match = url.match(/\/images\/(.+)$/);
-      if (match) {
-        const imagePath = match[1];
-        const proxyUrl = `https://api.autofish.store/api/image-proxy/${imagePath}`;
-        if (import.meta.env.DEV) {
-          console.log('[ImageUtils] Converting URL:', url, '→', proxyUrl);
-        }
-        return proxyUrl;
-      }
+    // Already proxied, or a local/bundled asset — leave it alone.
+    if (url.startsWith(IMAGE_PROXY) || url.startsWith("/") || url.startsWith("data:")) {
+      return url;
     }
 
-    // If already HTTPS or not from our image server, return as-is
+    // Anything served from an image server, whichever host it names.
+    const match = url.match(/\/images\/(.+)$/);
+    if (match) {
+      return `${IMAGE_PROXY}/${match[1]}`;
+    }
+
     return url;
-  } catch (error) {
-    console.warn('Error normalizing image URL:', error);
+  } catch {
     return url;
   }
 };
 
-/**
- * Hook for getting normalized image URLs
- */
-export const useNormalizedImageUrl = (url?: string): string => {
-  return normalizeImageUrl(url);
-};
+/** Hook-shaped wrapper kept for existing call sites. */
+export const useNormalizedImageUrl = (url?: string): string =>
+  normalizeImageUrl(url);
