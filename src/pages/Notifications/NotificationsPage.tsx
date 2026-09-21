@@ -6,6 +6,7 @@ import { Notification as ApiNotification } from "../../services/api";
 import { Notification as UINotification } from "./notificationsMock";
 import "../HomePage.css";
 import NotificationList from "./NotificationList";
+import { Button, EmptyState, ListRowSkeleton } from "../../components/ui";
 
 // Utility function to map API notifications to UI notifications
 const mapApiNotificationToUI = (apiNotif: ApiNotification): UINotification => {
@@ -124,83 +125,38 @@ const NotificationsPage: React.FC<NotificationsPageProps> = ({
         onNotificationClick={onNotificationClick}
         onMyPageClick={onMyPageClick}
       />
-      {/* Notifications Feed */}
-      <div
-        className="posts-feed"
-        style={{ marginTop: "90px" }}
-      >
-        
-        {/* Hidden Loading State - only show on initial load */}
-        {loading && initialLoad && (
-          <div style={{ textAlign: "center", padding: "40px" }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid #f3f3f3',
-              borderTop: '3px solid #00B2D6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '20px auto'
-            }} />
-            <p>Chargement des notifications...</p>
-            <style>{`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}</style>
+      <div className="home-scroll">
+        {loading && initialLoad ? (
+          <div className="notif-list" aria-busy="true">
+            <ListRowSkeleton />
+            <ListRowSkeleton />
+            <ListRowSkeleton />
           </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <div style={{ textAlign: "center", padding: "40px", color: "red" }}>
-            <p>Erreur: {error}</p>
-            <button 
-              onClick={fetchNotifications}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#00B2D6",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                marginTop: "10px"
-              }}
-            >
+        ) : error ? (
+          <div className="feed-error">
+            <h2 className="feed-error__title">
+              Les notifications n&apos;ont pas pu se charger
+            </h2>
+            <p className="feed-error__text">{error}</p>
+            <Button variant="secondary" onClick={fetchNotifications}>
               Réessayer
-            </button>
+            </Button>
           </div>
+        ) : notifications.length === 0 ? (
+          <EmptyState
+            icon={<img src="/icons/Notification.svg" alt="" />}
+            title="Aucune notification"
+            description="Les likes, commentaires et nouveaux arrivages apparaîtront ici."
+          />
+        ) : (
+          <NotificationList
+            notifications={notifications}
+            onNotificationClick={handleNotificationClick}
+          />
         )}
-
-        {/* Content */}
-        {(!loading || !initialLoad) && !error && (
-          <>
-            {notifications.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">
-                  <img src="/icons/Notification.svg" alt="notifications" />
-                </div>
-                <h2>Aucune notification</h2>
-                <p>Vous n'avez pas encore de notifications. Elles apparaîtront ici lorsque vous en recevrez.</p>
-              </div>
-            ) : (
-              <NotificationList
-                notifications={notifications}
-                onNotificationClick={handleNotificationClick}
-              />
-            )}
-          </>
-        )}
-        
-        {/* Add extra space at the bottom to ensure content doesn't hide behind bottom nav */}
-        <div style={{ height: "70px" }}></div>
       </div>
       {/* Bottom Navigation */}
-      <BottomNavBar
-        activeTab="home"
-        onTabChange={onTabChange}
-      />
+      <BottomNavBar activeTab="home" onTabChange={onTabChange} />
     </div>
   );
 };

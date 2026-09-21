@@ -5,6 +5,9 @@ import CategoriesPage from "./CategoriesPage/CategoriesPage";
 import { useAuth } from "../context/AuthContext";
 import CameraPermissionRequest from "../components/CameraPermissionRequest";
 import { checkCameraSupport, getAvailableCameras } from "../utils/cameraUtils";
+import { Banner, Button } from "../components/ui";
+import "./Flow.css";
+import "./IDVerificationPage.css";
 
 const cameraIcon = "/icons/camera_icon.svg";
 
@@ -14,6 +17,35 @@ interface IDVerificationPageProps {
 }
 
 type Side = "recto" | "verso";
+
+const RetakeIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1" />
+    <path d="M20.5 4v5h-5" />
+  </svg>
+);
+
+const DoneIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M4 12.5l5 5L20 6.5" />
+  </svg>
+);
 
 const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
   onBack,
@@ -31,77 +63,64 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
   const webcamRef = useRef<Webcam>(null);
 
   const handleOpenCamera = async (side: Side) => {
-    console.log('Opening camera for:', side);
-    
-    // Check camera support
     const support = checkCameraSupport();
     if (!support.getUserMedia) {
-      setCameraError("Votre navigateur ne supporte pas l'accès à la caméra");
+      setCameraError("Votre navigateur ne gère pas l'accès à la caméra.");
       return;
     }
 
-    // Get available cameras for debugging
     const cameras = await getAvailableCameras();
     if (cameras.length === 0) {
-      setCameraError("Aucune caméra trouvée sur cet appareil");
+      setCameraError("Aucune caméra détectée sur cet appareil.");
       return;
     }
 
-    // If permission already granted, open camera directly
-    if (cameraPermissionGranted) {
-      setIsCameraOpen(side);
-      setCameraError(null);
-    } else {
-      // Request permission first time only
-      setShowPermissionRequest(true);
-      setIsCameraOpen(side);
-      setCameraError(null);
-    }
+    setCameraError(null);
+    setIsCameraOpen(side);
+    if (!cameraPermissionGranted) setShowPermissionRequest(true);
   };
 
   const handleCapture = () => {
-    if (webcamRef.current && isCameraOpen) {
-      setShowFlash(true);
-      setTimeout(() => setShowFlash(false), 120);
-      const imageSrc = webcamRef.current.getScreenshot();
-      if (isCameraOpen === "recto") {
-        setRectoImage(imageSrc);
-        updateUserData({ idRecto: imageSrc });
-      }
-      if (isCameraOpen === "verso") {
-        setVersoImage(imageSrc);
-        updateUserData({ idVerso: imageSrc });
-      }
-      setIsCameraOpen(false);
+    if (!webcamRef.current || !isCameraOpen) return;
+
+    setShowFlash(true);
+    setTimeout(() => setShowFlash(false), 120);
+
+    const imageSrc = webcamRef.current.getScreenshot();
+    if (isCameraOpen === "recto") {
+      setRectoImage(imageSrc);
+      updateUserData({ idRecto: imageSrc });
+    } else {
+      setVersoImage(imageSrc);
+      updateUserData({ idVerso: imageSrc });
     }
+    setIsCameraOpen(false);
   };
 
   const handleRetake = (side: Side) => {
-    // Since permission was already granted, open camera directly
     setIsCameraOpen(side);
     setCameraError(null);
   };
 
   const handleCameraError = (error: string | DOMException) => {
-    console.error('Camera error:', error);
-    
-    let errorMessage = "Impossible d'accéder à la caméra. Veuillez autoriser l'accès à la caméra dans votre navigateur.";
-    
+    let message =
+      "La caméra n'a pas pu démarrer. Autorisez l'accès dans les réglages de votre navigateur.";
+
     if (error instanceof DOMException) {
-      if (error.name === 'NotAllowedError') {
-        errorMessage = "Accès à la caméra refusé. Veuillez autoriser l'accès dans les paramètres de votre navigateur.";
-      } else if (error.name === 'NotFoundError') {
-        errorMessage = "Aucune caméra trouvée sur cet appareil.";
-      } else if (error.name === 'NotSupportedError') {
-        errorMessage = "Votre navigateur ne supporte pas l'accès à la caméra.";
-      } else if (error.name === 'OverconstrainedError') {
-        errorMessage = "La caméra ne supporte pas les paramètres demandés. Tentative avec des paramètres de base...";
-        // Try with basic constraints
+      if (error.name === "NotAllowedError") {
+        message =
+          "Accès refusé. Autorisez la caméra dans les réglages de votre navigateur.";
+      } else if (error.name === "NotFoundError") {
+        message = "Aucune caméra détectée sur cet appareil.";
+      } else if (error.name === "NotSupportedError") {
+        message = "Votre navigateur ne gère pas l'accès à la caméra.";
+      } else if (error.name === "OverconstrainedError") {
+        // The component retries with looser constraints on its own.
         return;
       }
     }
-    
-    setCameraError(errorMessage);
+
+    setCameraError(message);
   };
 
   const handlePermissionGranted = () => {
@@ -112,324 +131,165 @@ const IDVerificationPage: React.FC<IDVerificationPageProps> = ({
   const handlePermissionDenied = () => {
     setShowPermissionRequest(false);
     setIsCameraOpen(false);
-    setCameraError("Accès à la caméra refusé");
+    setCameraError("Accès à la caméra refusé.");
   };
-
 
   if (goToCategories) {
     return (
       <CategoriesPage
         profileType={profileType}
-        onBack={() => {
-          setGoToCategories(false);
-        }}
+        onBack={() => setGoToCategories(false)}
       />
     );
   }
 
-  const uploadBox = (
+  const renderSlot = (
     side: Side,
     label: string,
-    image: string | null,
-    onRetake: () => void,
-    onOpen: () => void
+    image: string | null
   ) => (
-    <div style={{ marginBottom: 32, width: "100%" }}>
-      <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
-        {label}
-      </div>
-      <div
-        style={{
-          width: "100%",
-          height: 160,
-          background: "#fafbfc",
-          borderRadius: 24,
-          border: "1.2px solid #e0e0e0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          position: "relative",
-        }}
-        onClick={onOpen}
+    <div>
+      <span className="idv-card__label">{label}</span>
+
+      <button
+        type="button"
+        className={`idv-slot${image ? "" : " idv-slot--empty"}`}
+        onClick={() => (image ? handleRetake(side) : handleOpenCamera(side))}
+        aria-label={
+          image ? `Reprendre la photo du ${side}` : `Photographier le ${side}`
+        }
       >
         {image ? (
           <>
-            <img
-              src={image}
-              alt={side}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                borderRadius: 24,
-              }}
-            />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRetake();
-              }}
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 10,
-                background: "rgba(0,0,0,0.5)",
-                border: "none",
-                borderRadius: "50%",
-                width: 32,
-                height: 32,
-                color: "#fff",
-                fontSize: 18,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              aria-label="Reprendre"
+            <img src={image} alt="" className="idv-slot__photo" />
+            <span className="idv-slot__done">
+              <DoneIcon />
+              Enregistré
+            </span>
+            <span
+              className="idv-slot__retake"
+              role="presentation"
+              aria-hidden="true"
             >
-              ↻
-            </button>
+              <RetakeIcon />
+            </span>
           </>
         ) : (
-          <img
-            src={cameraIcon}
-            alt="camera"
-            style={{ width: 40, height: 40, opacity: 0.8 }}
-          />
+          <span className="idv-slot__prompt">
+            <img src={cameraIcon} alt="" aria-hidden="true" />
+            Appuyez pour photographier
+          </span>
         )}
-      </div>
+      </button>
     </div>
   );
 
+  const complete = Boolean(rectoImage && versoImage);
+
   return (
-    <>
-      <style>{`
-        .fade-in-page {
-          opacity: 0;
-          animation: fadeInPage 0.5s ease-in forwards;
-        }
-        @keyframes fadeInPage {
-          to { opacity: 1; }
-        }
-        .id-frame {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 320px;
-          height: 200px;
-          transform: translate(-50%, -50%);
-          border: 3px dashed #00A6C0;
-          border-radius: 16px;
-          pointer-events: none;
-          z-index: 10;
-        }
-        @media (max-width: 400px) {
-          .id-frame {
-            width: 90vw;
-            height: 56vw;
-          }
-        }
-        .flash-overlay {
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: #fff;
-          opacity: 0.85;
-          z-index: 1001;
-          pointer-events: none;
-          animation: flashAnim 0.18s linear;
-        }
-        @keyframes flashAnim {
-          from { opacity: 0.85; }
-          to { opacity: 0; }
-        }
-      `}</style>
-      <div
-        className="fade-in-page"
-        style={{
-          minHeight: "100vh",
-          background: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          paddingTop: 10,
-          paddingBottom: 40
-        }}
-      >
-        <NavBar title="Document d'identification" onBack={onBack} />
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 370,
-            margin: "0 auto",
-            padding: "0 16px",
-            boxSizing: "border-box",
-            marginTop: 60,
-          }}
-        >
-          {uploadBox(
-            "recto",
-            "Chargez le recto votre pièce d'identité",
-            rectoImage,
-            () => handleRetake("recto"),
-            () => handleOpenCamera("recto")
-          )}
-          {uploadBox(
-            "verso",
-            "Chargez le verso votre pièce d'identité",
-            versoImage,
-            () => handleRetake("verso"),
-            () => handleOpenCamera("verso")
-          )}
-          <button
-            style={{
-              width: "100%",
-              background: rectoImage && versoImage ? "#009cb7" : "#b0b0b0",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 18,
-              borderRadius: 18,
-              border: "none",
-              padding: "18px 0",
-              marginTop: 18,
-              cursor: rectoImage && versoImage ? "pointer" : "not-allowed",
-              transition: "background 0.2s",
-              boxShadow: "0 2px 12px rgba(0, 156, 183, 0.08)",
-            }}
-            disabled={!(rectoImage && versoImage)}
-            onClick={() => {
-              // Both producers and consumers go to categories after ID verification
-              // Address for producers will be collected in PageCreationPage
-              setGoToCategories(true);
-            }}
+    <div className="flow-screen fade-in-page">
+      <NavBar title="Pièce d'identité" onBack={onBack} />
+
+      <div className="flow-body">
+        <div className="flow-intro">
+          <h1 className="flow-intro__title">Vérifions votre identité</h1>
+          <p className="flow-intro__text">
+            Photographiez les deux faces de votre pièce d&apos;identité. Cadrez
+            le document entièrement et évitez les reflets.
+          </p>
+        </div>
+
+        {cameraError && !isCameraOpen && (
+          <Banner tone="warning" style={{ marginBottom: "var(--space-7)" }}>
+            {cameraError}
+          </Banner>
+        )}
+
+        <div className="idv-cards">
+          {renderSlot("recto", "Recto de la pièce", rectoImage)}
+          {renderSlot("verso", "Verso de la pièce", versoImage)}
+        </div>
+
+        <div className="flow-actions">
+          <Button
+            size="lg"
+            block
+            disabled={!complete}
+            onClick={() => setGoToCategories(true)}
           >
             Poursuivre
-          </button>
+          </Button>
         </div>
-        {isCameraOpen && (
-          <>
-            {showFlash && <div className="flash-overlay" />}
-            <div
-              style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: "#000",
-                zIndex: 1000,
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div
-                style={{
-                  padding: 16,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <button
-                  onClick={() => {
-                    setIsCameraOpen(false);
-                    setCameraError(null);
-                  }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "#fff",
-                    fontSize: 16,
-                    cursor: "pointer",
-                  }}
-                >
-                  Annuler
-                </button>
-                <div style={{ color: "#fff", fontSize: 16 }}>
-                  {isCameraOpen === "recto"
-                    ? "Photo du recto"
-                    : "Photo du verso"}
-                </div>
-                <div style={{ width: 60 }} />
-              </div>
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-end",
-                  position: "relative",
-                  flexDirection: "column",
-                  paddingBottom: 24,
-                }}
-              >
-                {cameraError ? (
-                  <div
-                    style={{ color: "#fff", textAlign: "center", padding: 24 }}
-                  >
-                    {cameraError}
-                  </div>
-                ) : (
-                  <>
-                    <Webcam
-                      audio={false}
-                      ref={webcamRef}
-                      screenshotFormat="image/jpeg"
-                      videoConstraints={{
-                        facingMode: "environment",
-                        width: { ideal: 1920, min: 1280 },
-                        height: { ideal: 1080, min: 720 },
-                        aspectRatio: { ideal: 16/9 }
-                      }}
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                      onUserMediaError={handleCameraError}
-                      mirrored={false}
-                    />
-                    <div className="id-frame" />
-                    {/* Capture button overlay - always visible at bottom */}
-                    <button
-                      onClick={handleCapture}
-                      style={{
-                        width: 72,
-                        height: 72,
-                        borderRadius: "50%",
-                        background: "#fff",
-                        border: "4px solid #009cb7",
-                        cursor: cameraError ? "not-allowed" : "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 28,
-                        fontWeight: 700,
-                        color: "#009cb7",
-                        zIndex: 20,
-                        position: "relative",
-                      }}
-                      disabled={!!cameraError}
-                    >
-                      📷
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-        {showPermissionRequest && (
-          <CameraPermissionRequest
-            onPermissionGranted={handlePermissionGranted}
-            onPermissionDenied={handlePermissionDenied}
-          />
-        )}
       </div>
-    </>
+
+      {isCameraOpen && (
+        <>
+          {showFlash && <div className="flash-overlay" />}
+
+          <div className="idv-camera" role="dialog" aria-modal="true">
+            <div className="idv-camera__bar">
+              <button
+                type="button"
+                className="idv-camera__cancel"
+                onClick={() => {
+                  setIsCameraOpen(false);
+                  setCameraError(null);
+                }}
+              >
+                Annuler
+              </button>
+              <span className="idv-camera__title">
+                {isCameraOpen === "recto" ? "Recto" : "Verso"}
+              </span>
+              <span className="idv-camera__spacer" />
+            </div>
+
+            <div className="idv-camera__stage">
+              {cameraError ? (
+                <p className="idv-camera__error">{cameraError}</p>
+              ) : (
+                <>
+                  <Webcam
+                    audio={false}
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    videoConstraints={{
+                      facingMode: "environment",
+                      width: { ideal: 1920, min: 1280 },
+                      height: { ideal: 1080, min: 720 },
+                      aspectRatio: { ideal: 16 / 9 },
+                    }}
+                    className="idv-camera__video"
+                    onUserMediaError={handleCameraError}
+                    mirrored={false}
+                  />
+
+                  <div className="id-frame" aria-hidden="true" />
+
+                  <p className="idv-camera__hint">
+                    Alignez la pièce dans le cadre
+                  </p>
+
+                  <button
+                    type="button"
+                    className="idv-camera__shutter"
+                    onClick={handleCapture}
+                    aria-label="Prendre la photo"
+                  />
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {showPermissionRequest && (
+        <CameraPermissionRequest
+          onPermissionGranted={handlePermissionGranted}
+          onPermissionDenied={handlePermissionDenied}
+        />
+      )}
+    </div>
   );
 };
 

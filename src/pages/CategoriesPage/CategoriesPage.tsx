@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import NavBar from "../../components/NavBar";
+import { Button, Spinner } from "../../components/ui";
 import UnifiedDropdown from "../../components/UnifiedDropdown";
 import DescriptionPage from "../DescriptionPage";
 import PageCreationPage from "../PageCreationPage";
@@ -163,54 +164,28 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
         )}
       </div>
       
-      {/* Loading State */}
       {loading && (
-        <div style={{ textAlign: "center", padding: "40px" }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '3px solid #f3f3f3',
-            borderTop: '3px solid #00B2D6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '20px auto'
-          }} />
-          <p>Chargement des catégories...</p>
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
+        <div className="categories-status">
+          <Spinner size="lg" />
+          <p>Chargement des catégories…</p>
         </div>
       )}
 
-      {/* Error State */}
       {error && (
-        <div style={{ textAlign: "center", padding: "40px", color: "red" }}>
-          <p>Erreur: {error}</p>
-          <button
-            onClick={fetchCategories}
-            disabled={loading}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: loading ? "#ccc" : "#00B2D6",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: loading ? "not-allowed" : "pointer",
-              marginTop: "10px"
-            }}
-          >
-            {loading ? "Chargement..." : "Réessayer"}
-          </button>
+        <div className="categories-status">
+          <p className="categories-status__error">
+            Les catégories n&apos;ont pas pu être chargées.
+          </p>
+          <Button variant="secondary" loading={loading} onClick={fetchCategories}>
+            Réessayer
+          </Button>
         </div>
       )}
 
       {/* Categories Dropdown */}
       {!loading && !error && (
         <>
-          <div style={{ width: '90vw', maxWidth: 340 }}>
+          <div className="categories-field">
             <UnifiedDropdown
               options={availableCategories.map(cat => ({ 
                 value: cat.id.toString(), 
@@ -247,37 +222,27 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({
             ))}
           </div>
           
-          {/* Continue Button */}
+          {profileType === "producer" && selectedCategories.length === 0 && (
+            <p className="categories-hint">
+              Sélectionnez au moins une catégorie pour continuer.
+            </p>
+          )}
+
           <button
             className="categories-action-btn"
             onClick={handleContinue}
-            disabled={(profileType === "producer" && selectedCategories.length === 0) || isRegistering}
-            style={{
-              opacity: (profileType === "producer" && selectedCategories.length === 0) || isRegistering ? 0.5 : 1,
-              cursor: (profileType === "producer" && selectedCategories.length === 0) || isRegistering ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
+            disabled={
+              (profileType === "producer" &&
+                selectedCategories.length === 0) ||
+              isRegistering
+            }
           >
-            {isRegistering && profileType === "client" && (
-              <div style={{
-                width: '16px',
-                height: '16px',
-                border: '2px solid #ffffff',
-                borderTop: '2px solid transparent',
-                borderRadius: '50%',
-                animation: 'spin 1s linear infinite'
-              }} />
+            {isRegistering && (
+              <span className="af-spinner af-spinner--on-brand" aria-hidden="true" />
             )}
             {profileType === "client" ? "Terminer l'inscription" : "Suivant"}
-            {profileType === "producer" && selectedCategories.length === 0 && (
-              <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                Sélectionnez au moins une catégorie
-              </div>
-            )}
           </button>
+
         </>
       )}
     </div>

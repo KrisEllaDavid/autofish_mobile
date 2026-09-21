@@ -1,0 +1,269 @@
+/* ==========================================================================
+   Producer page — the public-facing page, and its preview.
+   ========================================================================== */
+
+.pp-screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+.pp-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--header-total);
+  padding-bottom: calc(var(--space-10) + var(--safe-bottom));
+}
+
+/* ── Banner ──────────────────────────────────────────────────────────── */
+
+.pp-banner {
+  position: relative;
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  /* A ratio rather than a fixed 300px: the banner keeps its proportion from
+     a 320px phone to a tablet column instead of squashing. */
+  aspect-ratio: 5 / 3;
+  max-height: 340px;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+  overflow: hidden;
+}
+
+.pp-banner__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A gradient, not a flat 70% wash: the top of the photo stays visible and
+   the text at the bottom still holds its contrast. */
+.pp-banner__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(1, 26, 36, 0.86) 0%,
+    rgba(1, 26, 36, 0.5) 42%,
+    rgba(1, 26, 36, 0.18) 100%
+  );
+}
+
+.pp-banner__content {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-7) var(--gutter);
+  color: #fff;
+}
+
+.pp-banner__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.pp-banner__meta {
+  min-width: 0;
+}
+
+.pp-banner__name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-snug);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-banner__role {
+  margin-top: 1px;
+  font-size: var(--text-sm);
+  opacity: 0.85;
+  text-transform: capitalize;
+}
+
+.pp-banner__title {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  text-wrap: balance;
+}
+
+.pp-banner__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.pp-banner__address {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  font-size: var(--text-base);
+  opacity: 0.92;
+}
+
+.pp-banner__address img {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.pp-banner__address span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pp-banner__upload {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-circle);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out);
+}
+
+.pp-banner__upload:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.pp-banner__upload img {
+  width: 20px;
+  height: 20px;
+}
+
+.pp-banner__upload input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Publications ────────────────────────────────────────────────────── */
+
+.pp-section {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: var(--space-8) var(--gutter) 0;
+}
+
+.pp-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+.pp-section__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+}
+
+.pp-add {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--ink-100);
+  color: var(--ink-400);
+  cursor: not-allowed;
+}
+
+.pp-add svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  min-height: 240px;
+  padding: var(--space-9) var(--space-6);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  text-align: center;
+}
+
+.pp-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-circle);
+  background: var(--brand-a08);
+}
+
+.pp-empty__icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.pp-empty__title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.pp-empty__text {
+  max-width: 34ch;
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+
+@media (min-width: 600px) {
+  .pp-banner {
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-xl);
+    margin-top: var(--space-6);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .pp-banner {
+    aspect-ratio: auto;
+    height: 74dvh;
+    max-height: none;
+  }
+  .pp-banner__title {
+    font-size: var(--text-xl);
+  }
+}

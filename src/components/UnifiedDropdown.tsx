@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useId, useRef, useState } from "react";
 
 interface DropdownOption {
   value: string;
@@ -10,196 +10,276 @@ interface UnifiedDropdownProps {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  label?: string;
   icon?: string;
   activeIcon?: string;
   disabled?: boolean;
   required?: boolean;
+  error?: string;
+  hint?: string;
+  className?: string;
   style?: React.CSSProperties;
 }
 
+const ChevronIcon: React.FC<{ open: boolean }> = ({ open }) => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    style={{
+      transform: open ? "rotate(180deg)" : "rotate(0deg)",
+      transition: "transform var(--dur-fast) var(--ease-out)",
+    }}
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
+const CheckIcon: React.FC = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M4 12.5l5 5L20 6.5" />
+  </svg>
+);
+
+/**
+ * Select control shared by the signup, page-creation and filter flows.
+ *
+ * Built on the same field shell as TextField so a form reads as one set of
+ * controls, and wired as a real listbox: arrow keys, Home/End, Escape, type-
+ * to-jump, and a focus return to the trigger on close.
+ */
 const UnifiedDropdown: React.FC<UnifiedDropdownProps> = ({
   options,
   value,
   onChange,
   placeholder,
+  label,
   icon,
   activeIcon,
   disabled = false,
   required = false,
-  style = {}
+  error,
+  hint,
+  className = "",
+  style,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+  const listId = useId();
+  const noteId = `${listId}-note`;
 
-  // Close dropdown when clicking outside
+  const selectedIndex = options.findIndex((option) => option.value === value);
+  const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+  const hasContent = Boolean(value);
+
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown, {
+      passive: true,
+    });
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [isOpen]);
 
-  const handleSelect = (selectedValue: string) => {
-    onChange(selectedValue);
-    setIsOpen(false);
+  // Open on the current selection so the list starts where the user left off.
+  const open = () => {
+    if (disabled) return;
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    setIsOpen(true);
   };
 
-  const toggleDropdown = () => {
-    if (!disabled) {
-      setIsOpen(!isOpen);
+  const close = (refocus = true) => {
+    setIsOpen(false);
+    if (refocus) triggerRef.current?.focus();
+  };
+
+  const commit = (index: number) => {
+    const option = options[index];
+    if (!option) return;
+    onChange(option.value);
+    close();
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (disabled) return;
+
+    if (!isOpen) {
+      if (["ArrowDown", "ArrowUp", "Enter", " "].includes(event.key)) {
+        event.preventDefault();
+        open();
+      }
+      return;
+    }
+
+    switch (event.key) {
+      case "Escape":
+        event.preventDefault();
+        close();
+        break;
+      case "ArrowDown":
+        event.preventDefault();
+        setActiveIndex((i) => (i + 1) % options.length);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        setActiveIndex((i) => (i - 1 + options.length) % options.length);
+        break;
+      case "Home":
+        event.preventDefault();
+        setActiveIndex(0);
+        break;
+      case "End":
+        event.preventDefault();
+        setActiveIndex(options.length - 1);
+        break;
+      case "Enter":
+      case " ":
+        event.preventDefault();
+        commit(activeIndex);
+        break;
+      case "Tab":
+        close(false);
+        break;
+      default:
+        if (event.key.length === 1) {
+          const target = event.key.toLowerCase();
+          const next = options.findIndex((o) =>
+            o.label.toLowerCase().startsWith(target)
+          );
+          if (next >= 0) setActiveIndex(next);
+        }
     }
   };
 
-  const selectedOption = options.find(option => option.value === value);
-  const hasContent = !!value;
-
-  const inputContainerStyle: React.CSSProperties = {
-    position: "relative",
-    width: "100%",
-    marginBottom: 12,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    ...style
-  };
-
-  const getInputStyle = (hasContent: boolean): React.CSSProperties => ({
-    width: "100%",
-    padding: "16px 48px 16px 16px",
-    borderRadius: 15,
-    border: hasContent ? "1.2px solid #222" : "1.2px solid #e0e0e0",
-    background: disabled ? "#f5f5f5" : "#fafbfc",
-    fontSize: 16,
-    color: hasContent ? "#222" : "#b0b0b0",
-    marginBottom: 0,
-    outline: "none",
-    fontFamily: "inherit",
-    boxSizing: "border-box",
-    fontWeight: 500,
-    cursor: disabled ? "not-allowed" : "pointer",
-    userSelect: "none",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between"
-  });
-
-  const iconStyle: React.CSSProperties = {
-    position: "absolute",
-    left: 18,
-    top: "50%",
-    transform: "translateY(-50%)",
-    width: 22,
-    height: 22,
-    opacity: hasContent ? 1 : 0.6,
-    zIndex: 2
-  };
-
-  const arrowStyle: React.CSSProperties = {
-    position: "absolute",
-    right: 18,
-    top: "50%",
-    transform: `translateY(-50%) ${isOpen ? 'rotate(180deg)' : 'rotate(0deg)'}`,
-    width: 20,
-    height: 20,
-    opacity: 0.6,
-    transition: "transform 0.3s ease",
-    zIndex: 2
-  };
-
-  const dropdownListStyle: React.CSSProperties = {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    background: "#fff",
-    border: "1.2px solid #e0e0e0",
-    borderRadius: 15,
-    marginTop: 4,
-    maxHeight: 200,
-    overflowY: "auto",
-    zIndex: 1000,
-    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.1)"
-  };
-
-  const dropdownItemStyle: React.CSSProperties = {
-    padding: "12px 16px",
-    fontSize: 16,
-    color: "#222",
-    cursor: "pointer",
-    transition: "background-color 0.2s ease",
-    borderBottom: "1px solid #f0f0f0"
-  };
-
-  // Hover style would be used with CSS-in-JS hover pseudo-selectors if needed
-  // const dropdownItemHoverStyle: React.CSSProperties = {
-  //   ...dropdownItemStyle,
-  //   backgroundColor: "#f8f9fa"
-  // };
+  const shellClasses = [
+    "af-field__shell",
+    "af-select",
+    disabled ? "af-field__shell--disabled" : "",
+    error ? "af-field__shell--error" : "",
+    !error && hasContent ? "af-field__shell--filled" : "",
+    isOpen ? "af-select--open" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <>
-      <style>{`
-        .unified-dropdown-item:hover {
-          background-color: #f8f9fa !important;
-        }
-        .unified-dropdown-item:last-child {
-          border-bottom: none;
-        }
-      `}</style>
-      <div style={inputContainerStyle} ref={dropdownRef}>
+    <div
+      className={`af-field af-select-root ${className}`.trim()}
+      ref={rootRef}
+      style={style}
+    >
+      {label && (
+        <span className="af-field__label">
+          {label}
+          {required && <span aria-hidden="true"> *</span>}
+        </span>
+      )}
+
+      <div className={shellClasses}>
         {icon && (
-          <span style={iconStyle}>
+          <span className="af-field__lead">
             <img
               src={hasContent && activeIcon ? activeIcon : icon}
-              alt="dropdown icon"
-              style={{
-                width: 22,
-                height: 22,
-                opacity: hasContent ? 1 : 0.6,
-              }}
+              alt=""
+              aria-hidden="true"
             />
           </span>
         )}
-        
-        <div
-          style={getInputStyle(hasContent)}
-          onClick={toggleDropdown}
+
+        <button
+          ref={triggerRef}
+          type="button"
+          className="af-select__trigger"
+          onClick={() => (isOpen ? close(false) : open())}
+          onKeyDown={handleKeyDown}
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? listId : undefined}
+          aria-required={required || undefined}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error || hint ? noteId : undefined}
         >
-          <span style={{ flex: 1, textAlign: "left" }}>
+          <span
+            className={`af-select__value${
+              hasContent ? "" : " af-select__value--placeholder"
+            }`}
+          >
             {selectedOption ? selectedOption.label : placeholder}
-            {required && !hasContent && <span style={{ color: "#ff6b6b" }}> *</span>}
           </span>
-        </div>
-
-        <span style={arrowStyle}>
-          <img
-            src="/icons/chevron.svg"
-            alt="dropdown arrow"
-            style={{ width: 20, height: 20 }}
-          />
-        </span>
-
-        {isOpen && (
-          <div style={dropdownListStyle}>
-            {options.map((option) => (
-              <div
-                key={option.value}
-                className="unified-dropdown-item"
-                style={dropdownItemStyle}
-                onClick={() => handleSelect(option.value)}
-              >
-                {option.label}
-              </div>
-            ))}
-          </div>
-        )}
+          <ChevronIcon open={isOpen} />
+        </button>
       </div>
-    </>
+
+      {isOpen && (
+        <ul
+          id={listId}
+          ref={listRef}
+          className="af-select__list"
+          role="listbox"
+          aria-label={label || placeholder}
+          tabIndex={-1}
+        >
+          {options.map((option, index) => {
+            const isSelected = option.value === value;
+            return (
+              <li key={option.value} role="none">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  className={`af-select__option${
+                    index === activeIndex ? " af-select__option--active" : ""
+                  }`}
+                  onClick={() => commit(index)}
+                  onMouseEnter={() => setActiveIndex(index)}
+                >
+                  <span>{option.label}</span>
+                  {isSelected && <CheckIcon />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {(error || hint) && (
+        <div
+          id={noteId}
+          className={`af-field__note${error ? " af-field__note--error" : ""}`}
+          role={error ? "alert" : undefined}
+        >
+          {error || hint}
+        </div>
+      )}
+    </div>
   );
 };
 

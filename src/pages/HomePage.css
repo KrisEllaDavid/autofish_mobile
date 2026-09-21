@@ -1,68 +1,158 @@
-/* HomePage specific styles */
+/* ==========================================================================
+   Home feed
+   ========================================================================== */
 
-/* Spinner animation for loading more */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  max-width: 300px;
-  margin: 60px auto;
-  padding: 40px 20px;
-}
-
-.empty-state-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 24px auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 178, 214, 0.1);
-  border-radius: 50%;
-}
-
-.empty-state-icon img {
-  width: 40px;
-  height: 40px;
-  opacity: 0.6;
-}
-
-.empty-state h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 12px;
-}
-
-.empty-state p {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* Loading and content styles */
 .home-container {
-  min-height: 100vh;
+  position: relative;
   display: flex;
   flex-direction: column;
-  background-color: #F5F5F5;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
-.content {
+/* The one scroll container on the screen. The header sits above it and the
+   tab bar below, so neither moves while the feed scrolls under them. */
+.home-scroll {
   flex: 1;
-  padding-bottom: 120px; /* Account for bottom nav */
-}
-
-.posts-feed {
   width: 100%;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--header-total);
+  padding-bottom: var(--tabbar-clearance);
 }
 
+/* ── Search entry ────────────────────────────────────────────────────── */
+
+/* Sticks under the header so search stays reachable however far the user
+   has scrolled — the pattern every marketplace app ships. */
+.home-search {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  padding: var(--space-5) var(--gutter);
+  background: linear-gradient(
+    to bottom,
+    var(--surface-page) 72%,
+    rgba(245, 247, 249, 0)
+  );
+}
+
+.home-search__button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  min-height: 48px;
+  padding: var(--space-5) var(--space-6);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  color: var(--text-placeholder);
+  font-size: var(--text-md);
+  text-align: start;
+  transition: box-shadow var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.home-search__button:active {
+  transform: scale(0.99);
+  box-shadow: var(--shadow-xs);
+}
+
+.home-search__button img {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  opacity: 0.5;
+}
+
+/* ── Feed ────────────────────────────────────────────────────────────── */
+
 .posts-container {
-  padding: 0 16px;
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: var(--space-4) var(--gutter) 0;
+}
+
+.feed-status {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-9) 0;
+}
+
+.feed-end {
+  padding: var(--space-9) var(--gutter);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+/* A hairline above the end-of-feed note, so the feed closes rather than
+   just stopping. */
+.feed-end::before {
+  content: "";
+  display: block;
+  width: 40px;
+  height: 1px;
+  margin: 0 auto var(--space-6);
+  background: var(--border-default);
+}
+
+.feed-sentinel {
+  width: 100%;
+  height: 1px;
+}
+
+/* ── Error state ─────────────────────────────────────────────────────── */
+
+.feed-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  max-width: 340px;
+  margin-inline: auto;
+  padding: var(--space-11) var(--gutter);
+  text-align: center;
+}
+
+.feed-error__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.feed-error__text {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+}
+
+/* ── Tablet: two feed columns once one is wider than it should be ────── */
+
+@media (min-width: 760px) {
+  .posts-container,
+  .home-search__button {
+    max-width: 720px;
+  }
+
+  .posts-container {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    align-items: start;
+  }
+
+  .posts-container > .feed-status,
+  .posts-container > .feed-end,
+  .posts-container > .feed-sentinel {
+    grid-column: 1 / -1;
+  }
 }

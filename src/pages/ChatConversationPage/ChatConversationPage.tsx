@@ -304,7 +304,7 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
                     <div className="message-context-card">
                       <div className="context-header">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M8 1v14M1 8h14" stroke="#666" strokeWidth="2" strokeLinecap="round"/>
+                          <path d="M8 1v14M1 8h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                         </svg>
                         <span>Conversation à propos de:</span>
                       </div>
@@ -349,7 +349,7 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
                           >
-                            <circle cx="8" cy="8" r="7" fill="#ff4444" />
+                            <circle cx="8" cy="8" r="7" fill="var(--danger-500)" />
                             <path
                               d="M8 4v5M8 11h.01"
                               stroke="white"
@@ -389,9 +389,6 @@ const ChatConversationPage: React.FC<ChatConversationPageProps> = ({
           onClick={handleSendMessage}
           disabled={!messageText.trim()}
           className="send-button"
-          style={{
-            backgroundColor: messageText.trim() ? "#00b2d6" : "#d0d0d0",
-          }}
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path

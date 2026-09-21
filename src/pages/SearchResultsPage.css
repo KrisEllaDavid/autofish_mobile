@@ -1,0 +1,178 @@
+/* ==========================================================================
+   Search
+   ========================================================================== */
+
+.search-page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+.search-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--header-total);
+  padding-bottom: var(--tabbar-clearance);
+}
+
+/* ── The search bar ──────────────────────────────────────────────────── */
+
+/* Sticky under the header: the query stays editable however far the results
+   have been scrolled. */
+.search-bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  padding: var(--space-6) var(--gutter) var(--space-5);
+  background: linear-gradient(
+    to bottom,
+    var(--surface-page) 78%,
+    rgba(245, 247, 249, 0)
+  );
+}
+
+.search-bar__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+}
+
+.search-bar__field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.search-bar__icon {
+  position: absolute;
+  left: var(--space-6);
+  width: 18px;
+  height: 18px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.search-bar__input {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-4) var(--space-11) var(--space-4) var(--space-11);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  /* 16px floor keeps iOS from zooming the page on focus. */
+  font-size: var(--text-md);
+  color: var(--text-primary);
+  outline: none;
+  transition: box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.search-bar__input:focus {
+  box-shadow: var(--shadow-sm), inset 0 0 0 1.5px var(--brand-500),
+    0 0 0 4px var(--brand-a12);
+}
+
+.search-bar__input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.search-bar__clear {
+  position: absolute;
+  right: var(--space-4);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-circle);
+  background: var(--ink-100);
+  color: var(--ink-600);
+  transition: background-color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.search-bar__clear:active {
+  transform: scale(0.9);
+  background: var(--ink-200);
+}
+
+.search-bar__clear svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Result meta ─────────────────────────────────────────────────────── */
+
+.search-meta {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 0 var(--gutter) var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.search-meta strong {
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+
+/* ── Results ─────────────────────────────────────────────────────────── */
+
+.search-results {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 0 var(--gutter);
+}
+
+/* ── Suggestions, shown before the first search ──────────────────────── */
+
+.search-intro {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: var(--space-8) var(--gutter);
+}
+
+.search-intro__title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-primary);
+  margin-bottom: var(--space-5);
+}
+
+.search-intro__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+/* ── Tablet: two result columns, matching the feed ───────────────────── */
+
+@media (min-width: 760px) {
+  .search-results,
+  .search-bar__inner,
+  .search-meta,
+  .search-intro {
+    max-width: 720px;
+  }
+
+  .search-results {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+    align-items: start;
+  }
+}

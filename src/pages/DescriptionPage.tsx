@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import NavBar from "../components/NavBar";
 import PageCreationPage from "./PageCreationPage";
 import { useAuth } from "../context/AuthContext";
+import { Button, TextArea } from "../components/ui";
+import "./Flow.css";
 
 const MAX_WORDS = 50;
 
@@ -15,9 +17,7 @@ const DescriptionPage: React.FC<DescriptionPageProps> = ({ onBack }) => {
   const [description, setDescription] = useState("");
   const [goToPageCreation, setGoToPageCreation] = useState(false);
 
-  if (goToPageCreation) {
-    return <PageCreationPage onBack={onBack} />;
-  }
+  if (goToPageCreation) return <PageCreationPage onBack={onBack} />;
 
   const wordCount = description.trim()
     ? description.trim().split(/\s+/).length
@@ -28,115 +28,58 @@ const DescriptionPage: React.FC<DescriptionPageProps> = ({ onBack }) => {
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const words = value.trim().split(/\s+/);
-    if (words[0] === "") {
-      setDescription("");
-    } else if (words.length <= MAX_WORDS) {
-      setDescription(value);
-      updateUserData({ description: value });
-    } else {
-      setDescription(words.slice(0, MAX_WORDS).join(" "));
-      updateUserData({ description: words.slice(0, MAX_WORDS).join(" ") });
-    }
+
+    const next =
+      words[0] === ""
+        ? ""
+        : words.length <= MAX_WORDS
+        ? value
+        : words.slice(0, MAX_WORDS).join(" ");
+
+    setDescription(next);
+    if (next) updateUserData({ description: next });
   };
 
   return (
-    <>
-      <style>{`
-        .fade-in-page {
-          opacity: 0;
-          animation: fadeInPage 0.5s ease-in forwards;
-        }
-        @keyframes fadeInPage {
-          to { opacity: 1; }
-        }
-        .desc-textarea {
-          width: 100%;
-          min-height: 200px;
-          max-height: 250px;
-          border-radius: 24px;
-          border: 1.2px solid #e0e0e0;
-          background: #fafbfc;
-          font-size: 16px;
-          color: #222;
-          padding: 18px 18px 18px 18px;
-          box-sizing: border-box;
-          font-family: inherit;
-          resize: none;
-          outline: none;
-        }
-        .desc-textarea::placeholder {
-          color: #b0b0b0;
-          opacity: 1;
-        }
-      `}</style>
-      <div
-        className="fade-in-page"
-        style={{
-          minHeight: "100vh",
-          background: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          paddingTop: 32,
-        }}
-      >
-        <NavBar title="Ma description" onBack={onBack} />
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 370,
-            margin: "0 auto",
-            padding: "0 16px",
-            boxSizing: "border-box",
-            marginTop: 60,
-          }}
-        >
-          <div style={{ fontSize: 15, color: "#222", marginBottom: 16 }}>
-            Décrivez vous et vos intérêts en quelques mots
-          </div>
-          <textarea
-            className="desc-textarea"
-            placeholder="Entrez votre description ici..."
-            value={description}
-            onChange={handleChange}
-            maxLength={1000}
-          />
-          <div
-            style={{
-              textAlign: "right",
-              color: "#b0b0b0",
-              fontSize: 14,
-              marginTop: 6,
-            }}
-          >
-            {wordsLeft} mots restants
-          </div>
-          <button
-            style={{
-              width: "100%",
-              background: isValid ? "#009cb7" : "#b0b0b0",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 18,
-              borderRadius: 18,
-              border: "none",
-              padding: "18px 0",
-              marginTop: 38,
-              cursor: isValid ? "pointer" : "not-allowed",
-              transition: "background 0.2s",
-              boxShadow: "0 2px 12px rgba(0, 156, 183, 0.08)",
-            }}
+    <div className="flow-screen fade-in-page">
+      <NavBar title="Ma description" onBack={onBack} />
+
+      <div className="flow-body">
+        <div className="flow-intro">
+          <h1 className="flow-intro__title">Présentez-vous</h1>
+          <p className="flow-intro__text">
+            Décrivez-vous et vos intérêts en quelques mots. Les producteurs
+            verront ce texte sur votre profil.
+          </p>
+        </div>
+
+        <TextArea
+          label="Description"
+          value={description}
+          onChange={handleChange}
+          placeholder="Par exemple : passionné de cuisine, je cherche du poisson frais chaque semaine pour mon restaurant à Douala."
+          rows={7}
+          hint={
+            wordsLeft > 0
+              ? `${wordsLeft} mot${wordsLeft > 1 ? "s" : ""} restant${
+                  wordsLeft > 1 ? "s" : ""
+                }`
+              : "Limite atteinte."
+          }
+        />
+
+        <div className="flow-actions">
+          <Button
+            size="lg"
+            block
             disabled={!isValid}
-            onClick={() => {
-              setDescription(description);
-              setGoToPageCreation(true);
-            }}
+            onClick={() => setGoToPageCreation(true)}
           >
             Poursuivre
-          </button>
+          </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

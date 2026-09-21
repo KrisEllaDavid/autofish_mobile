@@ -1,0 +1,337 @@
+/* ==========================================================================
+   Onboarding + splash
+   A three-part column: image, copy, controls. Sized from the viewport with
+   min()/clamp() rather than vw, so it holds up on a 320px phone, a tablet
+   and in landscape instead of overflowing.
+   ========================================================================== */
+
+.ob-screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  background: var(--surface-card);
+  padding-top: var(--safe-top);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  overflow: hidden;
+}
+
+/* ── Hero image ──────────────────────────────────────────────────────── */
+
+.ob-hero {
+  position: relative;
+  flex: 0 1 auto;
+  width: 100%;
+  max-width: 560px;
+  margin-inline: auto;
+  margin-top: var(--space-5);
+  /* Square-ish on phones, capped so it never eats the copy on short screens. */
+  height: min(92vw, 46dvh, 460px);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  overflow: hidden;
+  background: var(--ink-100);
+  animation: ob-hero-in var(--dur-slow) var(--ease-out) both;
+}
+
+.ob-hero__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A short gradient so a white logo always has something to sit on, whatever
+   the photo does in that corner. */
+.ob-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 38%;
+  background: linear-gradient(
+    to top,
+    rgba(10, 32, 40, 0.42),
+    rgba(10, 32, 40, 0)
+  );
+  pointer-events: none;
+}
+
+.ob-hero__logo {
+  position: absolute;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  z-index: 1;
+  width: clamp(48px, 15vw, 68px);
+  height: auto;
+  filter: drop-shadow(0 2px 8px rgba(10, 32, 40, 0.35));
+}
+
+/* ── Copy ────────────────────────────────────────────────────────────── */
+
+.ob-copy {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 400px;
+  margin-inline: auto;
+  padding: var(--space-8) var(--gutter) 0;
+  animation: ob-copy-in var(--dur-slow) 80ms var(--ease-out) both;
+}
+
+.ob-copy__title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+.ob-copy__text {
+  margin-top: var(--space-5);
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+/* ── Controls ────────────────────────────────────────────────────────── */
+
+.ob-footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  width: 100%;
+  max-width: 400px;
+  margin-inline: auto;
+  margin-top: auto;
+  padding: var(--space-8) var(--gutter);
+  padding-bottom: calc(var(--space-9) + var(--safe-bottom));
+  animation: ob-copy-in var(--dur-slow) 160ms var(--ease-out) both;
+}
+
+.ob-dots {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/*
+  Each step owns a fixed 22px slot. The inactive dot and the active bar are
+  two layers inside it that cross-fade, so the indicator morphs without
+  animating width — no relayout of the row on every frame.
+*/
+.ob-dot {
+  position: relative;
+  width: 22px;
+  height: 7px;
+  flex: 0 0 auto;
+}
+
+.ob-dot::before,
+.ob-dot::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: var(--radius-pill);
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+/* The resting dot, centred in its slot. */
+.ob-dot::before {
+  left: 50%;
+  width: 7px;
+  margin-left: -3.5px;
+  background: var(--ink-200);
+  opacity: 1;
+}
+
+/* The active bar, filling the slot. */
+.ob-dot::after {
+  left: 0;
+  right: 0;
+  background: var(--brand-500);
+  opacity: 0;
+}
+
+.ob-dot--active::before {
+  opacity: 0;
+}
+
+.ob-dot--active::after {
+  opacity: 1;
+}
+
+/* ── Splash ──────────────────────────────────────────────────────────── */
+
+.splash {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--brand-900);
+}
+
+.splash__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.splash__wash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 105, 126, 0.78) 0%,
+    rgba(0, 84, 104, 0.88) 100%
+  );
+}
+
+.splash__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--safe-top) var(--gutter) calc(var(--space-12) + var(--safe-bottom));
+  animation: ob-copy-in var(--dur-slow) 120ms var(--ease-out) both;
+}
+
+.splash__logo {
+  width: clamp(88px, 28vw, 124px);
+  height: auto;
+}
+
+.splash__wordmark {
+  margin-top: var(--space-6);
+  text-align: center;
+  color: #fff;
+  font-family: var(--font-display);
+  line-height: 1.05;
+}
+
+.splash__wordmark strong {
+  display: block;
+  font-size: clamp(26px, 7.5vw, 32px);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.splash__wordmark span {
+  display: block;
+  font-size: clamp(17px, 5vw, 21px);
+  font-weight: var(--weight-regular);
+  letter-spacing: 0.06em;
+  opacity: 0.92;
+}
+
+.splash__dots {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: clamp(var(--space-11), 12dvh, var(--space-13));
+}
+
+.splash__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-circle);
+  background: #fff;
+  animation: ob-blink 1.4s var(--ease-in-out) infinite both;
+}
+
+.splash__dot:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.splash__dot:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────── */
+
+@keyframes ob-hero-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes ob-copy-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+}
+
+@keyframes ob-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+
+/* Tablets: the column stays phone-width and the image loses its full bleed. */
+@media (min-width: 600px) {
+  .ob-hero {
+    max-width: 480px;
+    height: min(440px, 42dvh);
+    border-radius: var(--radius-2xl);
+  }
+  .ob-screen {
+    justify-content: center;
+    padding-block: var(--space-10);
+  }
+  .ob-footer {
+    margin-top: var(--space-9);
+  }
+}
+
+/* Landscape phones: side by side, because stacked leaves no room for either. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .ob-screen {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-8);
+    padding-inline: var(--gutter);
+  }
+  .ob-hero {
+    flex: 1 1 42%;
+    height: min(78dvh, 300px);
+    margin-top: 0;
+    border-radius: var(--radius-xl);
+  }
+  .ob-copy {
+    flex: 1 1 42%;
+    margin-inline: 0;
+    padding: 0;
+  }
+  .ob-footer {
+    flex: 1 1 100%;
+    margin-inline: 0;
+    margin-top: 0;
+    padding: 0;
+    padding-bottom: calc(var(--space-5) + var(--safe-bottom));
+  }
+  .ob-copy__title {
+    font-size: var(--text-xl);
+  }
+  .ob-copy__text {
+    font-size: var(--text-base);
+    margin-top: var(--space-4);
+  }
+  .splash__dots {
+    margin-top: var(--space-8);
+  }
+}

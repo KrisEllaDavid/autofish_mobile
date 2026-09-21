@@ -1,31 +1,37 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import "./Modal.css";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Names the dialog for screen readers when it has no visible heading. */
+  label?: string;
   children: React.ReactNode;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
-  // Add event listener to handle ESC key to close modal
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, label, children }) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
+      if (event.key === "Escape") onClose();
     };
 
-    if (isOpen) {
-      document.addEventListener("keydown", handleEsc);
-      // Prevent scrolling on body when modal is open
-      document.body.style.overflow = "hidden";
-    }
+    // Restore whatever the body had, rather than forcing "auto" — the old
+    // version un-froze pages that were meant to stay frozen.
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    document.addEventListener("keydown", handleEsc);
+    document.body.style.overflow = "hidden";
+    contentRef.current?.focus();
 
     return () => {
       document.removeEventListener("keydown", handleEsc);
-      // Restore scrolling when modal is closed
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus?.();
     };
   }, [isOpen, onClose]);
 
@@ -33,7 +39,15 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={contentRef}
+        className="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         {children}
       </div>
     </div>

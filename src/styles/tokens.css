@@ -1,0 +1,279 @@
+/* ==========================================================================
+   AutoFish — Design tokens
+   Single source of truth for colour, space, type, depth, motion and layout.
+   Consumable from CSS via var(--x) and from TS via src/theme.ts.
+   ========================================================================== */
+
+:root {
+  /* ---------------------------------------------------------------------
+     BRAND — the AutoFish teal, expressed as a ramp.
+     500 is the identity colour (#00B2D6). It is a *surface* colour: at
+     2.5:1 on white it must never carry body text. 700 is the text and
+     filled-button tier (4.6:1 on white); 800 for small text on tints.
+     --------------------------------------------------------------------- */
+  --brand-50: #f0fbfd;
+  --brand-100: #dcf5fa;
+  --brand-200: #b5eaf4;
+  --brand-300: #7fdaec;
+  --brand-400: #35c4e0;
+  --brand-500: #00b2d6;
+  --brand-600: #009cb7;
+  --brand-700: #00819a;
+  --brand-800: #00697e;
+  --brand-900: #005468;
+
+  /* Brand alpha tints — hover washes, selected rows, icon backplates. */
+  --brand-a04: rgba(0, 178, 214, 0.04);
+  --brand-a08: rgba(0, 178, 214, 0.08);
+  --brand-a12: rgba(0, 178, 214, 0.12);
+  --brand-a20: rgba(0, 178, 214, 0.2);
+  --brand-a40: rgba(0, 178, 214, 0.4);
+
+  /* ---------------------------------------------------------------------
+     INK — cool-neutral ramp, tuned to sit under the teal without going
+     muddy. 900 body text (16:1) · 600 secondary (6:1) · 500 meta and icons
+     (3.9:1, never body) · 400 disabled · 300/200/100 lines and fills.
+     --------------------------------------------------------------------- */
+  --ink-900: #1a1d1f;
+  --ink-800: #2e3438;
+  --ink-700: #444c52;
+  --ink-600: #5b656c;
+  --ink-500: #78838b;
+  --ink-400: #9aa4ab;
+  --ink-300: #c3cad0;
+  --ink-200: #dfe4e8;
+  --ink-100: #edf0f2;
+  --ink-50: #f6f8f9;
+
+  --ink-a04: rgba(26, 29, 31, 0.04);
+  --ink-a08: rgba(26, 29, 31, 0.08);
+  --ink-a12: rgba(26, 29, 31, 0.12);
+  --ink-a40: rgba(26, 29, 31, 0.4);
+  --ink-a60: rgba(26, 29, 31, 0.6);
+
+  /* --------------------------------------------------------------------- */
+  /* SEMANTIC ROLES — what components actually reference.                   */
+  /* --------------------------------------------------------------------- */
+
+  /* Text */
+  --text-primary: var(--ink-900);
+  --text-secondary: var(--ink-600);
+  --text-tertiary: var(--ink-500);
+  --text-disabled: var(--ink-400);
+  --text-placeholder: var(--ink-500);
+  --text-on-brand: #ffffff;
+  --text-on-dark: #ffffff;
+  --text-link: var(--brand-700);
+  --text-accent: var(--brand-700);
+
+  /* Surfaces */
+  --surface-page: #f5f7f9;
+  --surface-card: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eef1f4;
+  --surface-field: #fafbfc;
+  --surface-field-focus: #ffffff;
+  --surface-inverse: var(--ink-900);
+  --surface-brand: var(--brand-500);
+  --surface-brand-strong: var(--brand-700);
+  --surface-brand-soft: var(--brand-50);
+  --surface-scrim: rgba(16, 22, 26, 0.56);
+
+  /* Lines */
+  --border-subtle: var(--ink-100);
+  --border-default: var(--ink-200);
+  --border-strong: var(--ink-300);
+  --border-focus: var(--brand-500);
+  --border-inverse: rgba(255, 255, 255, 0.16);
+
+  /* Status */
+  --danger-500: #e14b4b;
+  --danger-600: #c0342f;
+  --danger-soft: #fdecec;
+  --success-500: #2e9e5b;
+  --success-600: #1f7a44;
+  --success-soft: #e8f6ee;
+  --warning-500: #e0a32e;
+  --warning-600: #8a5b00;
+  --warning-soft: #fff6e5;
+  --info-500: var(--brand-500);
+  --info-600: var(--brand-700);
+  --info-soft: var(--brand-50);
+
+  /* Fixed-identity colours — locked by an outside brand, never re-themed. */
+  --like-500: #ff4b4b;
+  --like-soft: #ffeceb;
+  --whatsapp-500: #25d366;
+  --whatsapp-600: #1da851;
+
+  /* ---------------------------------------------------------------------
+     SPACE — 4pt grid, named by step so rhythm survives a redesign.
+     --------------------------------------------------------------------- */
+  --space-0: 0px;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 12px;
+  --space-6: 16px;
+  --space-7: 20px;
+  --space-8: 24px;
+  --space-9: 32px;
+  --space-10: 40px;
+  --space-11: 48px;
+  --space-12: 64px;
+  --space-13: 80px;
+
+  /* Horizontal page gutter — the one value that sets the app margin. */
+  --gutter: 20px;
+
+  /* ---------------------------------------------------------------------
+     RADIUS — soft and consistent. `lg` is the card language.
+     --------------------------------------------------------------------- */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+  --radius-circle: 50%;
+
+  /* ---------------------------------------------------------------------
+     TYPE
+     --------------------------------------------------------------------- */
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Arial Rounded MT Bold", var(--font-body);
+
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: clamp(26px, 6.8vw, 32px);
+  --text-display: clamp(28px, 8.5vw, 38px);
+
+  --leading-tight: 1.18;
+  --leading-snug: 1.32;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.62;
+
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.02em;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---------------------------------------------------------------------
+     DEPTH — every shadow carries an offset *and* a soft blur, tinted with
+     the cool neutral so it reads as light falling, not as a grey halo.
+     --------------------------------------------------------------------- */
+  --shadow-xs: 0 1px 2px rgba(19, 32, 38, 0.05);
+  --shadow-sm: 0 1px 2px rgba(19, 32, 38, 0.04),
+    0 2px 6px rgba(19, 32, 38, 0.05);
+  --shadow-md: 0 2px 4px rgba(19, 32, 38, 0.04),
+    0 6px 16px rgba(19, 32, 38, 0.07);
+  --shadow-lg: 0 4px 8px rgba(19, 32, 38, 0.05),
+    0 16px 32px rgba(19, 32, 38, 0.1);
+  --shadow-xl: 0 8px 16px rgba(19, 32, 38, 0.06),
+    0 28px 56px rgba(19, 32, 38, 0.14);
+  --shadow-brand: 0 4px 10px rgba(0, 129, 154, 0.18),
+    0 12px 28px rgba(0, 129, 154, 0.16);
+
+  /* Focus ring — one ring, everywhere, keyboard only. */
+  --focus-ring: 0 0 0 2px #ffffff, 0 0 0 4px var(--brand-500);
+  --focus-ring-inset: inset 0 0 0 2px var(--brand-500);
+
+  /* ---------------------------------------------------------------------
+     MOTION — exponential ease-out is the house curve. Press feedback is
+     fast (120ms); entrances stay calm (260ms).
+     --------------------------------------------------------------------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Retained for call sites that read it; it is an exponential ease-out,
+     not a spring. Overshoot belongs to a specific authored moment (see
+     af-like-pop), never to a shared curve. */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --dur-press: 120ms;
+  --dur-fast: 180ms;
+  --dur-base: 260ms;
+  --dur-slow: 400ms;
+  --dur-sheet: 340ms;
+
+  /* ---------------------------------------------------------------------
+     LAYOUT — safe areas, chrome heights, content column.
+     env() resolves to 0px without viewport-fit=cover in index.html.
+     --------------------------------------------------------------------- */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  --header-h: 56px;
+  --header-total: calc(var(--header-h) + var(--safe-top));
+  --tabbar-h: 62px;
+  --tabbar-total: calc(var(--tabbar-h) + var(--safe-bottom));
+  /* Clearance a scroll container leaves so content clears the tab bar and
+     the floating home button that rises above it. */
+  --tabbar-clearance: calc(var(--tabbar-total) + var(--space-7));
+
+  --content-max: 480px;
+  --reading-max: 68ch;
+  --tap-min: 44px;
+
+  /* Z layers — named, so nothing needs 9999 again. */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 100;
+  --z-header: 200;
+  --z-tabbar: 300;
+  --z-overlay: 400;
+  --z-sheet: 500;
+  --z-modal: 600;
+  --z-toast: 700;
+}
+
+/* Larger phones and foldables get a slightly wider gutter. */
+@media (min-width: 430px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+/* Tablets and up: the app stays a phone-width column, centred. */
+@media (min-width: 600px) {
+  :root {
+    --gutter: 28px;
+    --header-h: 60px;
+    --tabbar-h: 66px;
+  }
+}
+
+/* Small phones (iPhone SE, Galaxy A0x): pull everything in a notch. */
+@media (max-width: 360px) {
+  :root {
+    --gutter: 16px;
+    --space-9: 28px;
+    --space-10: 34px;
+  }
+}
+
+/* Short landscape: reclaim vertical space from the chrome. */
+@media (orientation: landscape) and (max-height: 480px) {
+  :root {
+    --header-h: 48px;
+    --tabbar-h: 54px;
+    --space-9: 24px;
+    --space-10: 28px;
+    --space-11: 32px;
+  }
+}

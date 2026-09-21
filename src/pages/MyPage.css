@@ -1,0 +1,632 @@
+/* ==========================================================================
+   My page — the producer's own page: banner, status, publications.
+   ========================================================================== */
+
+.my-page-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+/* The single scroll container, between the fixed header and the tab bar. */
+.my-page-container > .fade-in-page {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--header-total);
+  padding-bottom: var(--tabbar-clearance);
+}
+
+/* ── Banner ──────────────────────────────────────────────────────────── */
+
+.banner-container {
+  position: relative;
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  /* A ratio, so the banner keeps its shape at every width instead of
+     squashing against a fixed pixel height. */
+  aspect-ratio: 5 / 3;
+  max-height: 340px;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(1, 26, 36, 0.86) 0%,
+    rgba(1, 26, 36, 0.5) 44%,
+    rgba(1, 26, 36, 0.16) 100%
+  );
+}
+
+.banner-camera {
+  position: absolute;
+  top: var(--space-5);
+  right: var(--space-5);
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-circle);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out);
+}
+
+.banner-camera:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.banner-camera img {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Profile block over the banner ───────────────────────────────────── */
+
+.profile-info {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-7) var(--gutter);
+  color: #fff;
+}
+
+.profile-name,
+.profile-location {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.profile-name-text {
+  min-width: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-location-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  font-size: var(--text-base);
+  opacity: 0.92;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The edit affordances were 20px glyphs with no padding; they now carry a
+   real target without growing visually. */
+.edit-btn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-circle);
+  background: rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out);
+}
+
+.edit-btn:active {
+  transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.edit-btn img {
+  width: 15px;
+  height: 15px;
+}
+
+/* ── Verification badge ──────────────────────────────────────────────── */
+
+.verification-status {
+  display: flex;
+  margin-top: var(--space-2);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* A drawn dot rather than an emoji: it takes the badge's own colour. */
+.status-badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-circle);
+  background: currentColor;
+}
+
+.status-verified {
+  background: rgba(46, 158, 91, 0.22);
+  color: #b6f0cd;
+}
+
+.status-pending {
+  background: rgba(224, 163, 46, 0.24);
+  color: #ffe1a8;
+}
+
+/* ── Content ─────────────────────────────────────────────────────────── */
+
+.content-section {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: var(--space-8) var(--gutter) 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+.section-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+}
+
+.add-button-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.warning-text {
+  max-width: 18ch;
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  color: var(--warning-600);
+  text-align: end;
+}
+
+.publications-add {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-brand-strong);
+  color: var(--text-on-brand);
+  font-size: 24px;
+  font-weight: var(--weight-regular);
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-brand);
+  transition: transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
+}
+
+.publications-add:active:not(.disabled) {
+  transform: scale(0.92);
+  background: var(--brand-800);
+}
+
+.publications-add.disabled,
+.publications-add:disabled {
+  background: var(--ink-200);
+  color: var(--ink-500);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ── Posts ───────────────────────────────────────────────────────────── */
+
+.posts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.post-card-container {
+  position: relative;
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/* The nested PostCard already draws a card; inside this wrapper it drops
+   its own chrome so the two do not stack into a card-in-a-card. */
+.post-card-container .post-card {
+  margin-bottom: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.post-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5) var(--space-5);
+  box-shadow: inset 0 1px 0 var(--border-subtle);
+}
+
+.post-menu-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.post-menu-btn:active {
+  transform: scale(0.92);
+  background: var(--ink-a08);
+}
+
+/* ── States ──────────────────────────────────────────────────────────── */
+
+.loading-container {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--brand-a20);
+  border-top-color: var(--brand-600);
+  border-radius: var(--radius-circle);
+  animation: af-spin 0.7s linear infinite;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  max-width: 320px;
+  margin: var(--space-9) auto;
+  padding: var(--space-9) var(--space-6);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+  text-align: center;
+}
+
+.empty-state-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-circle);
+  background: var(--brand-a08);
+}
+
+.empty-state-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.empty-state-title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.empty-state-subtitle {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+/* ── Modal forms ─────────────────────────────────────────────────────── */
+
+.modal-form-label {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-secondary);
+}
+
+.modal-form-label + * {
+  margin-bottom: var(--space-6);
+}
+
+.modal-form-input,
+.modal-form-textarea,
+.modal-form-select {
+  width: 100%;
+  padding: var(--space-5) var(--space-6);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-field);
+  box-shadow: inset 0 0 0 1px var(--border-default);
+  /* 16px floor: below it iOS zooms the page on focus. */
+  font-size: var(--text-md);
+  font-family: inherit;
+  color: var(--text-primary);
+  outline: none;
+  transition: box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.modal-form-input:focus,
+.modal-form-textarea:focus,
+.modal-form-select:focus {
+  background: var(--surface-card);
+  box-shadow: inset 0 0 0 1.5px var(--brand-500), 0 0 0 4px var(--brand-a12);
+}
+
+.modal-form-input::placeholder,
+.modal-form-textarea::placeholder {
+  color: var(--text-placeholder);
+}
+
+.modal-form-textarea {
+  min-height: 110px;
+  line-height: var(--leading-relaxed);
+  resize: none;
+}
+
+.modal-form-select {
+  appearance: none;
+  cursor: pointer;
+  background-image: url("/icons/chevron.svg");
+  background-repeat: no-repeat;
+  background-position: right var(--space-6) center;
+  background-size: 12px;
+  padding-right: var(--space-11);
+}
+
+.modal-form-img-preview {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--ink-100);
+}
+
+.modal-title-accent {
+  margin-bottom: var(--space-7);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+}
+
+/* Stacked on narrow screens so a destructive action is never a thumb-slip
+   from the safe one. */
+.modal-btn-row,
+.modal-buttons {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.modal-btn {
+  min-height: var(--tap-min);
+  padding: var(--space-5) var(--space-7);
+  border: 0;
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out),
+    opacity var(--dur-press) var(--ease-out);
+}
+
+.modal-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.modal-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.modal-btn.cancel {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px var(--border-default);
+}
+
+.modal-btn.cancel:active {
+  background: var(--ink-50);
+}
+
+.modal-btn.save {
+  background: var(--surface-brand-strong);
+  color: var(--text-on-brand);
+  box-shadow: var(--shadow-brand);
+}
+
+.modal-btn.save:active:not(:disabled) {
+  background: var(--brand-800);
+}
+
+.modal-btn.delete {
+  background: var(--danger-600);
+  color: var(--text-on-brand);
+}
+
+.modal-btn.delete:active:not(:disabled) {
+  background: var(--danger-500);
+}
+
+@media (min-width: 400px) {
+  .modal-btn-row,
+  .modal-buttons {
+    flex-direction: row;
+  }
+  .modal-btn {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+
+@media (min-width: 600px) {
+  .banner-container {
+    aspect-ratio: 16 / 9;
+    margin-top: var(--space-6);
+    border-radius: var(--radius-xl);
+  }
+}
+
+@media (max-width: 360px) {
+  .profile-name-text {
+    font-size: var(--text-xl);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .banner-container {
+    aspect-ratio: auto;
+    height: 76dvh;
+    max-height: none;
+  }
+}
+
+/* ── Banner loading badge ────────────────────────────────────────────── */
+
+.banner-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ── Notices ─────────────────────────────────────────────────────────── */
+
+.my-page-notice {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: var(--space-6) var(--gutter) 0;
+}
+
+/* A flag above a post that is written but not yet public. */
+.post-card-flag {
+  padding: var(--space-4) var(--space-6);
+  background: var(--warning-soft);
+  color: var(--warning-600);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+}
+
+/* ── Modal extras ────────────────────────────────────────────────────── */
+
+.modal-note {
+  margin-top: var(--space-4);
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+.modal-preview {
+  margin-bottom: var(--space-6);
+}
+
+/* The native file control cannot be styled; it is at least given room and
+   a readable size rather than sitting flush against the field above it. */
+.modal-form-file {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.modal-form-file::file-selector-button {
+  margin-inline-end: var(--space-5);
+  padding: var(--space-3) var(--space-5);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--brand-a08);
+  color: var(--brand-800);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.post-menu-btn__icon {
+  width: 19px;
+  height: 19px;
+  opacity: 0.65;
+}
+
+/* The location pin is a dark SVG; inverted it reads on the banner scrim. */
+.profile-location-pin {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.9;
+  filter: brightness(0) invert(1);
+}

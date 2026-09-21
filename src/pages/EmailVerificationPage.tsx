@@ -1,15 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/AuthContext";
 import { apiClient } from "../services/api";
+import { Button } from "../components/ui";
+import "./Auth.css";
 
 const emailIcon = "/icons/Email.svg";
 const checkIcon = "/icons/Check.svg";
+
+const RESEND_COOLDOWN_S = 60;
 
 interface EmailVerificationPageProps {
   email: string;
   onVerified: () => void;
 }
+
+const steps = [
+  "Ouvrez votre boîte email.",
+  "Cliquez sur le lien de vérification.",
+  "Vous reviendrez automatiquement dans l'application.",
+];
 
 const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
   email,
@@ -20,338 +30,131 @@ const EmailVerificationPage: React.FC<EmailVerificationPageProps> = ({
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isChecking, setIsChecking] = useState(false);
 
-  // Check verification status and auto-login
-  const checkVerification = async () => {
+  const checkVerification = useCallback(async () => {
     if (isChecking) return;
-
     setIsChecking(true);
+
     try {
-      console.log('🔍 Checking email verification status...');
-      console.log('🔍 userData:', { email: userData?.email, hasPassword: !!userData?.password });
-
-      // Check if we have email and password in userData to login
+      // Without stored credentials we can only read the current profile.
       if (!userData?.email || !userData?.password) {
-        console.log('🔍 No stored password, checking current user status...');
-        // Fallback: Just check verification status without auto-login
         const currentUser = await apiClient.getCurrentUser();
-        console.log('🔍 Current user data:', {
-          email: currentUser?.email,
-          email_verified: currentUser?.email_verified,
-          is_active: currentUser?.is_active
-        });
 
-        if (currentUser && currentUser.email_verified) {
+        if (currentUser?.email_verified) {
           updateUserData({ email_verified: true });
           toast.success("Email vérifié avec succès !");
           onVerified();
-          return;
         } else {
-          toast.info("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
+          toast.info(
+            "Pas encore vérifié. Ouvrez le lien envoyé à votre adresse."
+          );
         }
         return;
       }
 
-      console.log('🔍 Attempting login with stored credentials...');
-      // Try to login with stored credentials
       const loginResult = await login({
         email: userData.email,
-        password: userData.password
+        password: userData.password,
       });
 
-      console.log('🔍 Login result:', {
-        success: !!loginResult,
-        email_verified: loginResult?.email_verified
-      });
-
-      // If login is successful and email is verified, user will be auto-navigated
-      if (loginResult && loginResult.email_verified) {
-        // Clear password from userData after successful login
+      if (loginResult?.email_verified) {
         updateUserData({ password: undefined });
-        toast.success("Email vérifié avec succès ! Connexion en cours...");
+        toast.success("Email vérifié. Connexion en cours…");
         onVerified();
       } else {
-        toast.info("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
+        toast.info("Pas encore vérifié. Ouvrez le lien envoyé à votre adresse.");
       }
     } catch (error: any) {
-      console.error("❌ Verification/login error:", error);
-      console.error("❌ Error details:", {
-        message: error?.message,
-        status: error?.status,
-        response: error?.response
-      });
-
-      // Check if the error is about email not being verified
-      if (error?.message?.includes('not activated') || error?.response?.detail?.includes('not activated')) {
-        toast.error("Email pas encore vérifié. Veuillez cliquer sur le lien dans votre email.");
+      const detail = error?.message || error?.response?.detail || "";
+      if (detail.includes("not activated")) {
+        toast.error(
+          "Pas encore vérifié. Ouvrez le lien envoyé à votre adresse."
+        );
       } else {
-        toast.error(`Erreur: ${error?.message || 'Erreur inconnue'}`);
+        toast.error(detail || "Vérification impossible pour le moment.");
       }
     } finally {
       setIsChecking(false);
     }
-  };
+  }, [isChecking, userData, login, updateUserData, onVerified]);
 
-  // Countdown for resend button
   useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => {
-        setResendCooldown(resendCooldown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
   }, [resendCooldown]);
 
   const handleResendVerification = async () => {
     if (isResending || resendCooldown > 0) return;
 
+    setIsResending(true);
     try {
-      setIsResending(true);
       await apiClient.resendVerificationEmail(email);
       toast.success("Email de vérification renvoyé !");
-      setResendCooldown(60); // 60 second cooldown
+      setResendCooldown(RESEND_COOLDOWN_S);
     } catch {
-      toast.error("Erreur lors de l'envoi de l'email de vérification");
+      toast.error("Envoi impossible. Réessayez dans un instant.");
     } finally {
       setIsResending(false);
     }
   };
 
-  const handleCheckAgain = () => {
-    // Manual check
-    checkVerification();
-  };
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#fff",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          width: "90vw",
-          maxWidth: 400,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        {/* Email Icon */}
-        <div
-          style={{
-            width: 120,
-            height: 120,
-            borderRadius: "50%",
-            background: "#f0f9ff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: 32,
-            border: "2px solid #00B2D6",
-          }}
-        >
-          <img
-            src={emailIcon}
-            alt="email"
-            style={{
-              width: 60,
-              height: 60,
-              opacity: 0.8,
-            }}
-          />
+    <div className="auth-screen fade-in-page">
+      <div className="auth-body">
+        <div className="auth-heading auth-heading--center">
+          <div className="auth-plate" style={{ width: 96, height: 96 }}>
+            <img src={emailIcon} alt="" style={{ width: 42, height: 42 }} />
+          </div>
+          <h1 className="auth-heading__title">Vérifiez votre email</h1>
+          <p className="auth-heading__text">
+            Nous avons envoyé un lien de vérification à <strong>{email}</strong>.
+          </p>
         </div>
 
-        {/* Title */}
-        <h1
-          style={{
-            fontSize: 28,
-            fontWeight: 700,
-            color: "#222",
-            marginBottom: 16,
-            lineHeight: 1.2,
-          }}
-        >
-          Vérifiez votre email
-        </h1>
+        <ol className="verify-steps">
+          {steps.map((step, index) => (
+            <li key={step} className="verify-step">
+              <span className="verify-step__num">{index + 1}</span>
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
 
-        {/* Description */}
-        <p
-          style={{
-            fontSize: 16,
-            color: "#666",
-            lineHeight: 1.5,
-            marginBottom: 8,
-          }}
-        >
-          Nous avons envoyé un lien de vérification à :
+        <p className="verify-tip">
+          Rien reçu ? Regardez aussi dans vos courriers indésirables.
         </p>
 
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 600,
-            color: "#00B2D6",
-            marginBottom: 32,
-            padding: "12px 20px",
-            background: "#f0f9ff",
-            borderRadius: 12,
-            border: "1px solid #e0f2fe",
-            wordBreak: "break-word",
-          }}
-        >
-          {email}
-        </div>
-
-        {/* Instructions */}
-        <div
-          style={{
-            background: "#f8f9fa",
-            border: "1px solid #e9ecef",
-            borderRadius: 12,
-            padding: "20px",
-            marginBottom: 32,
-            textAlign: "left",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 16,
-              fontWeight: 600,
-              color: "#495057",
-              marginBottom: 12,
-              textAlign: "center",
-            }}
+        <div className="af-stack af-stack--tight" style={{ marginTop: "var(--space-9)" }}>
+          <Button
+            size="lg"
+            block
+            loading={isChecking}
+            loadingLabel="Vérification…"
+            onClick={checkVerification}
+            iconStart={<img src={checkIcon} alt="" />}
           >
-            📝 Instructions
-          </div>
+            J&apos;ai vérifié mon email
+          </Button>
 
-          <div style={{ fontSize: 14, color: "#6c757d", lineHeight: 1.5 }}>
-            <div style={{ marginBottom: 8, display: "flex", alignItems: "flex-start" }}>
-              <span style={{ marginRight: 8, fontWeight: 600 }}>1.</span>
-              <span>Ouvrez votre boîte email</span>
-            </div>
-            <div style={{ marginBottom: 8, display: "flex", alignItems: "flex-start" }}>
-              <span style={{ marginRight: 8, fontWeight: 600 }}>2.</span>
-              <span>Cliquez sur le lien de vérification</span>
-            </div>
-            <div style={{ marginBottom: 8, display: "flex", alignItems: "flex-start" }}>
-              <span style={{ marginRight: 8, fontWeight: 600 }}>3.</span>
-              <span>Vous serez automatiquement redirigé vers l'application</span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              fontSize: 12,
-              color: "#868e96",
-              marginTop: 12,
-              textAlign: "center",
-              fontStyle: "italic",
-            }}
-          >
-            💡 Vérifiez aussi votre dossier spam/courrier indésirable
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ width: "100%" }}>
-          {/* Check Again Button */}
-          <button
-            onClick={handleCheckAgain}
-            disabled={isChecking}
-            style={{
-              width: "100%",
-              background: "#00B2D6",
-              color: "#fff",
-              fontWeight: 600,
-              fontSize: 16,
-              borderRadius: 12,
-              border: "none",
-              padding: "16px 0",
-              marginBottom: 16,
-              cursor: isChecking ? "not-allowed" : "pointer",
-              opacity: isChecking ? 0.7 : 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            {isChecking ? (
-              <>
-                <div
-                  style={{
-                    width: "16px",
-                    height: "16px",
-                    border: "2px solid #ffffff40",
-                    borderTop: "2px solid #ffffff",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                  }}
-                />
-                Vérification...
-              </>
-            ) : (
-              <>
-                <img src={checkIcon} alt="check" style={{ width: 18, height: 18 }} />
-                J'ai vérifié mon email
-              </>
-            )}
-          </button>
-
-          {/* Resend Button */}
-          <button
+          <Button
+            variant="outline"
+            size="lg"
+            block
+            disabled={resendCooldown > 0}
+            loading={isResending}
+            loadingLabel="Envoi…"
             onClick={handleResendVerification}
-            disabled={isResending || resendCooldown > 0}
-            style={{
-              width: "100%",
-              background: resendCooldown > 0 ? "#f5f5f5" : "#fff",
-              color: resendCooldown > 0 ? "#999" : "#00B2D6",
-              fontWeight: 600,
-              fontSize: 16,
-              borderRadius: 12,
-              border: "2px solid #00B2D6",
-              padding: "16px 0",
-              cursor: isResending || resendCooldown > 0 ? "not-allowed" : "pointer",
-              opacity: isResending || resendCooldown > 0 ? 0.7 : 1,
-            }}
           >
-            {isResending
-              ? "Envoi en cours..."
-              : resendCooldown > 0
-                ? `Renvoyer dans ${resendCooldown}s`
-                : "Renvoyer l'email"
-            }
-          </button>
+            {resendCooldown > 0
+              ? `Renvoyer dans ${resendCooldown}s`
+              : "Renvoyer l'email"}
+          </Button>
         </div>
 
-        {/* Help Text */}
-        <div
-          style={{
-            fontSize: 14,
-            color: "#999",
-            marginTop: 24,
-            lineHeight: 1.4,
-          }}
-        >
-          Vous ne recevez pas l'email ? Vérifiez votre adresse email ou contactez le support.
-        </div>
+        <p className="auth-footer auth-footer__spacer">
+          Toujours rien ? Vérifiez votre adresse ou contactez le support.
+        </p>
       </div>
-
-      {/* Spinner Animation */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };

@@ -1,258 +1,139 @@
 import React from "react";
-import { IonTabBar, IonTabButton } from "@ionic/react";
+import "./BottomNavBar.css";
+
+export type NavTab =
+  | "home"
+  | "messages"
+  | "producers"
+  | "profile"
+  | "favorites";
 
 interface BottomNavBarProps {
-  activeTab: "home" | "messages" | "producers" | "profile" | "favorites";
-  onTabChange: (tab: "home" | "messages" | "producers" | "profile" | "favorites") => void;
+  activeTab: NavTab;
+  onTabChange: (tab: NavTab) => void;
+  /** Unread conversation count shown on the messages tab. */
+  messageCount?: number;
 }
 
 const icons = {
   producers: "/icons/profile-2user-bottom-nav.svg",
   producersActive: "/icons/profile-2user.svg",
-  like: "/icons/dark_heart_outline_like.svg",
-  likeActive: "/icons/favourite_blue.svg",
+  favorites: "/icons/dark_heart_outline_like.svg",
+  favoritesActive: "/icons/favourite_blue.svg",
   home: "/icons/home-2-bottom-nav.svg",
-  homeActive: "/icons/home-2-bottom-nav.svg", // Using same for now, can be updated if blue version exists
   messages: "/icons/messages-bottom-nav.svg",
-  messagesActive: "/icons/messages-bottom-nav-blue.svg", // Using same for now, can be updated if blue version exists
+  messagesActive: "/icons/messages-bottom-nav-blue.svg",
   profile: "/icons/profile-bottom-nav.svg",
-  profileActive: "/icons/profile-2user-bottom-nav-blue.svg", // Using same for now, can be updated if blue version exists
-  comment: "/icons/comment.svg",
+  profileActive: "/icons/profile-2user-bottom-nav-blue.svg",
+} as const;
+
+type TabSpec = {
+  id: Exclude<NavTab, "home">;
+  label: string;
+  icon: string;
+  iconActive: string;
 };
 
+const startTabs: TabSpec[] = [
+  {
+    id: "producers",
+    label: "Producteurs",
+    icon: icons.producers,
+    iconActive: icons.producersActive,
+  },
+  {
+    id: "favorites",
+    label: "Favoris",
+    icon: icons.favorites,
+    iconActive: icons.favoritesActive,
+  },
+];
+
+const endTabs: TabSpec[] = [
+  {
+    id: "messages",
+    label: "Messages",
+    icon: icons.messages,
+    iconActive: icons.messagesActive,
+  },
+  {
+    id: "profile",
+    label: "Profil",
+    icon: icons.profile,
+    iconActive: icons.profileActive,
+  },
+];
+
+/**
+ * The app's primary navigation.
+ *
+ * Five destinations: four flanking tabs plus the home button raised into a
+ * notch in the bar. The notch is a CSS mask (see BottomNavBar.css) so the
+ * silhouette holds its shape from a 320px phone to a tablet column, and the
+ * whole bar sits above the home indicator via env(safe-area-inset-bottom).
+ */
 const BottomNavBar: React.FC<BottomNavBarProps> = ({
   activeTab,
   onTabChange,
+  messageCount = 0,
 }) => {
-  // You can choose between custom design or Ionic standard design
-  const useIonicDesign = false; // Set to true to use standard Ionic tab bar
+  const renderTab = (tab: TabSpec) => {
+    const active = activeTab === tab.id;
+    const unread = tab.id === "messages" && messageCount > 0;
 
-  if (useIonicDesign) {
     return (
-      <IonTabBar slot="bottom" className="custom-tab-bar">
-        <IonTabButton 
-          tab="producers" 
-          onClick={() => onTabChange("producers")}
-          className={activeTab === "producers" ? "tab-selected" : ""}
-        >
-          <img src={activeTab === "producers" ? icons.producersActive : icons.producers} alt="producers" style={{ width: 24, height: 24 }} />
-        </IonTabButton>
-        
-        <IonTabButton 
-          tab="favorites" 
-          onClick={() => onTabChange("favorites")}
-          className={activeTab === "favorites" ? "tab-selected" : ""}
-        >
-          <img src={activeTab === "favorites" ? icons.likeActive : icons.like} alt="favorites" style={{ width: 24, height: 24 }} />
-        </IonTabButton>
-        
-        <IonTabButton 
-          tab="home" 
-          onClick={() => onTabChange("home")}
-          className={activeTab === "home" ? "tab-selected" : ""}
-        >
-          <img src={activeTab === "home" ? icons.homeActive : icons.home} alt="home" style={{ width: 24, height: 24 }} />
-        </IonTabButton>
-        
-        <IonTabButton 
-          tab="messages" 
-          onClick={() => onTabChange("messages")}
-          className={activeTab === "messages" ? "tab-selected" : ""}
-        >
-          <img src={activeTab === "messages" ? icons.messagesActive : icons.messages} alt="messages" style={{ width: 24, height: 24 }} />
-        </IonTabButton>
-        
-        <IonTabButton 
-          tab="profile" 
-          onClick={() => onTabChange("profile")}
-          className={activeTab === "profile" ? "tab-selected" : ""}
-        >
-          <img src={activeTab === "profile" ? icons.profileActive : icons.profile} alt="profile" style={{ width: 24, height: 24 }} />
-        </IonTabButton>
-      </IonTabBar>
+      <button
+        key={tab.id}
+        type="button"
+        className={`af-tab${active ? " af-tab--active" : ""}`}
+        onClick={() => onTabChange(tab.id)}
+        aria-current={active ? "page" : undefined}
+        aria-label={
+          unread
+            ? `${tab.label}, ${messageCount} non lus`
+            : tab.label
+        }
+      >
+        <span className="af-tab__icon">
+          <img src={active ? tab.iconActive : tab.icon} alt="" aria-hidden="true" />
+          {unread && (
+            <span className="af-badge af-tab__badge" aria-hidden="true">
+              {messageCount > 99 ? "99+" : messageCount}
+            </span>
+          )}
+        </span>
+        <span className="af-tab__label">{tab.label}</span>
+      </button>
     );
-  }
+  };
 
-  // Keep your existing custom design
-  const leftTabs = [
-    { id: "producers", icon: activeTab === "producers" ? icons.producersActive : icons.producers },
-    { id: "favorites", icon: activeTab === "favorites" ? icons.likeActive : icons.like },
-  ];
-  const rightTabs = [
-    { id: "messages", icon: activeTab === "messages" ? icons.messagesActive : icons.messages },
-    { id: "profile", icon: activeTab === "profile" ? icons.profileActive : icons.profile },
-  ];
+  const homeActive = activeTab === "home";
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1000,
-        width: "100vw",
-        height: "150px",
-        pointerEvents: "none", // Only enable pointer events for children
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-end",
-        background:
-          "linear-gradient(180deg, rgba(217, 217, 217, 0.00) 66.46%, #FFF 78.29%)",
-      }}
-    >
-      {/* SVG Curved Background */}
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="100%"
-        height="150"
-        viewBox="0 0 375 30"
-        fill="none"
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: 0,
-          zIndex: 1,
-        }}
-      >
-        <path
-          data-figma-bg-blur-radius="22"
-          d="M0 0H93.75H128.989C142.006 0 153.66 8.06684 158.245 20.2499V20.2499C168.404 47.2497 206.596 47.2497 216.755 20.2499V20.2499C221.34 8.06684 232.994 0 246.011 0H281.25H375V98H0V0Z"
-          fill="white"
-          fillOpacity="1"
-        />
-        <defs>
-          <clipPath
-            id="bgblur_0_2402_1313_clip_path"
-            transform="translate(22 22)"
-          >
-            <path d="M0 0H93.75H128.989C142.006 0 153.66 8.06684 158.245 20.2499V20.2499C168.404 47.2497 206.596 47.2497 216.755 20.2499V20.2499C221.34 8.06684 232.994 0 246.011 0H281.25H375V98H0V0Z" />
-          </clipPath>
-        </defs>
-      </svg>
+    <nav className="af-tabbar" aria-label="Navigation principale">
+      <div className="af-tabbar__inner">
+        <div className="af-tabbar__veil" aria-hidden="true" />
+        <div className="af-tabbar__surface" aria-hidden="true" />
 
-      {/* Main Bar Content */}
-      <div
-        style={{
-          width: "100vw",
-          maxWidth: 430,
-          height: 100,
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          padding: "0 32px",
-          position: "relative",
-          zIndex: 2,
-          pointerEvents: "auto",
-        }}
-      >
-        {/* Left icons */}
-        <div style={{ display: "flex", gap: 36 }}>
-          {leftTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                if (tab.id === "producers") {
-                  onTabChange("producers");
-                } else if (tab.id === "favorites") {
-                  onTabChange("favorites");
-                }
-              }}
-              style={{
-                background: "none",
-                border: "none",
-                outline: "none",
-                cursor: "pointer",
-                padding: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: 1,
-                width: 44,
-                height: 80,
-                transition: "all 0.2s ease",
-              }}
-            >
-              <img
-                src={tab.icon}
-                alt={tab.id}
-                style={{ 
-                  width: 28, 
-                  height: 28,
-                  objectFit: 'contain' // Ensures consistent sizing
-                }}
-              />
-            </button>
-          ))}
+        <div className="af-tabbar__group af-tabbar__group--start">
+          {startTabs.map(renderTab)}
         </div>
 
-        {/* Right icons */}
-        <div style={{ display: "flex", gap: 36 }}>
-          {rightTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id as "messages" | "profile")}
-              style={{
-                background: "none",
-                border: "none",
-                outline: "none",
-                cursor: "pointer",
-                padding: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: 1,
-                width: 44,
-                height: 80,
-                transition: "all 0.2s ease",
-              }}
-            >
-              <img
-                src={tab.icon}
-                alt={tab.id}
-                style={{ 
-                  width: 28, 
-                  height: 28,
-                  objectFit: 'contain' // Ensures consistent sizing
-                }}
-              />
-            </button>
-          ))}
+        <div className="af-tabbar__group af-tabbar__group--end">
+          {endTabs.map(renderTab)}
         </div>
 
-        {/* Floating Home Button */}
         <button
+          type="button"
+          className={`af-tabbar__home${homeActive ? " af-tabbar__home--active" : ""}`}
           onClick={() => onTabChange("home")}
-          style={{
-            position: "absolute",
-            left: "50%",
-            transform: "translate(-50%, -32px)",
-            bottom: 32,
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
-            background: activeTab === "home" ? "#222" : "#333",
-            border:
-              activeTab === "home" ? "4px solid #7ee0f6" : "4px solid #fff",
-            boxShadow:
-              activeTab === "home"
-                ? "0 4px 16px 0 #7ee0f6, 0 2px 8px 0 rgba(0,0,0,0.10)"
-                : "0 2px 8px 0 rgba(0,0,0,0.10)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10,
-            cursor: "pointer",
-            pointerEvents: "auto",
-            transition: "border 0.2s, box-shadow 0.2s, background 0.2s",
-            outline: "none",
-          }}
+          aria-label="Accueil"
+          aria-current={homeActive ? "page" : undefined}
         >
-          <img src={activeTab === "home" ? icons.homeActive : icons.home} alt="home" style={{ width: 32, height: 32 }} />
+          <img src={icons.home} alt="" aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </nav>
   );
 };
 

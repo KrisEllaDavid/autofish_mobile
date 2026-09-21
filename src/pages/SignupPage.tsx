@@ -1,80 +1,34 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import NavBar from "../components/NavBar";
 import UnifiedDropdown from "../components/UnifiedDropdown";
-import "./CategoriesPage/CategoriesPage.css";
-// Modal removed from this page to simplify flow
-// ContactInfoPage removed from flow; collect all required client fields here
 import IDVerificationPage from "./IDVerificationPage";
 import CategoriesPage from "./CategoriesPage/CategoriesPage";
 import TermsOfUsePage from "./TermsOfUsePage";
+import { Banner, Button, PasswordField, TextField } from "../components/ui";
 import { useAuth } from "../context/AuthContext";
 import { compressImage, validateImage } from "../utils/imageCompression";
 import {
+  validateCity,
+  validateCountry,
   validateEmail,
-  validatePhone,
   validateName,
   validatePassword,
   validatePasswordConfirmation,
-  validateCity,
-  validateCountry
+  validatePhone,
 } from "../utils/formValidation";
+import "./Auth.css";
+
 const userIcon = "/icons/account.svg";
 const cameraIcon = "/icons/camera_icon.svg";
 const emailIcon = "/icons/Email.svg";
-const passwordIcon = "/icons/Password.svg";
-const eyeIcon = "/icons/Eye Slash.svg";
-const eyeOpenIcon = "/icons/Eye Open.svg";
-const googleIcon = "/icons/Google_icon.svg";
-const userUserOutlineBlue = "/icons/User-Outline_blue.svg";
-const userUserOutline = "/icons/User-Outline.svg";
 const emailIconBlue = "/icons/Email_blue.svg";
+const passwordIcon = "/icons/Password.svg";
 const passwordIconBlue = "/icons/Password_blue.svg";
-const checkIcon = "/icons/Check.svg";
-const checkboxIcon = "/icons/Checkbox.svg";
-// const bravoCheckIcon = "/icons/Check.svg";
-const getInputStyle = (hasContent: boolean): React.CSSProperties => ({
-  width: "100%",
-  padding: "16px 48px 16px 55px",
-  borderRadius: 15,
-  border: hasContent ? "1.2px solid #222" : "1.2px solid #e0e0e0",
-  background: "#fafbfc",
-  fontSize: 16,
-  color: "#222",
-  marginBottom: 12,
-  outline: "none",
-  fontFamily: "inherit",
-  boxSizing: "border-box",
-  fontWeight: 500,
-});
-const inputContainerStyle: React.CSSProperties = {
-  position: "relative",
-  width: "100%",
-  marginBottom: 12,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexDirection: "row",
-};
-const iconStyle: React.CSSProperties = {
-  position: "absolute",
-  left: 18,
-  top: "40%",
-  transform: "translateY(-50%)",
-  width: 22,
-  height: 22,
-  opacity: 0.6,
-};
-const eyeIconStyle: React.CSSProperties = {
-  position: "absolute",
-  right: 18,
-  top: "40%",
-  transform: "translateY(-50%)",
-  width: 22,
-  height: 22,
-  opacity: 0.6,
-  cursor: "pointer",
-};
+const googleIcon = "/icons/Google_icon.svg";
+const userOutline = "/icons/User-Outline.svg";
+const userOutlineBlue = "/icons/User-Outline_blue.svg";
+
 interface FormData {
   first_name: string;
   last_name: string;
@@ -83,17 +37,35 @@ interface FormData {
   password2: string;
   phone: string;
   city: string;
-  user_type: 'producer' | 'consumer';
-  terms_accepted: boolean;
-  // Country is required for both users
   country: string;
-  // Address only needed for producers (will be collected later)
-  // description removed from initial form - will be collected later in workflow
-  // categories, recto_id, verso_id, profile_picture handled in later steps
+  user_type: "producer" | "consumer";
   profile_picture: File | null;
 }
+
+const countryOptions = [
+  { value: "Cameroun", label: "Cameroun" },
+  { value: "République du Congo", label: "République du Congo" },
+];
+
+const codeOptions = [
+  { value: "+237", label: "+237" },
+  { value: "+242", label: "+242" },
+];
+
+const REQUIRED_FIELDS = [
+  "first_name",
+  "last_name",
+  "email",
+  "phone",
+  "city",
+  "country",
+  "password",
+  "password2",
+] as const;
+
 const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { updateUserData } = useAuth();
+
   const [formData, setFormData] = useState<FormData>({
     first_name: "",
     last_name: "",
@@ -102,199 +74,176 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     password2: "",
     phone: "",
     city: "",
-    user_type: 'consumer',
-    terms_accepted: false,
-    // Required for both user types
     country: "",
+    user_type: "consumer",
     profile_picture: null,
   });
-  // Country dialing code (only Cameroun and Congo per requirements)
-  const [countryCode, setCountryCode] = useState<string>("+237");
-  const [showPassword, setShowPassword] = useState(false);
+
+  const [countryCode, setCountryCode] = useState("+237");
   const [acceptTerms, setAcceptTerms] = useState(false);
-  // const [showModal, setShowModal] = useState(false);
-  // Removed contact info page navigation
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
   const [goToIDVerification, setGoToIDVerification] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [showValidationErrors, setShowValidationErrors] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [goToCategories, setGoToCategories] = useState(false);
   const [showTermsPage, setShowTermsPage] = useState(false);
 
-  // Country and code options
-  const countryOptions = [
-    { value: 'Cameroun', label: 'Cameroun' },
-    { value: 'République du Congo', label: 'République du Congo' }
-  ];
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const codeOptions = [
-    { value: '+237', label: '+237' },
-    { value: '+242', label: '+242' }
-  ];
-  
-  // Validation functions using comprehensive validation utilities
-  const validateField = (field: string, value: string): string => {
-    let result;
+  // Object URLs for the avatar preview are revoked on replace and unmount;
+  // the old code created one per render and leaked every single one.
+  useEffect(() => {
+    if (!formData.profile_picture) {
+      setAvatarPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(formData.profile_picture);
+    setAvatarPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [formData.profile_picture]);
 
+  const validateFieldValue = (field: string, value: string): string => {
     switch (field) {
-      case 'first_name':
-        result = validateName(value, 'Prénom');
-        return result.isValid ? '' : (result.error || '');
-      case 'last_name':
-        result = validateName(value, 'Nom');
-        return result.isValid ? '' : (result.error || '');
-      case 'email':
-        result = validateEmail(value);
-        return result.isValid ? '' : (result.error || '');
-      case 'phone':
-        result = validatePhone(value);
-        return result.isValid ? '' : (result.error || '');
-      case 'city':
-        result = validateCity(value);
-        return result.isValid ? '' : (result.error || '');
-      case 'password':
-        result = validatePassword(value);
-        return result.isValid ? '' : (result.error || '');
-      case 'password2':
-        result = validatePasswordConfirmation(formData.password, value);
-        return result.isValid ? '' : (result.error || '');
-      case 'country':
-        result = validateCountry(value);
-        return result.isValid ? '' : (result.error || '');
+      case "first_name":
+        return validateName(value, "Prénom").error || "";
+      case "last_name":
+        return validateName(value, "Nom").error || "";
+      case "email":
+        return validateEmail(value).error || "";
+      case "phone":
+        return validatePhone(value).error || "";
+      case "city":
+        return validateCity(value).error || "";
+      case "password":
+        return validatePassword(value).error || "";
+      case "password2":
+        return (
+          validatePasswordConfirmation(formData.password, value).error || ""
+        );
+      case "country":
+        return validateCountry(value).error || "";
       default:
-        return '';
+        return "";
     }
   };
 
-  // Form validation for this step only (backend-specific fields collected later)
-  const isFormValid = (() => {
-    const basicFieldsValid = formData.first_name &&
-      formData.last_name &&
-      formData.email &&
-      formData.password &&
-      formData.password2 &&
-      formData.phone &&
-      formData.city &&
-      formData.country &&
-      acceptTerms;
+  /** Shows a field error only once that field has been left or the form
+   *  submitted, so the page is not red while the user is still typing. */
+  const errorFor = (field: string) =>
+    touched[field] || submitted ? errors[field] || "" : "";
 
-    const passwordsMatch = formData.password === formData.password2;
+  const handleChange = (field: keyof FormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clearing as the user corrects means the error goes away on the
+    // keystroke that fixes it, not on the next blur.
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const error = validateFieldValue(field, value);
+      if (error) return prev;
+      const { [field]: _removed, ...rest } = prev;
+      return rest;
+    });
+  };
 
-    return !!(basicFieldsValid && passwordsMatch);
-  })();
+  const handleBlur = (field: keyof FormData) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    const error = validateFieldValue(field, String(formData[field] ?? ""));
+    setErrors((prev) => {
+      if (error) return { ...prev, [field]: error };
+      const { [field]: _removed, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  const completion = useMemo(() => {
+    const filled = REQUIRED_FIELDS.filter((field) =>
+      String(formData[field] ?? "").trim()
+    ).length;
+    return Math.round(((filled + (acceptTerms ? 1 : 0)) / 9) * 100);
+  }, [formData, acceptTerms]);
+
+  const handleAvatarChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file?.type.startsWith("image")) return;
+
+    try {
+      validateImage(file);
+      const compressed = await compressImage(file, {
+        maxWidth: 800,
+        maxHeight: 800,
+        quality: 0.8,
+      });
+
+      setFormData((prev) => ({ ...prev, profile_picture: compressed }));
+
+      const dataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(compressed);
+      });
+      updateUserData({ avatar: dataUrl, profile_picture: compressed });
+    } catch {
+      toast.error("Cette image n'a pas pu être traitée. Essayez-en une autre.");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
 
-    // Validate all fields and collect errors
-    const errors: Record<string, string> = {};
-    const fieldsToValidate = ['first_name', 'last_name', 'email', 'phone', 'city', 'country', 'password', 'password2'];
-
-    fieldsToValidate.forEach(field => {
-      const error = validateField(field, formData[field as keyof FormData] as string);
-      if (error) errors[field] = error;
+    const nextErrors: Record<string, string> = {};
+    REQUIRED_FIELDS.forEach((field) => {
+      const error = validateFieldValue(field, String(formData[field] ?? ""));
+      if (error) nextErrors[field] = error;
     });
-
-    // Check terms acceptance
     if (!acceptTerms) {
-      errors.terms = 'Vous devez accepter les conditions d\'utilisation';
+      nextErrors.terms = "Acceptez les conditions d'utilisation pour continuer.";
     }
 
-    // Check user type selection
-    if (!formData.user_type) {
-      errors.user_type = 'Veuillez sélectionner un type de compte';
-    }
+    setErrors(nextErrors);
 
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      setShowValidationErrors(true);
-      toast.error('Veuillez corriger les erreurs dans le formulaire');
+    if (Object.keys(nextErrors).length > 0) {
+      // Move focus to the first problem rather than only announcing it.
+      const firstField = REQUIRED_FIELDS.find((f) => nextErrors[f]);
+      if (firstField) {
+        document
+          .querySelector<HTMLElement>(`[name="${firstField}"]`)
+          ?.focus({ preventScroll: false });
+      }
       return;
     }
 
-    // Clear validation errors if form is valid
-    setValidationErrors({});
-    setShowValidationErrors(false);
-    
-    if (isFormValid) {
-      const signupData = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        // Also store combined name for downstream utils compatibility
-        name: `${formData.first_name} ${formData.last_name}`.trim(),
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone,
-        city: formData.city,
-        country: formData.country,
-        code: countryCode,
-        userRole: formData.user_type === 'producer' ? 'producteur' as const : 'client' as const,
-        terms_accepted: acceptTerms,
-        // For producers, address will be collected later; for consumers, use city as address
-        address: formData.user_type === 'consumer' ? formData.city : '',
-        profile_picture: formData.profile_picture,
-      } as any;
-      updateUserData(signupData);
+    updateUserData({
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      name: `${formData.first_name} ${formData.last_name}`.trim(),
+      email: formData.email,
+      password: formData.password,
+      phone: formData.phone,
+      city: formData.city,
+      country: formData.country,
+      code: countryCode,
+      userRole:
+        formData.user_type === "producer"
+          ? ("producteur" as const)
+          : ("client" as const),
+      terms_accepted: acceptTerms,
+      address: formData.user_type === "consumer" ? formData.city : "",
+      profile_picture: formData.profile_picture,
+    } as any);
 
-      // Navigate according to selected role
-      if (formData.user_type === 'producer') {
-        setGoToIDVerification(true);
-      } else {
-        // Consumers go to categories, then directly register (no need for ContactInfoPage)
-        setGoToCategories(true);
-      }
-    }
+    if (formData.user_type === "producer") setGoToIDVerification(true);
+    else setGoToCategories(true);
   };
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image")) {
-      try {
-        // Validate the image first
-        validateImage(file);
-        // Compress the image
-        const compressedFile = await compressImage(file, {
-          maxWidth: 800,
-          maxHeight: 800,
-          quality: 0.8,
-        });
-        // Store compressed file for preview and later upload
-        setFormData((prev) => ({
-          ...prev,
-          profile_picture: compressedFile,
-        }));
-        
-        // Log file information for debugging
-        console.log('Profile picture processed:', {
-          name: compressedFile.name,
-          size: compressedFile.size,
-          type: compressedFile.type
-        });
-        
-        // Also mirror to AuthContext for registration utils
-        updateUserData({ avatar: await (async () => {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(compressedFile);
-          });
-        })(), profile_picture: compressedFile });
-      } catch {
-        toast.error("Erreur lors du traitement de l'image");
-      }
-    }
-  };
-  // Show Terms of Use page
+
   if (showTermsPage) {
-    return (
-      <TermsOfUsePage
-        onBack={() => setShowTermsPage(false)}
-      />
-    );
+    return <TermsOfUsePage onBack={() => setShowTermsPage(false)} />;
   }
 
-  // Contact info page removed
   if (goToIDVerification) {
     return (
       <IDVerificationPage
@@ -303,6 +252,7 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       />
     );
   }
+
   if (goToCategories) {
     return (
       <CategoriesPage
@@ -311,727 +261,321 @@ const SignupPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       />
     );
   }
+
+  const nextStepText =
+    formData.user_type === "producer"
+      ? "Vérification d'identité, catégories, puis création de votre page."
+      : "Sélection de vos catégories préférées.";
+
   return (
-    <>
-      <style>{`
-        .fade-in-page {
-          opacity: 0;
-          animation: fadeInPage 0.5s ease-in forwards;
-        }
-        @keyframes fadeInPage {
-          to { opacity: 1; }
-        }
-        input::placeholder {
-          color: #222;
-          opacity: 0.3;
-        }
-      `}</style>
-      <div
-        className="fade-in-page"
-        style={{
-          minHeight: "100vh",
-          background: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          paddingTop: 10,
-          paddingBottom: 40
-        }}
-      >
-        <NavBar title="Inscription" onBack={onBack} />
-        <div style={{ height: 16 }} />
-        
-        {/* Signup Progress Indicator */}
-        <div
-          style={{
-            width: "90vw",
-            maxWidth: 340,
-            marginBottom: 24,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 14,
-              color: "#666",
-              marginBottom: 8,
-              textAlign: "center",
-            }}
-          >
-            Création du compte - Informations de base
+    <div className="auth-screen fade-in-page">
+      <NavBar title="Inscription" onBack={onBack} />
+
+      <div className="auth-body">
+        <div className="af-progress" style={{ marginBottom: "var(--space-9)" }}>
+          <div className="af-progress__label">
+            <span className="af-progress__step">Informations de base</span>
+            <span className="af-progress__count">Étape 1 sur 3</span>
           </div>
           <div
-            style={{
-              width: "100%",
-              height: 4,
-              background: "#e0e0e0",
-              borderRadius: 2,
-              overflow: "hidden",
-            }}
+            className="af-progress__track"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={completion}
+            aria-label="Progression du formulaire"
           >
             <div
-              style={{
-                width: "16.67%",
-                height: "100%",
-                background: "#00A6C0",
-                borderRadius: 2,
-                transition: "width 0.3s ease",
-              }}
+              className="af-progress__fill"
+              style={
+                { "--fill": Math.max(completion, 4) / 100 } as React.CSSProperties
+              }
             />
           </div>
         </div>
-        
-        {/* Avatar upload */}
-        <div
-          style={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            marginBottom: 24,
-          }}
-        >
-          <div
-            style={{
-              position: "relative",
-              width: 120,
-              height: 120,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-            onClick={handleAvatarClick}
-          >
-            <div
-              style={{
-                width: 120,
-                height: 120,
-                borderRadius: "50%",
-                border: "2px solid #00A6C0",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#fff",
-                overflow: "hidden",
-              }}
-            >
-              {formData.profile_picture ? (
+
+        <div style={{ marginBottom: "var(--space-9)" }}>
+          <label className="af-avatar-picker">
+            <span className="af-avatar-picker__frame">
+              {avatarPreview ? (
                 <img
-                  src={URL.createObjectURL(formData.profile_picture)}
-                  alt="avatar"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: "50%",
-                  }}
+                  src={avatarPreview}
+                  alt="Votre photo de profil"
+                  className="af-avatar-picker__photo"
                 />
               ) : (
                 <img
                   src={userIcon}
-                  alt="avatar"
-                  style={{
-                    width: 60,
-                    height: 60,
-                    opacity: 0.7,
-                    display: "block",
-                    margin: "0 auto",
-                  }}
+                  alt=""
+                  aria-hidden="true"
+                  className="af-avatar-picker__placeholder"
                 />
               )}
-            </div>
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                bottom: 12,
-                background: "#fff",
-                borderRadius: "50%",
-                border: "2px solid #00A6C0",
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <img
-                src={cameraIcon}
-                alt="upload"
-                style={{ width: 22, height: 22 }}
-              />
-            </div>
+            </span>
+            <span className="af-avatar-picker__badge" aria-hidden="true">
+              <img src={cameraIcon} alt="" />
+            </span>
             <input
               type="file"
               accept="image/*"
               ref={fileInputRef}
-              style={{ display: "none" }}
               onChange={handleAvatarChange}
+              aria-label="Choisir une photo de profil"
             />
-          </div>
+          </label>
+          <p className="af-avatar-picker__hint">
+            Photo de profil — facultative
+          </p>
         </div>
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            width: "90vw",
-            maxWidth: 340,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          {/* First Name Field */}
-          <div style={inputContainerStyle}>
-            <span style={iconStyle}>
+
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <TextField
+            name="first_name"
+            label="Prénom"
+            autoComplete="given-name"
+            enterKeyHint="next"
+            placeholder="Votre prénom"
+            value={formData.first_name}
+            error={errorFor("first_name")}
+            onChange={(e) => handleChange("first_name", e.target.value)}
+            onBlur={() => handleBlur("first_name")}
+            iconStart={
               <img
-                src={formData.first_name ? userUserOutlineBlue : userUserOutline}
-                alt="user"
-                style={{
-                  width: 22,
-                  height: 22,
-                  opacity: formData.first_name ? 1 : 0.6,
-                }}
+                src={formData.first_name ? userOutlineBlue : userOutline}
+                alt=""
               />
-            </span>
-            <input
-              type="text"
-              placeholder="Entrez votre prénom *"
-              style={getInputStyle(!!formData.first_name)}
-              value={formData.first_name}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, first_name: e.target.value }))
-              }
-              onBlur={(e) => {
-                const error = validateField('first_name', e.target.value);
-                if (error) {
-                  setValidationErrors(prev => ({ ...prev, first_name: error }));
-                } else {
-                  setValidationErrors(prev => {
-                    const { first_name: _first_name, ...rest } = prev;
-                    return rest;
-                  });
-                }
-              }}
+            }
+          />
+
+          <TextField
+            name="last_name"
+            label="Nom de famille"
+            autoComplete="family-name"
+            enterKeyHint="next"
+            placeholder="Votre nom"
+            value={formData.last_name}
+            error={errorFor("last_name")}
+            onChange={(e) => handleChange("last_name", e.target.value)}
+            onBlur={() => handleBlur("last_name")}
+            iconStart={
+              <img
+                src={formData.last_name ? userOutlineBlue : userOutline}
+                alt=""
+              />
+            }
+          />
+
+          <TextField
+            name="email"
+            label="Email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            enterKeyHint="next"
+            placeholder="vous@exemple.com"
+            value={formData.email}
+            error={errorFor("email")}
+            onChange={(e) => handleChange("email", e.target.value)}
+            onBlur={() => handleBlur("email")}
+            iconStart={
+              <img src={formData.email ? emailIconBlue : emailIcon} alt="" />
+            }
+          />
+
+          <div className="signup-phone">
+            <UnifiedDropdown
+              label="Indicatif"
+              options={codeOptions}
+              value={countryCode}
+              onChange={setCountryCode}
+              placeholder="+237"
+            />
+            <TextField
+              name="phone"
+              label="Téléphone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              enterKeyHint="next"
+              placeholder="6 XX XX XX XX"
+              value={formData.phone}
+              error={errorFor("phone")}
+              onChange={(e) => handleChange("phone", e.target.value)}
+              onBlur={() => handleBlur("phone")}
             />
           </div>
 
-          {/* Last Name Field */}
-          <div style={inputContainerStyle}>
-            <span style={iconStyle}>
-              <img
-                src={formData.last_name ? userUserOutlineBlue : userUserOutline}
-                alt="user"
-                style={{
-                  width: 22,
-                  height: 22,
-                  opacity: formData.last_name ? 1 : 0.6,
-                }}
-              />
-            </span>
-            <input
-              type="text"
-              placeholder="Entrez votre nom de famille *"
-              style={getInputStyle(!!formData.last_name)}
-              value={formData.last_name}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, last_name: e.target.value }))
-              }
-              onBlur={(e) => {
-                const error = validateField('last_name', e.target.value);
-                if (error) {
-                  setValidationErrors(prev => ({ ...prev, last_name: error }));
-                } else {
-                  setValidationErrors(prev => {
-                    const { last_name: _last_name, ...rest } = prev;
-                    return rest;
-                  });
-                }
-              }}
-            />
-          </div>
-          {/* Email Field */}
-          <div style={inputContainerStyle}>
-            <span style={iconStyle}>
-              <img
-                src={formData.email ? emailIconBlue : emailIcon}
-                alt="email"
-                style={{
-                  width: 22,
-                  height: 22,
-                  opacity: formData.email ? 1 : 0.6,
-                }}
-              />
-            </span>
-            <input
-              type="email"
-              placeholder="Entrez votre email *"
-              style={getInputStyle(!!formData.email)}
-              value={formData.email}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, email: e.target.value }))
-              }
-              onBlur={(e) => {
-                const error = validateField('email', e.target.value);
-                if (error) {
-                  setValidationErrors(prev => ({ ...prev, email: error }));
-                } else {
-                  setValidationErrors(prev => {
-                    const { email: _email, ...rest } = prev;
-                    return rest;
-                  });
-                }
-              }}
-              autoComplete="email"
-            />
-          </div>
+          <TextField
+            name="city"
+            label="Ville ou quartier"
+            autoComplete="address-level2"
+            enterKeyHint="next"
+            placeholder="Douala, Akwa…"
+            value={formData.city}
+            error={errorFor("city")}
+            onChange={(e) => handleChange("city", e.target.value)}
+            onBlur={() => handleBlur("city")}
+            iconStart={
+              <img src={formData.city ? userOutlineBlue : userOutline} alt="" />
+            }
+          />
 
-          {/* Phone Field with Country Code Dropdown */}
-          <div style={{ display: 'flex', gap: 8, width: '100%', marginBottom: 12 }}>
-            <div style={{ width: '35%' }}>
-              <UnifiedDropdown
-                options={codeOptions}
-                value={countryCode}
-                onChange={setCountryCode}
-                placeholder="+237"
-                style={{ marginBottom: 0}}
-              />
-            </div>
-            <div style={{ width: '62%' }}>
-              <div style={{ ...inputContainerStyle, marginBottom: 0 }}>
-                <span style={iconStyle}>
-                  <img
-                    src={formData.phone ? userUserOutlineBlue : userUserOutline}
-                    alt="phone"
-                    style={{ width: 22, height: 22, opacity: formData.phone ? 1 : 0.6 }}
-                  />
-                </span>
-                <input
-                  type="tel"
-                  placeholder="Votre numéro *"
-                  style={getInputStyle(!!formData.phone)}
-                  value={formData.phone}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                  onBlur={(e) => {
-                    const error = validateField('phone', e.target.value);
-                    if (error) {
-                      setValidationErrors(prev => ({ ...prev, phone: error }));
-                    } else {
-                      setValidationErrors(prev => {
-                        const { phone: _phone, ...rest } = prev;
-                        return rest;
-                      });
-                    }
-                  }}
-                  autoComplete="tel"
-                />
-              </div>
-            </div>
-          </div>
-
-            {/* Town/City Field */}
-          <div style={inputContainerStyle}>
-            <span style={iconStyle}>
-              <img
-                src={formData.city ? userUserOutlineBlue : userUserOutline}
-                  alt="town"
-                style={{
-                  width: 22,
-                  height: 22,
-                  opacity: formData.city ? 1 : 0.6,
-                }}
-              />
-            </span>
-            <input
-              type="text"
-              placeholder="Entrez votre ville/quartier *"
-              style={getInputStyle(!!formData.city)}
-              value={formData.city}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, city: e.target.value }))
-              }
-              onBlur={(e) => {
-                const error = validateField('city', e.target.value);
-                if (error) {
-                  setValidationErrors(prev => ({ ...prev, city: error }));
-                } else {
-                  setValidationErrors(prev => {
-                    const { city: _city, ...rest } = prev;
-                    return rest;
-                  });
-                }
-              }}
-              autoComplete="address-level2"
-            />
-          </div>
-
-          {/* Country Field Dropdown */}
           <UnifiedDropdown
+            label="Pays"
+            required
             options={countryOptions}
             value={formData.country}
-            onChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
+            onChange={(value) => {
+              handleChange("country", value);
+              setTouched((prev) => ({ ...prev, country: true }));
+            }}
             placeholder="Sélectionnez votre pays"
-            required={true}
-            style={{ marginBottom: 25}}
+            error={errorFor("country")}
           />
-          {/* Password Field */}
-          <div style={inputContainerStyle}>
-            <span style={iconStyle}>
+
+          <PasswordField
+            name="password"
+            label="Mot de passe"
+            autoComplete="new-password"
+            enterKeyHint="next"
+            placeholder="Au moins 8 caractères"
+            value={formData.password}
+            error={errorFor("password")}
+            hint="Au moins 8 caractères, avec des lettres et des chiffres."
+            onChange={(e) => handleChange("password", e.target.value)}
+            onBlur={() => handleBlur("password")}
+            iconStart={
               <img
                 src={formData.password ? passwordIconBlue : passwordIcon}
-                alt="password"
-                style={{
-                  width: 22,
-                  height: 22,
-                  opacity: formData.password ? 1 : 0.6,
-                }}
+                alt=""
               />
-            </span>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Entrez votre mot de passe *"
-              style={getInputStyle(!!formData.password)}
-              value={formData.password}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  password: e.target.value,
-                }))
-              }
-              onBlur={(e) => {
-                const error = validateField('password', e.target.value);
-                if (error) {
-                  setValidationErrors(prev => ({ ...prev, password: error }));
-                } else {
-                  setValidationErrors(prev => {
-                    const { password: _password, ...rest } = prev;
-                    return rest;
-                  });
-                }
-              }}
-              autoComplete="new-password"
-            />
-            <span
-              style={eyeIconStyle}
-              onClick={() => setShowPassword((s) => !s)}
-            >
-              <img
-                src={showPassword ? eyeOpenIcon : eyeIcon}
-                alt="toggle password visibility"
-                style={{ width: 22, height: 22, opacity: 1 }}
-              />
-            </span>
-          </div>
-          
-          {/* Password Requirements Help */}
-          <div
-            style={{
-              width: "100%",
-              fontSize: 12,
-              color: "#666",
-              marginBottom: 12,
-              paddingLeft: 8,
-            }}
-          >
-            Le mot de passe doit contenir au moins 8 caractères avec des lettres et des chiffres
-          </div>
+            }
+          />
 
-          {/* Password Confirmation Field */}
-          <div style={inputContainerStyle}>
-            <span style={iconStyle}>
+          <PasswordField
+            name="password2"
+            label="Confirmez le mot de passe"
+            autoComplete="new-password"
+            enterKeyHint="done"
+            placeholder="Retapez le mot de passe"
+            value={formData.password2}
+            error={errorFor("password2")}
+            valid={
+              formData.password2.length > 0 &&
+              formData.password === formData.password2
+            }
+            onChange={(e) => handleChange("password2", e.target.value)}
+            onBlur={() => handleBlur("password2")}
+            iconStart={
               <img
                 src={formData.password2 ? passwordIconBlue : passwordIcon}
-                alt="password confirmation"
-                style={{
-                  width: 22,
-                  height: 22,
-                  opacity: formData.password2 ? 1 : 0.6,
-                }}
+                alt=""
               />
-            </span>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Confirmez votre mot de passe *"
-              style={getInputStyle(!!formData.password2)}
-              value={formData.password2}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  password2: e.target.value,
-                }))
-              }
-              onBlur={(e) => {
-                const error = validateField('password2', e.target.value);
-                if (error) {
-                  setValidationErrors(prev => ({ ...prev, password2: error }));
-                } else {
-                  setValidationErrors(prev => {
-                    const { password2: _password2, ...rest } = prev;
-                    return rest;
-                  });
-                }
-              }}
-              autoComplete="new-password"
-            />
-          </div>
-          {/* User Type Selection */}
-          <div
-            style={{
-              width: "100%",
-              marginBottom: 18,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 14,
-                color: "#222",
-                marginBottom: 8,
-                fontWeight: 500,
-              }}
-            >
-              Type de compte *
-            </div>
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                width: "100%",
-              }}
-            >
+            }
+          />
+
+          <fieldset className="signup-type">
+            <legend className="af-field__label">Type de compte</legend>
+            <div className="af-segmented">
               <button
                 type="button"
-                onClick={() => setFormData(prev => ({ ...prev, user_type: 'consumer' }))}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  borderRadius: 12,
-                  border: formData.user_type === 'consumer' ? "2px solid #00A6C0" : "1px solid #e0e0e0",
-                  background: formData.user_type === 'consumer' ? "#f0f9ff" : "#fff",
-                  color: formData.user_type === 'consumer' ? "#00A6C0" : "#666",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
+                className="af-segmented__option"
+                aria-pressed={formData.user_type === "consumer"}
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, user_type: "consumer" }))
+                }
               >
                 Client
               </button>
               <button
                 type="button"
-                onClick={() => setFormData(prev => ({ ...prev, user_type: 'producer' }))}
-                style={{
-                  flex: 1,
-                  padding: "12px 16px",
-                  borderRadius: 12,
-                  border: formData.user_type === 'producer' ? "2px solid #00A6C0" : "1px solid #e0e0e0",
-                  background: formData.user_type === 'producer' ? "#f0f9ff" : "#fff",
-                  color: formData.user_type === 'producer' ? "#00A6C0" : "#666",
-                  fontWeight: 600,
-                  fontSize: 14,
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
+                className="af-segmented__option"
+                aria-pressed={formData.user_type === "producer"}
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, user_type: "producer" }))
+                }
               >
                 Producteur
               </button>
             </div>
-          </div>
+            <p className="signup-type__hint">
+              {formData.user_type === "producer"
+                ? "Vous vendez du poisson et publiez vos produits."
+                : "Vous achetez du poisson auprès des producteurs."}
+            </p>
+          </fieldset>
 
-          {/* Terms Acceptance */}
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "flex-start",
-              marginBottom: 18,
-            }}
-          >
-            <span
-              onClick={() => setAcceptTerms((v) => !v)}
-              style={{
-                marginRight: 8,
-                width: 18,
-                height: 18,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                userSelect: "none",
+          <label className="af-check signup-terms">
+            <input
+              type="checkbox"
+              checked={acceptTerms}
+              onChange={(e) => {
+                setAcceptTerms(e.target.checked);
+                if (e.target.checked) {
+                  setErrors(({ terms: _t, ...rest }) => rest);
+                }
               }}
-            >
-              <img
-                src={acceptTerms ? checkIcon : checkboxIcon}
-                alt={acceptTerms ? "checked" : "unchecked"}
-                style={{ width: 18, height: 18 }}
-              />
-            </span>
-            <span style={{ fontSize: 13, color: "#222", lineHeight: 1.4 }}>
-              J'accepte les{" "}
-              <span
+            />
+            <span className="af-check__box" aria-hidden="true" />
+            <span className="af-check__label">
+              J&apos;accepte les{" "}
+              <button
+                type="button"
+                className="af-link"
                 onClick={(e) => {
-                  e.stopPropagation();
+                  e.preventDefault();
                   setShowTermsPage(true);
                 }}
-                style={{
-                  color: "#009CB7",
-                  fontWeight: 600,
-                  textDecoration: "underline",
-                  cursor: "pointer",
-                }}
               >
-                conditions d'utilisation
-              </span>{" "}
-              et la politique de confidentialité de AutoFish-store
+                conditions d&apos;utilisation
+              </button>{" "}
+              et la politique de confidentialité d&apos;AutoFish Store.
             </span>
-          </div>
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              margin: "18px 0 18px 0",
-            }}
-          >
-            <div style={{ flex: 1, height: 1, background: "#e0e0e0" }} />
-            <span
-              style={{ margin: "0 12px", color: "#b0b0b0", fontWeight: 500 }}
-            >
-              OU
-            </span>
-            <div style={{ flex: 1, height: 1, background: "#e0e0e0" }} />
-          </div>
-          <button
-            type="button"
-            style={{
-              width: "100%",
-              background: "#fff",
-              color: "#222",
-              fontWeight: 700,
-              fontSize: 18,
-              borderRadius: 15,
-              border: "1.2px solid #e0e0e0",
-              padding: "12px 0",
-              marginBottom: 18,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 12,
-            }}
-          >
-            <img
-              src={googleIcon}
-              alt="Google"
-              style={{ width: 24, height: 24 }}
-            />
-            Continuer avec Google
-          </button>
-          {/* Validation Errors Display */}
-          {showValidationErrors && Object.keys(validationErrors).length > 0 && (
-            <div
-              style={{
-                width: "100%",
-                background: "#fff3f3",
-                border: "1px solid #ffcdd2",
-                borderRadius: 12,
-                padding: "16px",
-                marginBottom: 18,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "#d32f2f",
-                  marginBottom: 8,
-                }}
-              >
-                Veuillez corriger les erreurs suivantes :
-              </div>
-              <ul
-                style={{
-                  margin: 0,
-                  paddingLeft: 20,
-                  fontSize: 13,
-                  color: "#d32f2f",
-                  lineHeight: 1.4,
-                }}
-              >
-                {Object.entries(validationErrors).map(([field, error]) => (
-                  <li key={field}>{error}</li>
-                ))}
-              </ul>
-            </div>
+          </label>
+
+          {submitted && errors.terms && (
+            <p className="af-field__note af-field__note--error" role="alert">
+              {errors.terms}
+            </p>
           )}
 
-          <button
+          <Button
             type="submit"
-            style={{
-              width: "100%",
-              background: "#009CB7",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 18,
-              borderRadius: 15,
-              border: "none",
-              padding: "16px 0",
-              marginBottom: 18,
-              cursor: "pointer",
-              transition: "background 0.2s, opacity 0.2s",
-            }}
+            size="lg"
+            block
+            className="auth-form__submit"
           >
-            S'Inscrire
-          </button>
-        </form>
-        {/* Signup Process Information */}
-        <div
-          style={{
-            width: "90vw",
-            maxWidth: 340,
-            marginTop: 16,
-            padding: "16px",
-            background: "#f8f9fa",
-            borderRadius: 12,
-            border: "1px solid #e9ecef",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: "#495057",
-              marginBottom: 8,
-            }}
-          >
-            📋 Processus d'inscription
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              color: "#6c757d",
-              lineHeight: 1.4,
-            }}
-          >
-            Étapes suivantes :
-            <br />• {formData.user_type === 'producer' ? 'Vérification d\'identité (recto/verso), sélection de catégories et création de votre page' : 'Fournir vos informations de contact'}
-          </div>
-        </div>
+            Créer mon compte
+          </Button>
 
-        <div style={{ marginTop: 16, fontSize: 15, color: "#b0b0b0" }}>
-          Vous avez un compte ?{" "}
-          <span
-            onClick={onBack}
-            style={{
-              color: "#009CB7",
-              fontWeight: 600,
-              textDecoration: "none",
-              cursor: "pointer",
-            }}
+          <div className="af-divider af-divider--labelled">ou</div>
+
+          <Button
+            variant="outline"
+            size="lg"
+            block
+            iconStart={<img src={googleIcon} alt="" />}
           >
-            Connexion
-          </span>
-        </div>
-        {/* No modal; we navigate directly to next step based on role */}
+            Continuer avec Google
+          </Button>
+        </form>
+
+        <Banner tone="info" style={{ marginTop: "var(--space-9)" }}>
+          <span className="af-banner__title">Et ensuite ?</span>
+          {nextStepText}
+        </Banner>
+
+        <p className="auth-footer auth-footer__spacer">
+          Vous avez déjà un compte ?{" "}
+          <button type="button" className="af-link" onClick={onBack}>
+            Se connecter
+          </button>
+        </p>
       </div>
-    </>
+    </div>
   );
 };
+
 export default SignupPage;

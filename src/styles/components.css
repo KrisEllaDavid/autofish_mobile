@@ -1,0 +1,1544 @@
+/* ==========================================================================
+   AutoFish — Component layer
+   The shared vocabulary: screens, chrome, controls, surfaces, feedback.
+   Every rule reads from tokens.css. No raw hex below this line.
+   ========================================================================== */
+
+/* ==========================================================================
+   1. LAYOUT
+   Each screen owns its own shell in its own stylesheet — fixed header, one
+   scroll container, fixed tab bar, all inset from the safe areas and sized
+   from the --header-total / --tabbar-clearance tokens. What lives here are
+   the pieces every one of those shells composes from.
+   ========================================================================== */
+
+/* The centred content column. Phone: full width minus gutter.
+   Tablet and up: capped, so lines never stretch to 900px. */
+.af-container {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.af-container--flush {
+  padding-inline: 0;
+}
+
+.af-container--narrow {
+  max-width: 400px;
+}
+
+/* Vertical rhythm helpers — tight groups, generous separation. */
+.af-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.af-stack--tight {
+  gap: var(--space-4);
+}
+.af-stack--loose {
+  gap: var(--space-9);
+}
+
+.af-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-width: 0;
+}
+.af-row--between {
+  justify-content: space-between;
+}
+
+.af-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+/* A section heading gets more air above it than below — the space belongs
+   to the break, not to the pair. */
+.af-section {
+  margin-top: var(--space-9);
+}
+.af-section__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  margin-bottom: var(--space-5);
+}
+.af-section__subtitle {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  margin-bottom: var(--space-6);
+}
+
+/* ==========================================================================
+   2. APP HEADER
+   ========================================================================== */
+
+.af-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--header-total);
+  padding-top: var(--safe-top);
+  padding-inline: calc(var(--space-5) + var(--safe-left))
+    calc(var(--space-5) + var(--safe-right));
+  background: var(--surface-card);
+  transition: box-shadow var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+  border-bottom: 1px solid transparent;
+}
+
+/* Raised only once the content beneath has scrolled under it. */
+.af-header--raised {
+  border-bottom-color: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+.af-header--transparent {
+  background: transparent;
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+
+.af-header__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  height: var(--header-h);
+}
+
+.af-header__title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.af-header__title--start {
+  text-align: left;
+}
+
+/* Fixed-width side slots keep a centred title actually centred regardless
+   of how many actions sit on either side. */
+.af-header__side {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-1);
+  flex: 0 0 auto;
+  min-width: var(--tap-min);
+}
+.af-header__side--end {
+  justify-content: flex-end;
+}
+
+/* ==========================================================================
+   3. ICON BUTTON — the 44px hit target behind every 24px glyph.
+   ========================================================================== */
+
+.af-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border-radius: var(--radius-md);
+  color: var(--ink-700);
+  background: transparent;
+  transition: background-color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out);
+}
+
+.af-icon-btn img,
+.af-icon-btn svg {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.af-icon-btn:active {
+  background: var(--ink-a08);
+  transform: scale(0.94);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .af-icon-btn:hover {
+    background: var(--ink-a04);
+  }
+}
+
+.af-icon-btn--active {
+  background: var(--surface-brand);
+  color: var(--text-on-brand);
+}
+
+.af-icon-btn--active:active {
+  background: var(--brand-600);
+}
+
+.af-icon-btn--sm {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+}
+.af-icon-btn--sm img,
+.af-icon-btn--sm svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Unread / new-activity dot. */
+.af-icon-btn__dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-circle);
+  background: var(--danger-500);
+  border: 2px solid var(--surface-card);
+}
+
+/* ==========================================================================
+   4. BUTTONS
+   ========================================================================== */
+
+.af-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  min-height: var(--tap-min);
+  padding: var(--space-5) var(--space-7);
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  transition: background-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out),
+    opacity var(--dur-press) var(--ease-out);
+}
+
+.af-btn img,
+.af-btn svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+/* Press feedback lands on contact, not on release. */
+.af-btn:active:not(:disabled) {
+  transform: scale(0.975);
+}
+
+.af-btn:disabled {
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
+.af-btn--block {
+  width: 100%;
+}
+
+.af-btn--lg {
+  min-height: 54px;
+  padding-inline: var(--space-8);
+  font-size: var(--text-lg);
+  border-radius: var(--radius-lg);
+}
+
+.af-btn--sm {
+  min-height: 38px;
+  padding: var(--space-4) var(--space-5);
+  font-size: var(--text-sm);
+  border-radius: var(--radius-sm);
+  gap: var(--space-3);
+}
+
+/* Primary — brand-700 carries white text at 4.6:1. */
+.af-btn--primary {
+  background: var(--surface-brand-strong);
+  color: var(--text-on-brand);
+  box-shadow: var(--shadow-brand);
+}
+.af-btn--primary:active:not(:disabled) {
+  background: var(--brand-800);
+  box-shadow: var(--shadow-sm);
+}
+@media (hover: hover) and (pointer: fine) {
+  .af-btn--primary:hover:not(:disabled) {
+    background: var(--brand-800);
+  }
+}
+
+/* Dark — the app's second voice, used for onboarding and confirmations. */
+.af-btn--dark {
+  background: var(--surface-inverse);
+  color: var(--text-on-dark);
+  box-shadow: var(--shadow-md);
+}
+.af-btn--dark:active:not(:disabled) {
+  background: var(--ink-800);
+}
+@media (hover: hover) and (pointer: fine) {
+  .af-btn--dark:hover:not(:disabled) {
+    background: var(--ink-800);
+  }
+}
+
+/* Secondary — a tinted surface, not a second primary. */
+.af-btn--secondary {
+  background: var(--brand-a08);
+  color: var(--brand-800);
+}
+.af-btn--secondary:active:not(:disabled) {
+  background: var(--brand-a12);
+}
+
+.af-btn--outline {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px var(--border-default);
+}
+.af-btn--outline:active:not(:disabled) {
+  background: var(--ink-50);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.af-btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.af-btn--ghost:active:not(:disabled) {
+  background: var(--ink-a08);
+}
+
+.af-btn--danger {
+  background: var(--danger-600);
+  color: var(--text-on-brand);
+  box-shadow: var(--shadow-sm);
+}
+.af-btn--danger:active:not(:disabled) {
+  background: var(--danger-500);
+}
+
+.af-btn--danger-quiet {
+  background: var(--danger-soft);
+  color: var(--danger-600);
+}
+
+.af-btn--whatsapp {
+  background: var(--whatsapp-500);
+  color: var(--text-on-brand);
+  box-shadow: var(--shadow-sm);
+}
+.af-btn--whatsapp:active:not(:disabled) {
+  background: var(--whatsapp-600);
+}
+
+/* Inline text link rendered as a button. */
+.af-link {
+  display: inline;
+  color: var(--text-link);
+  font-weight: var(--weight-semibold);
+  font-size: inherit;
+  background: none;
+  border-radius: var(--radius-xs);
+  transition: opacity var(--dur-press) var(--ease-out);
+}
+.af-link:active {
+  opacity: 0.6;
+}
+
+/* Circular action button (onboarding "next", composer send). */
+.af-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-circle);
+  background: var(--surface-brand-strong);
+  color: var(--text-on-brand);
+  box-shadow: var(--shadow-brand);
+  transition: transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
+}
+.af-fab:active:not(:disabled) {
+  transform: scale(0.93);
+  background: var(--brand-800);
+}
+.af-fab:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+/* ==========================================================================
+   5. FIELDS
+   ========================================================================== */
+
+.af-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+}
+
+.af-field__label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-secondary);
+  padding-inline-start: var(--space-1);
+}
+
+.af-field__shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 54px;
+  background: var(--surface-field);
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--border-default);
+  transition: box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.af-field__shell:focus-within {
+  background: var(--surface-field-focus);
+  box-shadow: inset 0 0 0 1.5px var(--brand-500), 0 0 0 4px var(--brand-a12);
+}
+
+/* A filled but unfocused field reads as "done", not as an error. */
+.af-field__shell--filled {
+  background: var(--surface-field-focus);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.af-field__shell--error {
+  background: var(--danger-soft);
+  box-shadow: inset 0 0 0 1.5px var(--danger-500);
+}
+.af-field__shell--error:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--danger-500),
+    0 0 0 4px rgba(225, 75, 75, 0.14);
+}
+
+.af-field__shell--success {
+  box-shadow: inset 0 0 0 1.5px var(--success-500);
+}
+
+.af-field__shell--disabled {
+  background: var(--ink-50);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+.af-field__input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  padding: var(--space-5) var(--space-6);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.af-field__input:disabled {
+  color: var(--text-disabled);
+  -webkit-text-fill-color: var(--text-disabled);
+}
+
+textarea.af-field__input {
+  resize: none;
+  line-height: var(--leading-relaxed);
+  padding-block: var(--space-5);
+  min-height: 120px;
+}
+
+/* Leading / trailing slots sized so the input never collides with them. */
+.af-field__lead,
+.af-field__trail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--ink-500);
+}
+
+.af-field__lead {
+  padding-inline-start: var(--space-6);
+}
+.af-field__trail {
+  padding-inline-end: var(--space-3);
+}
+
+.af-field__lead img,
+.af-field__lead svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.55;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.af-field__shell:focus-within .af-field__lead img,
+.af-field__shell--filled .af-field__lead img {
+  opacity: 1;
+}
+
+.af-field__lead + .af-field__input {
+  padding-inline-start: var(--space-5);
+}
+
+.af-field__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-500);
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+.af-field__toggle:active {
+  background: var(--ink-a08);
+}
+.af-field__toggle img,
+.af-field__toggle svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.6;
+}
+
+/* Help and error text share one slot so the field height never jumps. */
+.af-field__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--text-secondary);
+  padding-inline-start: var(--space-1);
+}
+
+.af-field__note--error {
+  color: var(--danger-600);
+  font-weight: var(--weight-medium);
+}
+
+.af-field__count {
+  margin-inline-start: auto;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Checkbox / radio row */
+.af-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-height: var(--tap-min);
+  cursor: pointer;
+}
+
+.af-check__box {
+  position: relative;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-card);
+  box-shadow: inset 0 0 0 1.5px var(--border-strong);
+  transition: background-color var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
+}
+
+.af-check__box::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: no-repeat center / 13px 13px
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.5l3.2 3.2L13 5'/%3E%3C/svg%3E");
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-spring);
+}
+
+.af-check input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.af-check input:checked + .af-check__box {
+  background: var(--surface-brand-strong);
+  box-shadow: inset 0 0 0 1.5px var(--surface-brand-strong);
+}
+
+.af-check input:checked + .af-check__box::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.af-check input:focus-visible + .af-check__box {
+  box-shadow: inset 0 0 0 1.5px var(--brand-500), 0 0 0 4px var(--brand-a20);
+}
+
+.af-check__label {
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  line-height: var(--leading-snug);
+}
+
+/* ==========================================================================
+   6. SURFACES
+   ========================================================================== */
+
+.af-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.af-card--flat {
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+.af-card--raised {
+  box-shadow: var(--shadow-md);
+}
+
+.af-card--pad {
+  padding: var(--space-6);
+}
+
+/* A card the whole of which is tappable. */
+.af-card--tappable {
+  transition: transform var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
+  cursor: pointer;
+}
+.af-card--tappable:active {
+  transform: scale(0.988);
+  box-shadow: var(--shadow-xs);
+}
+
+/* List row — the workhorse of settings, conversations, producers. */
+.af-listrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-5) var(--space-6);
+  background: var(--surface-card);
+  text-align: start;
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+
+.af-listrow:active {
+  background: var(--ink-50);
+}
+
+.af-listrow + .af-listrow {
+  box-shadow: inset 0 1px 0 var(--border-subtle);
+}
+
+.af-listrow__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.af-listrow__title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.af-listrow__meta {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.af-listrow__chevron {
+  flex: 0 0 auto;
+  color: var(--ink-400);
+}
+
+/* Avatar */
+.af-avatar {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-circle);
+  overflow: hidden;
+  background: var(--brand-a12);
+  color: var(--brand-800);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-base);
+  letter-spacing: var(--tracking-wide);
+  user-select: none;
+}
+
+.af-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.af-avatar--xs {
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-xs);
+}
+.af-avatar--sm {
+  width: 38px;
+  height: 38px;
+  font-size: var(--text-sm);
+}
+.af-avatar--lg {
+  width: 64px;
+  height: 64px;
+  font-size: var(--text-xl);
+}
+.af-avatar--xl {
+  width: 104px;
+  height: 104px;
+  font-size: var(--text-3xl);
+}
+
+.af-avatar--ring {
+  box-shadow: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--brand-500);
+}
+
+/* Chips and pills */
+.af-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 34px;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--ink-50);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  white-space: nowrap;
+  transition: background-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.af-chip:active {
+  transform: scale(0.96);
+}
+
+.af-chip--selected {
+  background: var(--surface-brand-strong);
+  color: var(--text-on-brand);
+}
+
+.af-chip--brand {
+  background: var(--brand-a12);
+  color: var(--brand-800);
+}
+
+.af-chip--onimage {
+  background: var(--brand-a40);
+  color: var(--text-on-brand);
+  backdrop-filter: blur(10px) saturate(1.4);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+}
+
+/* Badge — a count, not a label. */
+.af-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding-inline: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--danger-500);
+  color: var(--text-on-brand);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.af-badge--brand {
+  background: var(--surface-brand-strong);
+}
+
+/* Divider */
+.af-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  border: 0;
+  margin-block: var(--space-6);
+}
+
+.af-divider--labelled {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  height: auto;
+  background: none;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+.af-divider--labelled::before,
+.af-divider--labelled::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* ==========================================================================
+   7. FEEDBACK
+   ========================================================================== */
+
+/* Inline banner — status the user should read, not dismiss-and-forget. */
+.af-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--info-soft);
+  color: var(--brand-900);
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
+}
+
+.af-banner__icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+}
+
+.af-banner__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.af-banner__title {
+  font-weight: var(--weight-bold);
+  margin-bottom: var(--space-1);
+}
+
+.af-banner--warning {
+  background: var(--warning-soft);
+  color: var(--warning-600);
+}
+.af-banner--danger {
+  background: var(--danger-soft);
+  color: var(--danger-600);
+}
+.af-banner--success {
+  background: var(--success-soft);
+  color: var(--success-600);
+}
+
+/* Empty state — an icon plate, a sentence, and the way out. */
+.af-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-5);
+  max-width: 320px;
+  margin-inline: auto;
+  padding: var(--space-11) var(--space-6);
+}
+
+.af-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-circle);
+  background: var(--brand-a08);
+  margin-bottom: var(--space-1);
+}
+
+.af-empty__icon img,
+.af-empty__icon svg {
+  width: 34px;
+  height: 34px;
+  opacity: 0.75;
+}
+
+.af-empty__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+}
+
+.af-empty__text {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+}
+
+.af-empty__action {
+  margin-top: var(--space-3);
+}
+
+/* Skeleton — a calm sweep, not a pulse. */
+.af-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--ink-100);
+  border-radius: var(--radius-sm);
+}
+
+.af-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.72),
+    transparent
+  );
+  animation: af-shimmer 1.6s var(--ease-in-out) infinite;
+}
+
+@keyframes af-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.af-skeleton--text {
+  height: 12px;
+  border-radius: var(--radius-pill);
+}
+.af-skeleton--circle {
+  border-radius: var(--radius-circle);
+}
+
+/* Spinner */
+.af-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-circle);
+  border: 2.5px solid var(--brand-a20);
+  border-top-color: var(--brand-600);
+  animation: af-spin 0.7s linear infinite;
+}
+
+.af-spinner--on-brand {
+  border-color: rgba(255, 255, 255, 0.32);
+  border-top-color: #fff;
+}
+
+.af-spinner--lg {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+@keyframes af-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================================================
+   8. OVERLAYS
+   ========================================================================== */
+
+.af-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  background: var(--surface-scrim);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: af-fade-in var(--dur-base) var(--ease-out) both;
+}
+
+/* Bottom sheet — rises from the edge it belongs to. */
+.af-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-sheet);
+  display: flex;
+  flex-direction: column;
+  max-height: 88dvh;
+  background: var(--surface-card);
+  border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+  box-shadow: var(--shadow-xl);
+  padding-bottom: var(--safe-bottom);
+  animation: af-sheet-in var(--dur-sheet) var(--ease-out) both;
+  /* The sheet owns vertical drags; horizontal stays with the browser. */
+  touch-action: pan-x;
+}
+
+.af-sheet__grip {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-200);
+  margin: var(--space-4) auto var(--space-2);
+}
+
+.af-sheet__header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-4) var(--space-6) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.af-sheet__title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+}
+
+.af-sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Dialog */
+.af-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  animation: af-dialog-in var(--dur-base) var(--ease-out) both;
+}
+
+/* Popover menu */
+.af-menu {
+  position: absolute;
+  z-index: var(--z-sheet);
+  min-width: 210px;
+  padding: var(--space-3);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  transform-origin: top right;
+  animation: af-menu-in var(--dur-fast) var(--ease-out) both;
+}
+
+.af-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  width: 100%;
+  min-height: 46px;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  text-align: start;
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+
+.af-menu__item:active {
+  background: var(--ink-50);
+}
+
+.af-menu__item--danger {
+  color: var(--danger-600);
+}
+
+.af-menu__separator {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: var(--space-3) var(--space-4);
+}
+
+/* ==========================================================================
+   9. MOTION PRIMITIVES
+   Entrances start from an already-visible default so nothing is ever stuck
+   invisible if the animation is skipped.
+   ========================================================================== */
+
+@keyframes af-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes af-rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}
+
+@keyframes af-sheet-in {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+}
+
+@keyframes af-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translate3d(0, 8px, 0);
+  }
+}
+
+@keyframes af-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translate3d(0, -6px, 0);
+  }
+}
+
+.af-anim-fade {
+  animation: af-fade-in var(--dur-base) var(--ease-out) both;
+}
+
+.af-anim-rise {
+  animation: af-rise-in var(--dur-base) var(--ease-out) both;
+}
+
+/* One authored moment per screen: the content list settles in sequence.
+   Capped at 8 so a long feed does not stagger for two seconds. */
+.af-anim-stagger > * {
+  animation: af-rise-in var(--dur-base) var(--ease-out) both;
+}
+.af-anim-stagger > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.af-anim-stagger > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.af-anim-stagger > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.af-anim-stagger > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.af-anim-stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.af-anim-stagger > *:nth-child(6) {
+  animation-delay: 200ms;
+}
+.af-anim-stagger > *:nth-child(7) {
+  animation-delay: 240ms;
+}
+.af-anim-stagger > *:nth-child(n + 8) {
+  animation-delay: 280ms;
+}
+
+/* ==========================================================================
+   10. TOASTS — react-toastify, re-skinned onto the token system.
+   ========================================================================== */
+
+.Toastify__toast-container {
+  z-index: var(--z-toast);
+  width: min(calc(100vw - var(--space-8)), 420px);
+  padding: 0;
+}
+
+.Toastify__toast-container--top-center {
+  top: calc(var(--safe-top) + var(--space-5));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.Toastify__toast {
+  min-height: 0;
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
+  box-shadow: var(--shadow-lg);
+}
+
+.Toastify__toast-body {
+  padding: 0;
+  margin: 0;
+  font-weight: var(--weight-medium);
+  align-items: flex-start;
+}
+
+.Toastify__toast-icon {
+  width: 20px;
+  margin-inline-end: var(--space-5);
+}
+
+.Toastify__close-button {
+  color: var(--ink-400);
+  opacity: 1;
+  align-self: center;
+}
+
+.Toastify__progress-bar {
+  height: 2px;
+}
+
+.Toastify__toast--error {
+  background: var(--surface-card);
+  color: var(--danger-600);
+  box-shadow: var(--shadow-lg), inset 3px 0 0 var(--danger-500);
+}
+.Toastify__toast--error .Toastify__progress-bar {
+  background: var(--danger-500);
+}
+
+.Toastify__toast--success {
+  background: var(--surface-card);
+  color: var(--success-600);
+  box-shadow: var(--shadow-lg), inset 3px 0 0 var(--success-500);
+}
+.Toastify__toast--success .Toastify__progress-bar {
+  background: var(--success-500);
+}
+
+.Toastify__toast--info {
+  color: var(--brand-800);
+  box-shadow: var(--shadow-lg), inset 3px 0 0 var(--brand-500);
+}
+.Toastify__toast--info .Toastify__progress-bar {
+  background: var(--brand-500);
+}
+
+.Toastify__toast--warning {
+  color: var(--warning-600);
+  box-shadow: var(--shadow-lg), inset 3px 0 0 var(--warning-500);
+}
+.Toastify__toast--warning .Toastify__progress-bar {
+  background: var(--warning-500);
+}
+
+/* ==========================================================================
+   11. SELECT — shares the field shell so a form reads as one set of controls.
+   ========================================================================== */
+
+.af-select-root {
+  position: relative;
+}
+
+.af-select {
+  cursor: pointer;
+}
+
+.af-select--open {
+  background: var(--surface-field-focus);
+  box-shadow: inset 0 0 0 1.5px var(--brand-500), 0 0 0 4px var(--brand-a12);
+}
+
+.af-select__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: var(--space-5) var(--space-6);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  text-align: start;
+}
+
+.af-field__lead + .af-select__trigger {
+  padding-inline-start: var(--space-5);
+}
+
+.af-select__trigger:disabled {
+  color: var(--text-disabled);
+}
+
+.af-select__value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.af-select__value--placeholder {
+  color: var(--text-placeholder);
+  font-weight: var(--weight-regular);
+}
+
+.af-select__list {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  right: 0;
+  z-index: var(--z-sheet);
+  max-height: 256px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-3);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  animation: af-menu-in var(--dur-fast) var(--ease-out) both;
+  transform-origin: top center;
+}
+
+.af-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: 46px;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
+  color: var(--text-primary);
+  text-align: start;
+  transition: background-color var(--dur-press) var(--ease-out);
+}
+
+.af-select__option--active {
+  background: var(--ink-50);
+}
+
+.af-select__option[aria-selected="true"] {
+  color: var(--brand-800);
+  font-weight: var(--weight-semibold);
+}
+
+/* ==========================================================================
+   12. SEGMENTED CONTROL — a choice between two or three peers.
+   ========================================================================== */
+
+.af-segmented {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--ink-50);
+  border-radius: var(--radius-md);
+}
+
+.af-segmented__option {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  color: var(--text-secondary);
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.af-segmented__option[aria-pressed="true"] {
+  background: var(--surface-card);
+  color: var(--brand-800);
+  box-shadow: var(--shadow-xs);
+}
+
+.af-segmented__option:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================================================
+   13. PROGRESS — a step meter for multi-screen flows.
+   ========================================================================== */
+
+.af-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.af-progress__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.af-progress__step {
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.af-progress__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+.af-progress__track {
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-100);
+  overflow: hidden;
+}
+
+/* Scaled, not resized: animating width relayouts the track on every frame,
+   where a transform is composited. `--fill` is 0–1. */
+.af-progress__fill {
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(var(--fill, 0));
+  border-radius: var(--radius-pill);
+  background: var(--brand-500);
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+/* ==========================================================================
+   14. AVATAR PICKER — the profile photo control in signup and settings.
+   ========================================================================== */
+
+.af-avatar-picker {
+  position: relative;
+  display: block;
+  width: 116px;
+  height: 116px;
+  margin-inline: auto;
+  border-radius: var(--radius-circle);
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+.af-avatar-picker:active {
+  transform: scale(0.96);
+}
+
+.af-avatar-picker__frame {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-circle);
+  overflow: hidden;
+  background: var(--brand-a08);
+  box-shadow: inset 0 0 0 2px var(--brand-300);
+}
+
+.af-avatar-picker__frame img.af-avatar-picker__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.af-avatar-picker__placeholder {
+  width: 46px;
+  height: 46px;
+  opacity: 0.5;
+}
+
+.af-avatar-picker__badge {
+  position: absolute;
+  right: 2px;
+  bottom: 6px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-circle);
+  background: var(--surface-brand-strong);
+  box-shadow: 0 0 0 3px var(--surface-card), var(--shadow-sm);
+}
+
+.af-avatar-picker__badge img {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
+}
+
+.af-avatar-picker input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.af-avatar-picker__hint {
+  margin-top: var(--space-5);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}

@@ -1,49 +1,73 @@
+/* ==========================================================================
+   Modal — a dialog for decisions that must not be lost behind the page.
+   ========================================================================== */
+
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
+  inset: 0;
+  z-index: var(--z-modal);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 9999;
-  animation: fadeIn 0.2s ease-out;
-  padding: 20px;
-  box-sizing: border-box;
+  justify-content: center;
+  padding: calc(var(--gutter) + var(--safe-left))
+    calc(var(--gutter) + var(--safe-right));
+  padding-top: calc(var(--space-8) + var(--safe-top));
+  padding-bottom: calc(var(--space-8) + var(--safe-bottom));
+  background: var(--surface-scrim);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: af-fade-in var(--dur-base) var(--ease-out) both;
+  overscroll-behavior: contain;
 }
 
 .modal-content {
-  background: white;
-  padding: 24px;
-  max-width: 90%;
-  max-height: 90%;
-  overflow: auto;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  animation: modalZoomIn 0.3s ease-out;
   position: relative;
+  width: 100%;
+  max-width: 400px;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-8);
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  animation: af-dialog-in var(--dur-base) var(--ease-out) both;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+/* Shared dialog furniture. */
+
+.modal-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  text-align: center;
 }
 
-@keyframes modalZoomIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
+.modal-text {
+  margin-top: var(--space-5);
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+  text-align: center;
+  text-wrap: pretty;
+}
+
+/* Destructive confirmations stack, so the safe choice is not a thumb-slip
+   away from the irreversible one on a narrow screen. */
+.modal-actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--space-4);
+  margin-top: var(--space-8);
+}
+
+@media (min-width: 400px) {
+  .modal-actions {
+    flex-direction: row;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+  .modal-actions > * {
+    flex: 1;
+    min-width: 0;
   }
 }

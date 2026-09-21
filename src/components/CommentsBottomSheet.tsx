@@ -3,10 +3,72 @@ import ReactDOM from "react-dom";
 import { useApiWithLoading } from "../services/apiWithLoading";
 import { Comment } from "../services/api";
 import { toast } from "react-toastify";
-import { normalizeImageUrl } from "../utils/imageUtils";
 import { appEvents, APP_EVENTS } from "../utils/eventEmitter";
+import {
+  Avatar,
+  Button,
+  EmptyState,
+  IconButton,
+  ListRowSkeleton,
+  Spinner,
+} from "./ui";
+import "./CommentsBottomSheet.css";
 
-const MAIN_BLUE = "#00B2D6";
+const CloseIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    aria-hidden="true"
+  >
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);
+
+const SendIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.9"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M4.3 11.7 20 4l-7.7 15.7-1.9-6.1z" />
+    <path d="m10.4 13.6 9.6-9.6" />
+  </svg>
+);
+
+const HeartIcon: React.FC<{ filled: boolean }> = ({ filled }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 20s-7.2-4.5-7.2-9.4A4.1 4.1 0 0 1 12 8.2a4.1 4.1 0 0 1 7.2 2.4C19.2 15.5 12 20 12 20z" />
+  </svg>
+);
+
+const CommentIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="var(--brand-700)"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.4 9.4 0 0 1-2.8-.4L4 21l1.4-3.9A8.2 8.2 0 0 1 3.6 11.5 8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4z" />
+  </svg>
+);
 
 interface CommentsBottomSheetProps {
   isOpen: boolean;
@@ -34,18 +96,36 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchComments(1);
-      // Focus input after a short delay to allow animation
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 300);
-    } else {
-      // Reset state when closing
-      setComments([]);
-      setPage(1);
-      setHasMore(true);
-      setCommentText("");
+      // Focus lands after the sheet has finished rising, so the keyboard
+      // does not fight the entrance animation.
+      const timer = setTimeout(() => inputRef.current?.focus(), 360);
+      return () => clearTimeout(timer);
     }
+
+    setComments([]);
+    setPage(1);
+    setHasMore(true);
+    setCommentText("");
   }, [isOpen, publicationId]);
+
+  // Escape closes the sheet, and the page behind it stops scrolling while
+  // it is open.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    const previousOverflow = document.body.style.overflow;
+
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, onClose]);
 
   const fetchComments = async (pageNum: number) => {
     if (loading) return;
@@ -57,37 +137,18 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
         pageNum,
         20
       );
-
-      // Handle response - even if empty, it's valid
       const results = response.results || [];
 
-      // Debug: Log comment data to check author information
-      if (results.length > 0) {
-        console.log('📝 First comment data:', results[0]);
-        console.log('📝 Author info:', {
-          author_name: results[0].author_name,
-          author_avatar: results[0].author_avatar,
-          author_type: results[0].author_type
-        });
-      }
-
-      if (pageNum === 1) {
-        setComments(results);
-      } else {
-        setComments((prev) => [...prev, ...results]);
-      }
-
+      setComments((prev) => (pageNum === 1 ? results : [...prev, ...results]));
       setHasMore(response.has_more || false);
       setPage(pageNum);
     } catch (error: any) {
-      console.error("Error fetching comments:", error);
-      // Set empty state on error
       setComments([]);
       setHasMore(false);
 
-      // Only show error toast if it's not a 404 (publication might just not exist)
+      // A 404 just means the publication has no comment thread yet.
       if (error?.status !== 404) {
-        toast.error("Erreur lors du chargement des commentaires");
+        toast.error("Les commentaires n'ont pas pu être chargés.");
       }
     } finally {
       setLoading(false);
@@ -98,7 +159,7 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
     if (!commentText.trim() || sending) return;
 
     if (!api.isAuthenticated()) {
-      toast.info("Veuillez vous connecter pour commenter");
+      toast.info("Connectez-vous pour commenter.");
       return;
     }
 
@@ -109,28 +170,18 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
         commentText.trim()
       );
 
-      // Debug: Log the new comment to see what data we're getting
-      console.log('📤 New comment created:', newComment);
-      console.log('📤 Author info:', {
-        author_name: newComment.author_name,
-        author_avatar: newComment.author_avatar,
-        created_at: newComment.created_at
-      });
-
-      // Add the new comment to the top of the list
       setComments((prev) => [newComment, ...prev]);
       setCommentText("");
-      toast.success("Commentaire ajouté !");
+      if (inputRef.current) inputRef.current.style.height = "auto";
 
-      // Emit event to notify other components (e.g., HomePage to update comment count)
-      appEvents.emit(APP_EVENTS.PUBLICATION_COMMENTED, { publicationId, comment: newComment });
+      appEvents.emit(APP_EVENTS.PUBLICATION_COMMENTED, {
+        publicationId,
+        comment: newComment,
+      });
 
-      // Scroll to top to see the new comment
       commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    } catch (error: any) {
-      console.error("Error creating comment:", error);
-      console.error("Error details:", error?.response?.data || error?.message);
-      toast.error("Erreur lors de l'envoi du commentaire");
+    } catch {
+      toast.error("Votre commentaire n'a pas pu être envoyé.");
     } finally {
       setSending(false);
     }
@@ -140,477 +191,230 @@ const CommentsBottomSheet: React.FC<CommentsBottomSheetProps> = ({
     try {
       await api.deleteComment(commentId);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
-      toast.success("Commentaire supprimé");
 
-      // Emit event to notify other components (e.g., HomePage to update comment count)
-      appEvents.emit(APP_EVENTS.PUBLICATION_COMMENTED, { publicationId, commentDeleted: true });
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-      toast.error("Erreur lors de la suppression");
+      appEvents.emit(APP_EVENTS.PUBLICATION_COMMENTED, {
+        publicationId,
+        commentDeleted: true,
+      });
+    } catch {
+      toast.error("Le commentaire n'a pas pu être supprimé.");
     }
   };
 
   const handleLikeComment = async (commentId: number) => {
     if (!api.isAuthenticated()) {
-      toast.info("Veuillez vous connecter pour aimer un commentaire");
+      toast.info("Connectez-vous pour aimer un commentaire.");
       return;
     }
 
-    // Optimistic update
-    setComments((prev) =>
-      prev.map((comment) => {
-        if (comment.id === commentId) {
-          return {
-            ...comment,
-            is_liked: !comment.is_liked,
-            likes_count: comment.is_liked
-              ? comment.likes_count - 1
-              : comment.likes_count + 1,
-          };
-        }
-        return comment;
-      })
-    );
-
-    try {
-      await api.toggleLikeComment(commentId);
-    } catch (error) {
-      // Revert on error
-      console.error("Error liking comment:", error);
-      setComments((prev) =>
-        prev.map((comment) => {
-          if (comment.id === commentId) {
-            return {
+    const toggle = (list: Comment[]) =>
+      list.map((comment) =>
+        comment.id === commentId
+          ? {
               ...comment,
               is_liked: !comment.is_liked,
               likes_count: comment.is_liked
                 ? comment.likes_count - 1
                 : comment.likes_count + 1,
-            };
-          }
-          return comment;
-        })
+            }
+          : comment
       );
-      toast.error("Erreur lors de l'ajout du like");
+
+    setComments(toggle);
+
+    try {
+      await api.toggleLikeComment(commentId);
+    } catch {
+      setComments(toggle);
+      toast.error("Le like n'a pas pu être enregistré.");
     }
   };
 
   const loadMore = () => {
-    if (hasMore && !loading) {
-      fetchComments(page + 1);
-    }
+    if (hasMore && !loading) fetchComments(page + 1);
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
+    const diffMins = Math.floor((Date.now() - date.getTime()) / 60000);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
     if (diffMins < 1) return "À l'instant";
-    if (diffMins < 60) return `Il y a ${diffMins}min`;
-    if (diffHours < 24) return `Il y a ${diffHours}h`;
-    if (diffDays < 7) return `Il y a ${diffDays}j`;
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    if (diffDays < 7) return `Il y a ${diffDays} j`;
 
-    return date.toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "short",
-    });
+    return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   };
 
   if (!isOpen) return null;
 
   return ReactDOM.createPortal(
     <>
-      {/* Backdrop */}
       <div
+        className="af-scrim"
         onClick={(e) => {
           e.stopPropagation();
           onClose();
         }}
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
-          zIndex: 9998,
-          animation: "fadeIn 0.2s ease-out",
-        }}
+        aria-hidden="true"
       />
 
-      {/* Bottom Sheet */}
-      <div
+      <section
+        className="af-sheet comments-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Commentaires"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          maxHeight: "80vh",
-          backgroundColor: "white",
-          borderRadius: "24px 24px 0 0",
-          zIndex: 9999,
-          display: "flex",
-          flexDirection: "column",
-          animation: "slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: "0 -4px 24px rgba(0,0,0,0.15)",
-        }}
       >
-        {/* Header */}
-        <div
-          style={{
-            padding: "20px 24px 16px 24px",
-            borderBottom: "1px solid #e0e0e0",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              width: "40px",
-              height: "4px",
-              backgroundColor: "#ddd",
-              borderRadius: "2px",
-              margin: "0 auto 16px auto",
-              cursor: "pointer",
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-          />
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: 20,
-                fontWeight: 700,
-                color: "#222",
-                margin: 0,
-              }}
-            >
-              Commentaires
-            </h2>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: 24,
-                color: "#666",
-                cursor: "pointer",
-                padding: "4px 8px",
-              }}
-            >
-              ×
-            </button>
-          </div>
-          <p
-            style={{
-              fontSize: 13,
-              color: "#666",
-              margin: "4px 0 0 0",
-            }}
-          >
-            {publicationTitle}
-          </p>
-        </div>
+        <button
+          type="button"
+          className="af-sheet__grip"
+          aria-label="Fermer les commentaires"
+          onClick={onClose}
+        />
 
-        {/* Comments List */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: "16px 24px",
-          }}
-        >
-          {comments.length === 0 && !loading ? (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "40px 20px",
-                color: "#999",
-              }}
-            >
-              <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
-              <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
-                Aucun commentaire
-              </p>
-              <p style={{ fontSize: 14 }}>
-                Soyez le premier à commenter cette publication
-              </p>
-            </div>
+        <header className="af-sheet__header">
+          <div className="comments-sheet__title-block">
+            <h2 className="af-sheet__title">Commentaires</h2>
+            <p className="comments-sheet__subtitle">{publicationTitle}</p>
+          </div>
+          <IconButton label="Fermer" size="sm" onClick={onClose}>
+            <CloseIcon />
+          </IconButton>
+        </header>
+
+        <div className="af-sheet__body comments-sheet__list">
+          {loading && comments.length === 0 ? (
+            <>
+              <ListRowSkeleton />
+              <ListRowSkeleton />
+              <ListRowSkeleton />
+            </>
+          ) : comments.length === 0 ? (
+            <EmptyState
+              icon={<CommentIcon />}
+              title="Aucun commentaire"
+              description="Soyez le premier à réagir à cette publication."
+            />
           ) : (
             <>
               {comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  style={{
-                    marginBottom: 20,
-                    paddingBottom: 16,
-                    borderBottom: "1px solid #f0f0f0",
-                  }}
-                >
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    {/* Avatar */}
-                    <div
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: "50%",
-                        backgroundColor: "#f0f0f0",
-                        flexShrink: 0,
-                        overflow: "hidden",
-                      }}
-                    >
-                      {comment.author_avatar && comment.author_avatar.startsWith('http') ? (
-                        <img
-                          src={normalizeImageUrl(comment.author_avatar)}
-                          alt={comment.author_name}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            backgroundColor: `${MAIN_BLUE}20`,
-                            color: MAIN_BLUE,
-                            fontWeight: 700,
-                            fontSize: 16,
-                          }}
+                <article key={comment.id} className="comment">
+                  <Avatar
+                    size="sm"
+                    src={
+                      comment.author_avatar?.startsWith("http")
+                        ? comment.author_avatar
+                        : undefined
+                    }
+                    name={comment.author_name || "Utilisateur"}
+                  />
+
+                  <div className="comment__body">
+                    <div className="comment__head">
+                      <span className="comment__author">
+                        {comment.author_name || "Utilisateur"}
+                      </span>
+                      <time
+                        className="comment__time"
+                        dateTime={comment.created_at}
+                      >
+                        {formatDate(comment.created_at)}
+                        {comment.is_edited && " · modifié"}
+                      </time>
+
+                      {comment.can_delete && (
+                        <button
+                          type="button"
+                          className="comment__delete"
+                          onClick={() => handleDeleteComment(comment.id)}
                         >
-                          {comment.author_avatar || (comment.author_name ? comment.author_name.charAt(0).toUpperCase() : '?')}
-                        </div>
+                          Supprimer
+                        </button>
                       )}
                     </div>
 
-                    {/* Comment Content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                          marginBottom: 6,
-                        }}
+                    <p className="comment__text" data-selectable="true">
+                      {comment.content}
+                    </p>
+
+                    <div className="comment__footer">
+                      <button
+                        type="button"
+                        className="comment__like"
+                        aria-pressed={Boolean(comment.is_liked)}
+                        aria-label={`${
+                          comment.is_liked ? "Retirer le like" : "Aimer"
+                        }, ${comment.likes_count || 0}`}
+                        onClick={() => handleLikeComment(comment.id)}
                       >
-                        <div>
-                          <div
-                            style={{
-                              fontWeight: 600,
-                              fontSize: 15,
-                              color: "#222",
-                              marginBottom: 2,
-                            }}
-                          >
-                            {comment.author_name || 'Utilisateur'}
-                          </div>
-                          <div style={{ fontSize: 12, color: "#999" }}>
-                            {formatDate(comment.created_at)}
-                            {comment.is_edited && " (modifié)"}
-                          </div>
-                        </div>
+                        <HeartIcon filled={Boolean(comment.is_liked)} />
+                        <span>{comment.likes_count || 0}</span>
+                      </button>
 
-                        {/* Delete Button for Owner */}
-                        {comment.can_delete && (
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              color: "#ff4444",
-                              fontSize: 12,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              padding: "4px 8px",
-                            }}
-                          >
-                            Supprimer
-                          </button>
-                        )}
-                      </div>
-
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: 15,
-                          lineHeight: 1.5,
-                          color: "#444",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {comment.content}
-                      </p>
-
-                      {/* Like Button */}
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "16px",
-                          marginTop: "8px",
-                        }}
-                      >
-                        <button
-                          onClick={() => handleLikeComment(comment.id)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: "4px 0",
-                            color: comment.is_liked ? "#ff4444" : "#999",
-                            fontSize: 13,
-                            fontWeight: 600,
-                          }}
-                        >
-                          <span style={{ fontSize: 16 }}>
-                            {comment.is_liked ? "❤️" : "🤍"}
-                          </span>
-                          <span>{comment.likes_count || 0}</span>
-                        </button>
-
-                        {/* Reply count indicator */}
-                        {comment.reply_count > 0 && (
-                          <span
-                            style={{
-                              fontSize: 13,
-                              color: "#999",
-                            }}
-                          >
-                            💬 {comment.reply_count} {comment.reply_count === 1 ? "réponse" : "réponses"}
-                          </span>
-                        )}
-                      </div>
+                      {comment.reply_count > 0 && (
+                        <span className="comment__replies">
+                          {comment.reply_count}{" "}
+                          {comment.reply_count === 1 ? "réponse" : "réponses"}
+                        </span>
+                      )}
                     </div>
                   </div>
-                </div>
+                </article>
               ))}
 
-              {/* Load More Button */}
               {hasMore && (
-                <button
+                <Button
+                  variant="ghost"
+                  block
+                  loading={loading}
+                  loadingLabel="Chargement…"
                   onClick={loadMore}
-                  disabled={loading}
-                  style={{
-                    width: "100%",
-                    padding: "12px",
-                    backgroundColor: "white",
-                    border: `2px solid ${MAIN_BLUE}`,
-                    borderRadius: "8px",
-                    color: MAIN_BLUE,
-                    fontWeight: 600,
-                    fontSize: 14,
-                    cursor: loading ? "not-allowed" : "pointer",
-                    opacity: loading ? 0.6 : 1,
-                    marginTop: 8,
-                  }}
+                  style={{ marginTop: "var(--space-5)" }}
                 >
-                  {loading ? "Chargement..." : "Voir plus de commentaires"}
-                </button>
+                  Voir plus de commentaires
+                </Button>
               )}
             </>
           )}
           <div ref={commentsEndRef} />
         </div>
 
-        {/* Comment Input */}
-        <div
-          style={{
-            padding: "16px 24px",
-            borderTop: "1px solid #e0e0e0",
-            backgroundColor: "white",
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
-            <textarea
-              ref={inputRef}
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendComment();
-                }
-              }}
-              placeholder="Ajouter un commentaire..."
-              rows={1}
-              style={{
-                flex: 1,
-                padding: "12px 16px",
-                border: "1px solid #e0e0e0",
-                borderRadius: "24px",
-                fontSize: 15,
-                color: "#000",
-                outline: "none",
-                resize: "none",
-                fontFamily: "inherit",
-                maxHeight: "100px",
-                backgroundColor: "white",
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = MAIN_BLUE;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "#e0e0e0";
-              }}
-            />
-            <button
-              onClick={handleSendComment}
-              disabled={!commentText.trim() || sending}
-              style={{
-                padding: "12px 20px",
-                backgroundColor: commentText.trim() ? MAIN_BLUE : "#ddd",
-                color: "white",
-                border: "none",
-                borderRadius: "24px",
-                fontSize: 15,
-                fontWeight: 600,
-                cursor:
-                  commentText.trim() && !sending ? "pointer" : "not-allowed",
-                transition: "background-color 0.2s",
-                height: "48.1px",
-              }}
-            >
-              {sending ? "..." : "Envoyer"}
-            </button>
-          </div>
-        </div>
-      </div>
+        <div className="comments-composer">
+          <textarea
+            ref={inputRef}
+            className="comments-composer__input"
+            value={commentText}
+            rows={1}
+            placeholder="Ajouter un commentaire…"
+            enterKeyHint="send"
+            onChange={(e) => {
+              setCommentText(e.target.value);
+              // Grow with the content, up to the CSS max-height.
+              e.target.style.height = "auto";
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSendComment();
+              }
+            }}
+          />
 
-      {/* Animations */}
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
-        }
-      `}</style>
+          <button
+            type="button"
+            className="comments-composer__send"
+            onClick={handleSendComment}
+            disabled={!commentText.trim() || sending}
+            aria-label="Envoyer le commentaire"
+          >
+            {sending ? <Spinner onBrand /> : <SendIcon />}
+          </button>
+        </div>
+      </section>
     </>,
     document.body
   );

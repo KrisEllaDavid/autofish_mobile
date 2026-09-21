@@ -1,5 +1,6 @@
 import React from "react";
 import NavBar from "../components/NavBar";
+import "./TermsOfUsePage.css";
 
 const autofishBlueLogo = "/icons/autofish_blue_logo.svg";
 
@@ -10,106 +11,12 @@ interface TermsOfUsePageProps {
 const TermsOfUsePage: React.FC<TermsOfUsePageProps> = ({ onBack }) => {
   return (
     <>
-      <style>{`
-        .fade-in-page {
-          opacity: 0;
-          animation: fadeInPage 0.5s ease-in forwards;
-        }
-        @keyframes fadeInPage {
-          to { opacity: 1; }
-        }
-        .terms-content {
-          padding: 20px;
-          padding-bottom: 40px;
-        }
-        .terms-content h1 {
-          font-size: 24px;
-          font-weight: 700;
-          color: #009CB7;
-          text-align: center;
-          margin-bottom: 8px;
-          font-family: "Arial Rounded MT Bold", Arial, sans-serif;
-        }
-        .terms-content .subtitle {
-          font-size: 16px;
-          font-style: italic;
-          color: #666;
-          text-align: center;
-          margin-bottom: 24px;
-        }
-        .terms-content h2 {
-          font-size: 18px;
-          font-weight: 700;
-          color: #009CB7;
-          margin-top: 24px;
-          margin-bottom: 12px;
-        }
-        .terms-content h3 {
-          font-size: 16px;
-          font-weight: 600;
-          color: #222;
-          margin-top: 16px;
-          margin-bottom: 8px;
-        }
-        .terms-content p {
-          font-size: 14px;
-          color: #444;
-          line-height: 1.6;
-          margin-bottom: 12px;
-          text-align: justify;
-        }
-        .terms-content ul {
-          margin-left: 20px;
-          margin-bottom: 12px;
-        }
-        .terms-content li {
-          font-size: 14px;
-          color: #444;
-          line-height: 1.6;
-          margin-bottom: 8px;
-        }
-        .terms-content strong {
-          font-weight: 600;
-          color: #222;
-        }
-        .terms-content .last-updated {
-          font-size: 13px;
-          color: #888;
-          font-style: italic;
-          margin-bottom: 20px;
-          text-align: center;
-        }
-        .terms-content .contact-box {
-          background: #f5f5f5;
-          border-left: 4px solid #009CB7;
-          padding: 16px;
-          margin: 20px 0;
-          border-radius: 4px;
-        }
-        .terms-content .contact-box p {
-          margin-bottom: 4px;
-        }
-      `}</style>
-      <div
-        className="fade-in-page"
-        style={{
-          minHeight: "100vh",
-          background: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          paddingTop: 64,
-        }}
-      >
+      <div className="terms-screen fade-in-page">
         <NavBar title="Conditions d'utilisation" onBack={onBack} />
 
+        <div className="terms-scroll">
         <div className="terms-content">
-          <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <img
-              src={autofishBlueLogo}
-              alt="Autofish Logo"
-              style={{ width: 60, height: 60, marginBottom: 12 }}
-            />
-          </div>
+          <img src={autofishBlueLogo} alt="" className="terms-mark" />
 
           <h1>CONDITIONS D'UTILISATION</h1>
           <div className="subtitle">Application Mobile Auto-Fish Store</div>
@@ -304,9 +211,10 @@ const TermsOfUsePage: React.FC<TermsOfUsePageProps> = ({ onBack }) => {
             <p>Adresse : 24 Rue Eymard ITOBA, Massengo, Djiri, Brazzaville</p>
           </div>
 
-          <div className="last-updated" style={{ marginTop: 32, marginBottom: 0 }}>
+          <div className="last-updated" style={{ marginTop: "var(--space-9)", marginBottom: 0 }}>
             Dernière mise à jour : 01 Janvier 2026
           </div>
+        </div>
         </div>
       </div>
     </>

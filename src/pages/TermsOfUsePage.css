@@ -1,0 +1,142 @@
+/* ==========================================================================
+   Terms of use — a reading screen.
+   Measure, rhythm and contrast are the whole design here.
+   ========================================================================== */
+
+.terms-screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--surface-card);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+.terms-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--header-total);
+  padding-bottom: calc(var(--space-11) + var(--safe-bottom));
+}
+
+.terms-content {
+  width: 100%;
+  /* Capped by characters, not pixels: the measure stays readable whatever
+     the root size or the screen. */
+  max-width: min(var(--reading-max), 100%);
+  margin-inline: auto;
+  padding: var(--space-8) var(--gutter) 0;
+}
+
+.terms-mark {
+  display: block;
+  width: 60px;
+  height: 60px;
+  margin: 0 auto var(--space-6);
+}
+
+.terms-content h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--brand-700);
+  text-align: center;
+  margin-bottom: var(--space-3);
+  text-wrap: balance;
+}
+
+.terms-content .subtitle {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+
+.terms-content .last-updated {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  text-align: center;
+  margin-bottom: var(--space-9);
+}
+
+/* More space above a heading than below it: the gap belongs to the break
+   between sections, not to the pair. */
+.terms-content h2 {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+  margin-top: var(--space-10);
+  margin-bottom: var(--space-5);
+}
+
+.terms-content h3 {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  margin-top: var(--space-7);
+  margin-bottom: var(--space-4);
+}
+
+.terms-content p,
+.terms-content li {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--ink-700);
+  /* Left-aligned, not justified: justification on a phone opens rivers of
+     whitespace between words. */
+  text-align: start;
+  text-wrap: pretty;
+}
+
+.terms-content p {
+  margin-bottom: var(--space-5);
+}
+
+.terms-content ul {
+  display: grid;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.terms-content li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.terms-content li::before {
+  content: "";
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  margin-top: 9px;
+  border-radius: var(--radius-circle);
+  background: var(--brand-400);
+}
+
+.terms-content strong {
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.terms-content .contact-box {
+  padding: var(--space-6);
+  margin: var(--space-8) 0;
+  background: var(--brand-50);
+  border-radius: var(--radius-md);
+}
+
+.terms-content .contact-box p {
+  margin-bottom: var(--space-2);
+  color: var(--brand-900);
+}
+
+.terms-content .contact-box p:last-child {
+  margin-bottom: 0;
+}

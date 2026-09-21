@@ -1,147 +1,249 @@
+/* ==========================================================================
+   Category selection — a step in both the client and producer signup flows.
+   ========================================================================== */
+
 .categories-page {
-  min-height: 100vh;
-  background: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-bottom: 64px;
-  animation: fadeInPage 0.5s ease-in forwards;
-  opacity: 0;
-}
-
-@keyframes fadeInPage {
-  to {
-    opacity: 1;
-  }
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--surface-card);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  padding-top: calc(var(--header-total) + var(--space-8));
+  padding-bottom: calc(var(--space-10) + var(--safe-bottom));
+  animation: fadeInPage var(--dur-base) var(--ease-out) both;
 }
 
 .categories-subtitle {
-  font-size: 15px;
-  color: #222;
-  margin-top: 60px;
-  margin-bottom: 18px;
-  text-align: left;
-  width: 90vw;
-  max-width: 340px;
+  width: 100%;
+  max-width: 400px;
+  margin-inline: auto;
+  margin-bottom: var(--space-6);
+  padding-inline: var(--gutter);
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+  text-wrap: pretty;
 }
 
+/* ── Dropdown ────────────────────────────────────────────────────────── */
+
 .categories-dropdown {
-  width: 100%;
-  max-width: 340px;
-  background: #fafbfc;
-  border-radius: 24px;
-  border: 1.2px solid #e0e0e0;
-  padding: 24px 24px 18px 24px;
-  font-size: 18px;
-  color: #b0b0b0;
+  position: relative;
   display: flex;
   flex-direction: column;
-  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 70px;
+  width: calc(100% - var(--gutter) * 2);
+  max-width: 400px;
+  margin-bottom: var(--space-7);
+  padding: var(--space-6);
+  background: var(--surface-field);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 1px var(--border-default);
+  font-size: var(--text-md);
+  color: var(--text-primary);
   overflow: hidden;
-  position: relative;
-  margin-bottom: 24px;
-  box-sizing: border-box;
+  /* The list lives in a 0fr → 1fr grid row rather than a max-height guess:
+     it opens to exactly its content, and the animation does not depend on a
+     magic pixel ceiling. */
+  transition: box-shadow var(--dur-base) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
 }
 
 .categories-dropdown.open {
-  max-height: 400px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  background: var(--surface-card);
+  box-shadow: inset 0 0 0 1.5px var(--brand-500), var(--shadow-md);
 }
 
 .categories-dropdown-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-5);
+  min-height: 24px;
   cursor: pointer;
+  font-weight: var(--weight-medium);
+}
+
+/* Closed with nothing chosen, the header is a placeholder, not content. */
+.categories-dropdown:not(.open) .categories-dropdown-header {
+  color: var(--text-placeholder);
 }
 
 .categories-dropdown-arrow {
-  font-size: 28px;
-  color: #222;
-  transition: transform 0.3s;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+  color: var(--ink-500);
+  transition: transform var(--dur-base) var(--ease-out);
 }
 
 .categories-dropdown-arrow img {
-  transition: transform 0.3s;
+  width: 16px;
+  height: 16px;
 }
 
 .categories-dropdown.open .categories-dropdown-arrow {
   transform: rotate(180deg);
 }
 
-.categories-dropdown.open .categories-dropdown-arrow img {
-  transform: rotate(90deg);
-}
-
 .categories-dropdown-list {
-  margin-top: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  max-height: 180px;
+  display: grid;
+  grid-template-rows: 1fr;
+  gap: var(--space-1);
+  margin-top: var(--space-6);
+  max-height: 260px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: af-fade-in var(--dur-fast) var(--ease-out) both;
 }
 
 .categories-dropdown-item {
-  font-size: 16px;
-  color: #222;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: var(--space-4) var(--space-5);
+  margin-inline: calc(var(--space-5) * -1);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-md);
+  color: var(--text-primary);
   cursor: pointer;
-  padding: 0 0 0 2px;
-  transition: background 0.2s;
+  transition: background-color var(--dur-press) var(--ease-out);
 }
 
-.categories-dropdown-item:hover {
-  background: #f0f0f0;
+.categories-dropdown-item:active {
+  background: var(--ink-50);
 }
+
+@media (hover: hover) and (pointer: fine) {
+  .categories-dropdown-item:hover {
+    background: var(--ink-50);
+  }
+}
+
+/* ── Selected pills ──────────────────────────────────────────────────── */
 
 .categories-pills {
-  width: 90vw;
-  max-width: 340px;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 48px;
+  gap: var(--space-4);
+  width: calc(100% - var(--gutter) * 2);
+  max-width: 400px;
+  margin-bottom: var(--space-9);
 }
 
 .categories-pill {
-  background: #222;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  border-radius: 16px;
-  padding: 10px 18px 10px 18px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-3);
+  min-height: 36px;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--surface-brand-strong);
+  color: var(--text-on-brand);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  animation: af-rise-in var(--dur-fast) var(--ease-out) both;
 }
 
 .categories-pill-close {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 18px;
-  margin-left: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin: 0;
   padding: 0;
+  border: 0;
+  border-radius: var(--radius-circle);
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+  font-size: var(--text-sm);
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.categories-pill-close:active {
+  transform: scale(0.88);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Action ──────────────────────────────────────────────────────────── */
+
+.categories-action-btn {
+  width: calc(100% - var(--gutter) * 2);
+  max-width: 400px;
+  min-height: 54px;
+  margin-top: auto;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface-brand-strong);
+  color: var(--text-on-brand);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  cursor: pointer;
+  box-shadow: var(--shadow-brand);
+  transition: transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out),
+    opacity var(--dur-press) var(--ease-out);
+}
+
+.categories-action-btn:active:not(:disabled) {
+  transform: scale(0.985);
+  background: var(--brand-800);
+  box-shadow: var(--shadow-sm);
+}
+
+.categories-action-btn:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ── States ──────────────────────────────────────────────────────────── */
+
+.categories-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-11) var(--gutter);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--text-base);
+}
+
+.categories-status__error {
+  max-width: 32ch;
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+}
+
+.categories-field {
+  width: calc(100% - var(--gutter) * 2);
+  max-width: 400px;
+}
+
+/* The reason a disabled button is disabled belongs next to it, not inside
+   it — a label that changes height moves the control under the thumb. */
+.categories-hint {
+  width: calc(100% - var(--gutter) * 2);
+  max-width: 400px;
+  margin-bottom: var(--space-5);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--text-tertiary);
+  text-align: center;
 }
 
 .categories-action-btn {
-  width: 90vw;
-  max-width: 370px;
-  background: #009cb7;
-  color: #fff;
-  font-weight: 700;
-  font-size: 18px;
-  border-radius: 18px;
-  border: none;
-  padding: 18px 0;
-  margin-top: 32px;
-  cursor: pointer;
-  transition: background 0.2s;
-  box-shadow: 0 2px 12px rgba(0, 156, 183, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
 }

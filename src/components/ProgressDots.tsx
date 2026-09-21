@@ -1,30 +1,31 @@
 import React from "react";
-import { commonStyles } from "./styles";
 
 interface ProgressDotsProps {
   activeIndex: number;
   totalSteps: number;
 }
 
+/** Step indicator. The active step widens into a bar rather than changing
+ *  colour alone, so progress reads at a glance and without relying on hue. */
 const ProgressDots: React.FC<ProgressDotsProps> = ({
   activeIndex,
   totalSteps,
-}) => {
-  return (
-    <div style={{ display: "flex", gap: 8 }}>
-      {Array.from({ length: totalSteps }).map((_, index) => (
-        <span
-          key={index}
-          style={{
-            ...(index === activeIndex
-              ? commonStyles.progressBar
-              : commonStyles.progressDot),
-            background: index === activeIndex ? "#17b5c5" : "#e0e0e0",
-          }}
-        />
-      ))}
-    </div>
-  );
-};
+}) => (
+  <div
+    className="ob-dots"
+    role="progressbar"
+    aria-valuemin={1}
+    aria-valuemax={totalSteps}
+    aria-valuenow={activeIndex + 1}
+    aria-label={`Étape ${activeIndex + 1} sur ${totalSteps}`}
+  >
+    {Array.from({ length: totalSteps }).map((_, index) => (
+      <span
+        key={index}
+        className={`ob-dot${index === activeIndex ? " ob-dot--active" : ""}`}
+      />
+    ))}
+  </div>
+);
 
 export default ProgressDots;

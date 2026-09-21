@@ -37,8 +37,20 @@ export const ErrorHandlerProvider: React.FC<ErrorHandlerProviderProps> = ({ chil
       {error && !error.isAuthError && (
         <ErrorOverlay>
           <ErrorModal>
-            <ErrorIcon>⚠️</ErrorIcon>
-            <ErrorTitle>Oops!</ErrorTitle>
+            <ErrorIcon aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--danger-600)"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 3.8 21 19.2H3z" />
+                <path d="M12 10v4M12 16.8v.2" />
+              </svg>
+            </ErrorIcon>
+            <ErrorTitle>Une erreur est survenue</ErrorTitle>
             <ErrorMessage>{error.message || "Quelque chose s'est mal passé"}</ErrorMessage>
             <GoHomeButton onClick={handleGoHome}>
               Retour à l'accueil
@@ -87,89 +99,81 @@ export const handleApiError = (error: any, showErrorFn: (message: string, isAuth
   showErrorFn(errorMessage, false);
 };
 
-// Styled Components
+// Styled components, reading from the token layer so this overlay matches
+// the rest of the app rather than carrying its own palette.
 const ErrorOverlay = styled.div`
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  inset: 0;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
-  animation: fadeIn 0.3s ease;
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
+  padding: calc(var(--space-8) + var(--safe-top)) var(--gutter)
+    calc(var(--space-8) + var(--safe-bottom));
+  background: var(--surface-scrim);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: af-fade-in var(--dur-base) var(--ease-out) both;
 `;
 
 const ErrorModal = styled.div`
-  background: white;
-  border-radius: 20px;
-  padding: 32px 24px;
-  max-width: 90%;
-  width: 320px;
+  width: 100%;
+  max-width: 380px;
+  padding: var(--space-9) var(--space-8) var(--space-8);
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
   text-align: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.3s ease;
-
-  @keyframes slideUp {
-    from {
-      transform: translateY(20px);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
+  animation: af-dialog-in var(--dur-base) var(--ease-out) both;
 `;
 
 const ErrorIcon = styled.div`
-  font-size: 48px;
-  margin-bottom: 16px;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto var(--space-7);
+  border-radius: var(--radius-circle);
+  background: var(--danger-soft);
+
+  svg {
+    width: 32px;
+    height: 32px;
+  }
 `;
 
 const ErrorTitle = styled.h2`
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 12px 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
 `;
 
 const ErrorMessage = styled.p`
-  font-size: 16px;
-  color: #666;
-  margin: 0 0 24px 0;
-  line-height: 1.5;
+  margin-top: var(--space-5);
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+  text-wrap: pretty;
 `;
 
 const GoHomeButton = styled.button`
-  background: #00B2D6;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  padding: 14px 32px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
   width: 100%;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #0098b8;
-    transform: translateY(-1px);
-  }
+  min-height: 52px;
+  margin-top: var(--space-8);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--surface-brand-strong);
+  color: var(--text-on-brand);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  box-shadow: var(--shadow-brand);
+  transition: background-color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
 
   &:active {
-    transform: translateY(0);
+    transform: scale(0.98);
+    background: var(--brand-800);
   }
 `;

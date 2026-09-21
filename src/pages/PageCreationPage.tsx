@@ -9,6 +9,8 @@ import Modal from "../components/Modal";
 import HomePage from "./HomePage";
 import { useAuth } from "../context/AuthContext";
 import { parseUserDataForProducerRegistration, validateUserDataForRegistration } from "../utils/registrationUtils";
+import { Avatar, Button, TextField } from "../components/ui";
+import "./Flow.css";
 
 const countries = [
   { name: "Cameroun", code: "+237" },
@@ -134,136 +136,33 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   }
 
   return (
-    <>
-      <style>{`
-        .fade-in-page {
-          opacity: 0;
-          animation: fadeInPage 0.5s ease-in forwards;
-        }
-        @keyframes fadeInPage {
-          to { opacity: 1; }
-        }
-        .input-box {
-          width: 100%;
-          background: #fafbfc;
-          border-radius: 18px;
-          border: 1.2px solid #e0e0e0;
-          font-size: 16px;
-          color: #222;
-          padding: 18px 18px 18px 18px;
-          margin-bottom: 22px;
-          outline: none;
-          font-family: inherit;
-          box-sizing: border-box;
-          font-weight: 500;
-        }
-        .input-box::placeholder {
-          color: #b0b0b0;
-          opacity: 1;
-        }
-        .categories-dropdown-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          cursor: pointer;
-        }
-        .categories-dropdown-arrow {
-          font-size: 28px;
-          color: #222;
-          transition: transform 0.3s;
-          display: flex;
-          align-items: center;
-        }
-        .categories-dropdown-arrow img {
-          transition: transform 0.3s;
-        }
-        .categories-dropdown.open .categories-dropdown-arrow {
-          transform: rotate(180deg);
-        }
-        .categories-dropdown.open .categories-dropdown-arrow img {
-          transform: rotate(90deg);
-        }
-        .categories-dropdown-list {
-          margin-top: 18px;
-          z-index: 1000;
-        }
-        .categories-dropdown-item {
-          font-size: 16px;
-          color: #222;
-          cursor: pointer;
-          padding: 12px 24px;
-          transition: background 0.2s;
-        }
-        .categories-dropdown-item:hover {
-          background: #f0f0f0;
-        }
-        .preview-btn {
-          width: 100%;
-          background: #fff;
-          color: #222;
-          font-weight: 700;
-          font-size: 18px;
-          border-radius: 18px;
-          border: 1.2px solid #222;
-          padding: 18px 0;
-          margin-bottom: 18px;
-          cursor: pointer;
-          transition: background 0.2s, color 0.2s;
-        }
-        .continue-btn {
-          width: 100%;
-          background: #009cb7;
-          color: #fff;
-          font-weight: 700;
-          font-size: 18px;
-          border-radius: 18px;
-          border: none;
-          padding: 18px 0;
-          cursor: pointer;
-          transition: background 0.2s;
-          box-shadow: 0 2px 12px rgba(0, 156, 183, 0.08);
-        }
-        .continue-btn:disabled {
-          background: #b0b0b0;
-          cursor: not-allowed;
-        }
-      `}</style>
-      <div
-        className="fade-in-page"
-        style={{
-          minHeight: "100vh",
-          background: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          paddingTop: 10,
-          paddingBottom: 40
-        }}
-      >
-        <NavBar title="Création de page" onBack={onBack} />
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 370,
-            margin: "0 auto",
-            padding: "0 16px",
-            boxSizing: "border-box",
-            marginTop: 24,
+    <div className="flow-screen fade-in-page">
+      <NavBar title="Création de page" onBack={onBack} />
+
+      <div className="flow-body">
+        <div className="flow-intro">
+          <h1 className="flow-intro__title">Votre page producteur</h1>
+          <p className="flow-intro__text">
+            Ces informations apparaîtront sur votre page publique, celle que
+            les clients consultent avant de vous contacter.
+          </p>
+        </div>
+
+        <form
+          className="flow-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleProducerRegistration();
           }}
         >
-          <div style={{ fontSize: 20, fontWeight: 700, color: "#222", marginBottom: 24, textAlign: "center" }}>
-            Informations de votre page business
-          </div>
-
-          <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
-            Quel est le nom de votre page ?
-          </div>
-          <input
-            className="input-box"
-            placeholder="Entrez le nom de la page"
+          <TextField
+            label="Nom de la page"
             value={pageName}
             onChange={(e) => setPageName(e.target.value)}
+            placeholder="Par exemple : Pêcherie du Wouri"
+            enterKeyHint="next"
           />
+
           <CountryDropdown
             countries={countries}
             selectedCountry={businessCountry}
@@ -272,121 +171,92 @@ const PageCreationPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               setBusinessCountry(country);
               setBusinessCountryCode(code);
             }}
-            label="Quelle est votre pays de vente ?"
+            label="Pays de vente"
+            required
             placeholder="Sélectionnez votre pays"
           />
+
           <AddressInput
             address={businessAddress}
             onAddressChange={setBusinessAddress}
-            label="Quel est votre adresse business (Ville, Quartier)"
-            placeholder="Entrez votre adresse business"
+            label="Adresse de l'activité"
+            placeholder="Ville, quartier, repère…"
           />
+
           <PhoneInput
             countryCode={businessCountryCode}
             phoneNumber={businessPhone}
             onPhoneChange={setBusinessPhone}
-            onCountryCodeClick={() => {}} // Country code changes through dropdown above
-            label="Quel est votre numéro de téléphone business?"
-            placeholder="Entrez votre numéro de téléphone business"
+            /* The dial code follows the country chosen above. */
+            onCountryCodeClick={() => {}}
+            label="Téléphone de l'activité"
+            placeholder="6 XX XX XX XX"
+            hint="Les clients vous joindront sur ce numéro."
           />
-          <button
-            className="preview-btn"
-            type="button"
+        </form>
+
+        <div className="flow-actions">
+          <Button
+            size="lg"
+            block
+            loading={isRegistering}
+            loadingLabel="Inscription…"
+            disabled={!isValid}
+            onClick={handleProducerRegistration}
+          >
+            Terminer l&apos;inscription
+          </Button>
+
+          <Button
+            variant="outline"
+            size="lg"
+            block
             onClick={handleShowPreview}
           >
             Aperçu de la page
-          </button>
-          <button
-            className="continue-btn"
-            disabled={!isValid || isRegistering}
-            onClick={handleProducerRegistration}
-          >
-            {isRegistering ? 'Inscription en cours...' : 'Terminer l\'inscription'}
-          </button>
-          {showModal && (
-            <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
-              <div
-                style={{
-                  background: "#fff",
-                  borderRadius: 28,
-                  boxShadow: "0 4px 32px rgba(0,0,0,0.18)",
-                  padding: 32,
-                  maxWidth: 340,
-                  width: "90vw",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: 90,
-                    height: 90,
-                    borderRadius: "50%",
-                    border: "3px solid #009cb7",
-                    overflow: "hidden",
-                    marginBottom: 18,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <img
-                    src={userData?.avatar}
-                    alt="cover"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                </div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 24,
-                    color: "#222",
-                    marginBottom: 8,
-                    textAlign: "center",
-                  }}
-                >
-                  Bravo !
-                </div>
-                <div
-                  style={{
-                    color: "#b0b0b0",
-                    fontSize: 17,
-                    marginBottom: 28,
-                    textAlign: "center",
-                  }}
-                >
-                  Votre page producteur a bien été enregistrée
-                </div>
-                <button
-                  style={{
-                    width: "100%",
-                    background: "#009cb7",
-                    color: "#fff",
-                    fontWeight: 700,
-                    fontSize: 18,
-                    borderRadius: 18,
-                    border: "none",
-                    padding: "16px 0",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => {
-                    setShowModal(false);
-                    setShowHomePage(true);
-                  }}
-                >
-                  Vers l'accueil
-                </button>
-              </div>
-            </Modal>
-          )}
+          </Button>
         </div>
       </div>
-    </>
+
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        label="Page créée"
+      >
+        <div style={{ textAlign: "center" }}>
+          <Avatar
+            src={userData?.avatar}
+            name={pageName || userData?.name}
+            size="xl"
+            ring
+            alt=""
+            style={{ marginInline: "auto" }}
+          />
+
+          <h2 className="modal-title" style={{ marginTop: "var(--space-7)" }}>
+            Votre page est créée
+          </h2>
+          <p className="modal-text">
+            {pageName ? `« ${pageName} » est enregistrée. ` : ""}
+            Notre équipe vérifie votre compte producteur. Vous pourrez publier
+            dès la validation.
+          </p>
+
+          <div style={{ marginTop: "var(--space-8)" }}>
+            <Button
+              size="lg"
+              block
+              onClick={() => {
+                setShowModal(false);
+                setShowHomePage(true);
+              }}
+            >
+              Aller à l&apos;accueil
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
   );
 };
 

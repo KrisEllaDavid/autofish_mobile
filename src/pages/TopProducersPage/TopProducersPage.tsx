@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./TopProducersPage.css";
+import { Button, ListRowSkeleton } from "../../components/ui";
 import TopNavBar from "../../components/TopNavBar";
 import { useApiWithLoading } from "../../services/apiWithLoading";
 import { ProducerPage } from "../../services/api";
@@ -178,46 +179,22 @@ const TopProducersPage: React.FC<TopProducersPageProps> = ({
           </select>
         </div>
 
-        {/* Hidden Loading State - only show on initial load */}
         {loading && initialLoad && (
-          <div style={{ textAlign: "center", padding: "40px" }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid #f3f3f3',
-              borderTop: '3px solid #00B2D6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite',
-              margin: '20px auto'
-            }} />
-            <p>Chargement des producteurs...</p>
-            <style>{`
-              @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-              }
-            `}</style>
+          <div className="producers-list" aria-busy="true">
+            <ListRowSkeleton />
+            <ListRowSkeleton />
+            <ListRowSkeleton />
           </div>
         )}
 
-        {/* Error State */}
         {error && (
-          <div style={{ textAlign: "center", padding: "40px", color: "red" }}>
-            <p>Erreur: {error}</p>
-            <button 
-              onClick={() => window.location.reload()}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#00B2D6",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                marginTop: "10px"
-              }}
-            >
+          <div className="producers-status">
+            <p className="producers-status__text">
+              La liste des producteurs n&apos;a pas pu se charger.
+            </p>
+            <Button variant="secondary" onClick={() => window.location.reload()}>
               Réessayer
-            </button>
+            </Button>
           </div>
         )}
 

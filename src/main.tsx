@@ -9,19 +9,15 @@ import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
 
-/* Optional CSS utils that can be commented out */
-import '@ionic/react/css/padding.css';
-import '@ionic/react/css/float-elements.css';
-import '@ionic/react/css/text-alignment.css';
-import '@ionic/react/css/text-transformation.css';
-import '@ionic/react/css/flex-utils.css';
-import '@ionic/react/css/display.css';
+/* Ionic's optional utility sheets are not used by any screen — the app has
+   its own layout layer in src/styles. Importing them only adds specificity
+   we then have to fight. */
 
-/* Theme variables */
-// import '@ionic/react/css/palettes/dark.always.css';
-// import '@ionic/react/css/palettes/dark.class.css';
-import '@ionic/react/css/palettes/dark.system.css';
+/* No dark palette is imported: the app ships a single light theme, and
+   dark.system.css would otherwise repaint Ionic's hosts from the OS setting
+   while every screen stayed light. */
 
+/* App styles last, so they win over Ionic's base. */
 import "./index.css";
 import App from "./App.tsx";
 import { setupIonicReact } from '@ionic/react';

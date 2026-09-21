@@ -1,0 +1,84 @@
+/* ==========================================================================
+   Full-screen loading overlay
+   ========================================================================== */
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-toast);
+  display: grid;
+  place-items: center;
+  padding: var(--safe-top) var(--gutter) var(--safe-bottom);
+  background: linear-gradient(
+    160deg,
+    rgba(0, 156, 183, 0.94),
+    rgba(0, 105, 126, 0.96)
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: af-fade-in var(--dur-fast) var(--ease-out) both;
+}
+
+.loading-overlay__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+  animation: af-rise-in var(--dur-base) var(--ease-out) both;
+}
+
+.loading-overlay__logo {
+  animation: loading-breathe 2.4s var(--ease-in-out) infinite;
+}
+
+.loading-overlay__dots {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.loading-overlay__dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-circle);
+  background: #fff;
+  animation: ob-blink 1.4s var(--ease-in-out) infinite both;
+}
+
+.loading-overlay__dots span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.loading-overlay__dots span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.loading-overlay__label {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-wide);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+@keyframes loading-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.88;
+  }
+}
+
+/* ob-blink is defined with the onboarding dots; redeclared here so the
+   overlay does not depend on that stylesheet being loaded. */
+@keyframes ob-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}

@@ -21,6 +21,8 @@ import { useApiWithLoading } from "../services/apiWithLoading";
 import { Publication, ProducerPage } from "../services/api";
 import { useData } from "../context/DataContext";
 import { appEvents, APP_EVENTS } from "../utils/eventEmitter";
+import { toast } from "react-toastify";
+import { Button, EmptyState, PostCardSkeleton, Spinner } from "../components/ui";
 
 type MainTab =
   | "home"
@@ -308,7 +310,7 @@ const HomePage: React.FC = () => {
     if (!userData || !userData.registrationComplete) {
       // TODO: Show login modal or redirect to login
       console.log("User must be logged in to like posts");
-      alert("Veuillez vous connecter pour aimer cette publication.");
+      toast.info("Connectez-vous pour aimer cette publication.");
       return;
     }
 
@@ -397,7 +399,7 @@ const HomePage: React.FC = () => {
             errorMessage.toLowerCase().includes("token") ||
             errorMessage.toLowerCase().includes("unauthorized")
           ) {
-            alert("Votre session a expiré. Veuillez vous reconnecter.");
+            toast.error("Votre session a expiré. Reconnectez-vous.");
             // TODO: Redirect to login or refresh token
             return;
           }
@@ -407,7 +409,7 @@ const HomePage: React.FC = () => {
       }
 
       console.error("Failed to update like:", errorMessage);
-      alert("Erreur lors de la mise à jour du like: " + errorMessage);
+      toast.error("Le like n'a pas pu être enregistré.");
     }
   };
 
@@ -427,7 +429,7 @@ const HomePage: React.FC = () => {
 
     // Check if user is authenticated
     if (!userData || !userData.registrationComplete) {
-      alert("Veuillez vous connecter pour envoyer un message.");
+      toast.info("Connectez-vous pour envoyer un message.");
       return;
     }
 
@@ -440,14 +442,14 @@ const HomePage: React.FC = () => {
     console.log('🔍 Are they equal?', publication?.producer === userData.id);
 
     if (publication && publication.producer === userData.id) {
-      alert("Vous ne pouvez pas envoyer un message sur votre propre publication.");
+      toast.info("Cette publication est la vôtre.");
       return;
     }
 
     // Additional check: if publication has no producer, show error
     if (publication && !publication.producer) {
       console.error('❌ Publication has no producer!', publication);
-      alert("Cette publication n'a pas de producteur associé. Impossible de créer une conversation.");
+      toast.error("Aucun producteur associé à cette publication.");
       return;
     }
 
@@ -472,7 +474,7 @@ const HomePage: React.FC = () => {
           error.response.data.chat_id.toString()
         );
       } else {
-        alert("Erreur lors de l'ouverture de la conversation");
+        toast.error("La conversation n'a pas pu être ouverte.");
       }
     }
   };
@@ -709,123 +711,54 @@ const HomePage: React.FC = () => {
         activeTab={activeTab}
         hasNewPublications={hasNewPublications}
       />
-      {/* Search Bar - Click to open search page */}
-      <div
-        style={{
-          width: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          margin: "80px 0 16px 0",
-          backgroundColor: "white",
-          height: "80px",
-          padding: "0 16px",
-          flexShrink: 0, // Prevent shrinking
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "400px",
-            position: "relative",
-          }}
-        >
-          <div
+      <div className="home-scroll">
+        {/* Search entry — sticky, so it stays reachable down the feed. */}
+        <div className="home-search">
+          <button
+            type="button"
+            className="home-search__button"
             onClick={() => {
               setSearchQuery("");
               setActiveTab("search");
             }}
-            style={{
-              width: "100%",
-              padding: "12px 16px",
-              border: "1px solid #e0e0e0",
-              borderRadius: "8px",
-              fontSize: "16px",
-              backgroundColor: "white",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              color: "#999",
-              transition: "border-color 0.2s, box-shadow 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#00B2D6";
-              e.currentTarget.style.boxShadow =
-                "0 0 0 2px rgba(0, 178, 214, 0.1)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#e0e0e0";
-              e.currentTarget.style.boxShadow = "none";
-            }}
           >
-            <span style={{ width: "15px" }}>
-              <img
-                src="/icons/Search.svg"
-                alt="search"
-                className="search-icon"
-              />
-            </span>
-            <span>Rechercher des produits...</span>
-          </div>
+            <img src="/icons/Search.svg" alt="" aria-hidden="true" />
+            <span>Rechercher un produit, un producteur…</span>
+          </button>
         </div>
-      </div>
 
-      {/* Verification Status Banner */}
-      <VerificationStatusBanner />
+        <VerificationStatusBanner />
 
-      {/* Content */}
-      <div className="content">
-        <div className="posts-feed" style={{ position: "relative" }}>
+        <div className="posts-feed">
           {loading && initialLoad ? (
-            <div style={{ textAlign: "center", padding: "20px" }}>
-              <div
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  border: "3px solid #f3f3f3",
-                  borderTop: "3px solid #00B2D6",
-                  borderRadius: "50%",
-                  animation: "spin 1s linear infinite",
-                  margin: "20px auto",
-                }}
-              />
-              <p>Chargement des publications...</p>
-              <style>{`
-                @keyframes spin {
-                  0% { transform: rotate(0deg); }
-                  100% { transform: rotate(360deg); }
-                }
-              `}</style>
+            /* Skeletons in the shape of the cards, so nothing jumps when the
+               real posts land. */
+            <div className="posts-container" aria-busy="true">
+              <PostCardSkeleton />
+              <PostCardSkeleton />
+              <PostCardSkeleton />
             </div>
           ) : error ? (
-            <div style={{ textAlign: "center", padding: "20px", color: "red" }}>
-              <p>Erreur: {error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#00B2D6",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                }}
+            <div className="feed-error">
+              <h2 className="feed-error__title">
+                Le fil n&apos;a pas pu se charger
+              </h2>
+              <p className="feed-error__text">
+                Vérifiez votre connexion, puis réessayez.
+              </p>
+              <Button
+                variant="secondary"
+                onClick={() => fetchPublications(1, false)}
               >
                 Réessayer
-              </button>
+              </Button>
             </div>
           ) : filteredPublications.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-state-icon">
-                <img src="/icons/autofish_blue_logo.svg" alt="publications" />
-              </div>
-              <h2>Aucune publication disponible</h2>
-              <p>
-                Il n'y a pas encore de publications à afficher. Revenez plus
-                tard!
-              </p>
-            </div>
+            <EmptyState
+              icon={<img src="/icons/autofish_blue_logo.svg" alt="" />}
+              title="Rien à afficher pour le moment"
+              description="Les producteurs n'ont pas encore publié. Revenez bientôt pour découvrir les arrivages."
+            />
           ) : (
             <div className="posts-container">
               {filteredPublications.map((publication) => {
@@ -900,60 +833,29 @@ const HomePage: React.FC = () => {
                 );
               })}
 
-              {/* Loading more indicator */}
               {loadingMore && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    padding: "30px 0",
-                    color: "#009CB7",
-                  }}
-                >
-                  <div
-                    style={{
-                      border: "3px solid #f3f3f3",
-                      borderTop: "3px solid #009CB7",
-                      borderRadius: "50%",
-                      width: "40px",
-                      height: "40px",
-                      animation: "spin 1s linear infinite",
-                    }}
-                  />
+                <div className="feed-status">
+                  <Spinner size="lg" label="Chargement de la suite" />
                 </div>
               )}
 
-              {/* Intersection observer target for infinite scroll */}
+              {/* Sentinel for the infinite-scroll observer. */}
               <div
                 ref={observerTarget}
-                style={{ height: "10px", width: "100%" }}
+                className="feed-sentinel"
                 aria-hidden="true"
               />
 
-              {/* No more posts message */}
               {!hasMore && publications.length > 0 && (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "20px 0",
-                    color: "#999",
-                    fontSize: "14px",
-                  }}
-                >
-                  Vous avez vu toutes les publications
-                </div>
+                <p className="feed-end">
+                  Vous avez tout vu pour l&apos;instant.
+                </p>
               )}
-
-              {/* Spacer element to add 100px after the last post */}
-              <div
-                style={{ height: "100px", width: "100%" }}
-                aria-hidden="true"
-              />
             </div>
           )}
         </div>
       </div>
-      {/* Bottom Navigation */}
+
       <BottomNavBar
         activeTab={
           (["home", "messages", "producers", "profile", "favorites"].includes(

@@ -1,37 +1,37 @@
 import React from "react";
+import { TextField } from "./ui";
 
 interface AddressInputProps {
   address: string;
   onAddressChange: (address: string) => void;
   placeholder?: string;
   label?: string;
+  hint?: string;
+  error?: string;
   style?: React.CSSProperties;
 }
 
 const AddressInput: React.FC<AddressInputProps> = ({
   address,
   onAddressChange,
-  placeholder = "Entrez votre adresse",
+  placeholder = "Ville, quartier, repère…",
   label,
-  style = {}
-}) => {
-  return (
-    <>
-      {label && (
-        <div style={{ fontSize: 15, color: "#222", marginBottom: 10 }}>
-          {label}
-        </div>
-      )}
-      <input
-        className="input-box"
-        placeholder={placeholder}
-        value={address}
-        onChange={(e) => onAddressChange(e.target.value)}
-        style={style}
-      />
-    </>
-  );
-};
+  hint,
+  error,
+  style,
+}) => (
+  <div style={style}>
+    <TextField
+      label={label}
+      value={address}
+      onChange={(e) => onAddressChange(e.target.value)}
+      placeholder={placeholder}
+      autoComplete="street-address"
+      enterKeyHint="next"
+      hint={hint}
+      error={error}
+    />
+  </div>
+);
 
 export default AddressInput;
-

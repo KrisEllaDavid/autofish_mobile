@@ -1,18 +1,15 @@
 import React from "react";
-import { commonStyles } from "./styles";
 
 interface TextContentProps {
   title: string;
   description: string;
 }
 
-const TextContent: React.FC<TextContentProps> = ({ title, description }) => {
-  return (
-    <div style={commonStyles.textContainer}>
-      <h2 style={commonStyles.title}>{title}</h2>
-      <p style={commonStyles.description}>{description}</p>
-    </div>
-  );
-};
+const TextContent: React.FC<TextContentProps> = ({ title, description }) => (
+  <div className="ob-copy">
+    <h2 className="ob-copy__title">{title}</h2>
+    <p className="ob-copy__text">{description}</p>
+  </div>
+);
 
 export default TextContent;

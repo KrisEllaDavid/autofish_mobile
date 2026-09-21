@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import TopNavBar from "../../components/TopNavBar";
+import { PostCardSkeleton } from "../../components/ui";
 import PostCard from "../../components/PostCard";
 import { useApiWithLoading } from "../../services/apiWithLoading";
 import { Publication } from "../../services/api";
@@ -8,7 +9,6 @@ import { useData } from "../../context/DataContext";
 import { appEvents, APP_EVENTS } from "../../utils/eventEmitter";
 import "./FavoritePostsPage.css";
 
-const MAIN_BLUE = "#00B2D6";
 
 interface FavoritePostsPageProps {
   onNotificationClick?: () => void;
@@ -101,26 +101,11 @@ const FavoritePostsPage: React.FC<FavoritePostsPageProps> = ({
         activeTab={activeTab}
       />
 
-      <div className="favorite-posts-content" style={{
-        padding: "96px 16px 100px 16px",
-        minHeight: "100vh",
-        backgroundColor: "#f8f9fa"
-      }}>
+      <div className="favorite-posts-content">
         {loading ? (
-          <div style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            minHeight: "50vh"
-          }}>
-            <div style={{
-              width: "40px",
-              height: "40px",
-              border: `4px solid ${MAIN_BLUE}40`,
-              borderTop: `4px solid ${MAIN_BLUE}`,
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite"
-            }} />
+          <div className="favorite-posts-list" aria-busy="true">
+            <PostCardSkeleton />
+            <PostCardSkeleton />
           </div>
         ) : likedPublications.length === 0 ? (
           <div className="empty-state">
@@ -131,28 +116,17 @@ const FavoritePostsPage: React.FC<FavoritePostsPageProps> = ({
             <p>Vos publications favorites apparaîtront ici une fois que vous commencerez à aimer des posts.</p>
           </div>
         ) : (
-          <div style={{
-            maxWidth: "800px",
-            margin: "0 auto"
-          }}>
-            <h2 style={{
-              fontSize: "18px",
-              fontWeight: 600,
-              color: "#222",
-              marginBottom: "20px"
-            }}>
-              {likedPublications.length} publication{likedPublications.length > 1 ? "s" : ""} favorite{likedPublications.length > 1 ? "s" : ""}
-            </h2>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "16px"
-            }}>
+          <>
+            <p className="favorite-posts-count">
+              {likedPublications.length} publication
+              {likedPublications.length > 1 ? "s" : ""} favorite
+              {likedPublications.length > 1 ? "s" : ""}
+            </p>
+            <div className="favorite-posts-list">
               {likedPublications.map((pub) => (
                 <div
                   key={pub.id}
                   onClick={() => onPostClick?.(pub.id)}
-                  style={{ cursor: "pointer" }}
                 >
                   <PostCard
                     id={pub.id.toString()}
@@ -181,16 +155,9 @@ const FavoritePostsPage: React.FC<FavoritePostsPageProps> = ({
                 </div>
               ))}
             </div>
-          </div>
+          </>
         )}
       </div>
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };

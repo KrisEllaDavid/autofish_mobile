@@ -1,0 +1,45 @@
+/* ==========================================================================
+   Account menu — the popover behind the header's overflow button.
+   ========================================================================== */
+
+.account-menu {
+  transform-origin: top right;
+}
+
+.account-menu__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+.account-menu__details {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-menu__name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu__email {
+  margin-top: 1px;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu__role {
+  margin-top: var(--space-4);
+  min-height: 26px;
+  padding-block: var(--space-2);
+  font-size: var(--text-xs);
+}

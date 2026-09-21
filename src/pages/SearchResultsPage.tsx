@@ -6,17 +6,22 @@ import { useAuth } from "../context/AuthContext";
 import { useApiWithLoading } from "../services/apiWithLoading";
 import { Publication } from "../services/api";
 import { toast } from "react-toastify";
+import { Chip, EmptyState, PostCardSkeleton } from "../components/ui";
+import "./SearchResultsPage.css";
 
-const MAIN_BLUE = "#00B2D6";
 const searchIcon = "/icons/Search.svg";
+
+/** Starting points offered before the first query, so the empty search
+ *  screen suggests something rather than just waiting. */
+const SUGGESTIONS = ["Tilapia", "Crevettes", "Maquereau", "Douala", "Yaoundé"];
+
+type NavTab = "home" | "messages" | "producers" | "profile" | "favorites";
 
 interface SearchResultsPageProps {
   onBack: () => void;
   onNotificationClick?: () => void;
   onMyPageClick?: () => void;
-  onTabChange: (
-    tab: "home" | "messages" | "producers" | "profile" | "favorites"
-  ) => void;
+  onTabChange: (tab: NavTab) => void;
   activeTab?: string;
   userAvatar?: string;
   userName?: string;
@@ -26,8 +31,21 @@ interface SearchResultsPageProps {
   initialSearchQuery?: string;
 }
 
+const ClearIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    aria-hidden="true"
+  >
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);
+
 const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
-  onBack,
+  onBack: _onBack,
   onNotificationClick,
   onMyPageClick,
   onTabChange,
@@ -47,64 +65,67 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Perform search
-  const handleSearch = useCallback(async () => {
+  const runSearch = useCallback(
+    async (term: string) => {
+      const query = term.trim();
+      if (!query) return;
+
+      setIsLoading(true);
+      setHasSearched(true);
+      setSearchQuery(query);
+
+      try {
+        // Filtering happens client-side against a single page of the feed;
+        // a server-side search endpoint would replace this.
+        const allPublications = await api.getPublicFeed({
+          page: 1,
+          limit: 100,
+          user_categories: userData?.selectedCategories?.map((cat) =>
+            parseInt(cat)
+          ),
+        });
+
+        const needle = query.toLowerCase();
+        setResults(
+          allPublications.results.filter(
+            (pub) =>
+              pub.title.toLowerCase().includes(needle) ||
+              pub.description.toLowerCase().includes(needle) ||
+              pub.location.toLowerCase().includes(needle) ||
+              pub.category_name?.toLowerCase().includes(needle)
+          )
+        );
+      } catch {
+        toast.error("La recherche a échoué. Réessayez.");
+        setResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [api, userData?.selectedCategories]
+  );
+
+  const handleSearch = useCallback(() => {
     if (!searchInput.trim()) {
-      toast.info("Veuillez entrer un terme de recherche");
+      toast.info("Entrez un terme à rechercher.");
       return;
     }
+    runSearch(searchInput);
+  }, [searchInput, runSearch]);
 
-    setIsLoading(true);
-    setHasSearched(true);
-    setSearchQuery(searchInput);
-
-    try {
-      // Fetch all publications and filter client-side
-      // In production, you'd want server-side search
-      const allPublications = await api.getPublicFeed({
-        page: 1,
-        limit: 100,
-        user_categories: userData?.selectedCategories?.map((cat) =>
-          parseInt(cat)
-        ),
-      });
-
-      const query = searchInput.trim().toLowerCase();
-      const filtered = allPublications.results.filter(
-        (pub) =>
-          pub.title.toLowerCase().includes(query) ||
-          pub.description.toLowerCase().includes(query) ||
-          pub.location.toLowerCase().includes(query) ||
-          (pub.category_name && pub.category_name.toLowerCase().includes(query))
-      );
-
-      setResults(filtered);
-    } catch (error) {
-      console.error("Search error:", error);
-      toast.error("Erreur lors de la recherche");
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [searchInput, api, userData?.selectedCategories]);
-
-  // Auto-search on mount if initial query provided
   useEffect(() => {
-    if (initialSearchQuery.trim()) {
-      handleSearch();
-    }
+    if (initialSearchQuery.trim()) runSearch(initialSearchQuery);
+    // Runs once for the query handed in by the feed.
   }, []);
 
   const handleLike = async (publicationId: number) => {
     if (!api.isAuthenticated()) {
-      toast.info("Veuillez vous connecter pour aimer une publication");
+      toast.info("Connectez-vous pour aimer une publication.");
       return;
     }
 
     try {
       await api.likePublication(publicationId);
-
-      // Update local state
       setResults((prev) =>
         prev.map((pub) =>
           pub.id === publicationId
@@ -118,27 +139,20 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             : pub
         )
       );
-    } catch (error) {
-      console.error("Error liking publication:", error);
-      toast.error("Erreur lors de l'ajout aux favoris");
+    } catch {
+      toast.error("Le like n'a pas pu être enregistré.");
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
+  const clearSearch = () => {
+    setSearchInput("");
+    setResults([]);
+    setHasSearched(false);
+    setSearchQuery("");
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: "#f8f9fa",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
+    <div className="search-page">
       <TopNavBar
         title="Recherche"
         userAvatar={userAvatar || userData?.avatar}
@@ -150,303 +164,112 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
         activeTab={activeTab}
       />
 
-      {/* Search Section */}
-      <div
-        style={{
-          width: "100%",
-          backgroundColor: "white",
-          padding: "96px 16px 16px 16px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-          }}
-        >
-          {/* Back Button */}
-          <button
-            onClick={onBack}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              background: "none",
-              border: "none",
-              color: MAIN_BLUE,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              marginBottom: 16,
-              padding: 0,
-            }}
-          >
-            <span style={{ fontSize: 18 }}>←</span>
-            <span>Retour</span>
-          </button>
-
-          <h1
-            style={{
-              fontSize: 24,
-              fontWeight: 700,
-              color: "#222",
-              marginBottom: 16,
-            }}
-          >
-            Rechercher des produits
-          </h1>
-
-          {/* Search Input */}
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-              marginBottom: 8,
-            }}
-          >
-            <input
-              type="text"
-              placeholder="Entrez le nom du produit, catégorie, localisation..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              style={{
-                color: "black",
-                flex: 1,
-                padding: "14px 16px",
-                border: "2px solid #e0e0e0",
-                borderRadius: "12px",
-                fontSize: "16px",
-                outline: "none",
-                backgroundColor: "white",
-                transition: "border-color 0.2s",
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = MAIN_BLUE;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = "#e0e0e0";
-              }}
-            />
-            <button
-              onClick={handleSearch}
-              disabled={isLoading}
-              style={{
-                padding: "14px 24px",
-                backgroundColor: MAIN_BLUE,
-                color: "white",
-                border: "none",
-                borderRadius: "12px",
-                fontSize: "16px",
-                fontWeight: 600,
-                cursor: isLoading ? "not-allowed" : "pointer",
-                opacity: isLoading ? 0.7 : 1,
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {isLoading ? (
-                <>
-                  <div
-                    style={{
-                      width: "16px",
-                      height: "16px",
-                      border: "2px solid #ffffff40",
-                      borderTop: "2px solid #ffffff",
-                      borderRadius: "50%",
-                      animation: "spin 1s linear infinite",
-                    }}
-                  />
-                  Recherche...
-                </>
-              ) : (
-                <>
-                  <img
-                    src={searchIcon}
-                    alt="search"
-                    style={{
-                      width: 18,
-                      height: 18,
-                      filter: "brightness(0) invert(1)",
-                    }}
-                  />
-                  Rechercher
-                </>
+      <div className="search-scroll">
+        <div className="search-bar">
+          <div className="search-bar__inner">
+            <div className="search-bar__field">
+              <img
+                src={searchIcon}
+                alt=""
+                aria-hidden="true"
+                className="search-bar__icon"
+              />
+              <input
+                type="search"
+                className="search-bar__input"
+                value={searchInput}
+                placeholder="Produit, catégorie, ville…"
+                aria-label="Rechercher"
+                inputMode="search"
+                enterKeyHint="search"
+                autoCapitalize="none"
+                autoCorrect="off"
+                autoFocus
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSearch();
+                }}
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  className="search-bar__clear"
+                  onClick={clearSearch}
+                  aria-label="Effacer la recherche"
+                >
+                  <ClearIcon />
+                </button>
               )}
-            </button>
-          </div>
-
-          <p
-            style={{
-              fontSize: 12,
-              color: "#999",
-              marginTop: 8,
-            }}
-          >
-            💡 Astuce : Essayez de rechercher par catégorie (ex: Poisson,
-            Manioc) ou par ville
-          </p>
-        </div>
-      </div>
-
-      {/* Results Section */}
-      <div
-        style={{
-          flex: 1,
-          padding: "24px 16px 100px 16px",
-          maxWidth: "800px",
-          width: "100%",
-          margin: "0 auto",
-        }}
-      >
-        {!hasSearched ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "60px 20px",
-              color: "#666",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 48,
-                marginBottom: 16,
-              }}
-            >
-              🔍
             </div>
-            <h2
-              style={{
-                fontSize: 20,
-                fontWeight: 600,
-                marginBottom: 8,
-                color: "#222",
-              }}
-            >
-              Trouvez les produits que vous cherchez
-            </h2>
-            <p style={{ fontSize: 14, lineHeight: 1.6 }}>
-              Utilisez la barre de recherche ci-dessus pour trouver des produits
-              par nom, catégorie ou localisation.
-            </p>
           </div>
-        ) : isLoading ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "60px 20px",
-              color: "#666",
-            }}
-          >
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                border: `4px solid ${MAIN_BLUE}40`,
-                borderTop: `4px solid ${MAIN_BLUE}`,
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-                margin: "0 auto 16px auto",
-              }}
-            />
-            <p>Recherche en cours...</p>
+        </div>
+
+        {isLoading ? (
+          <div className="search-results" aria-busy="true">
+            <PostCardSkeleton />
+            <PostCardSkeleton />
+          </div>
+        ) : !hasSearched ? (
+          <div className="search-intro">
+            <h2 className="search-intro__title">Suggestions</h2>
+            <div className="search-intro__chips">
+              {SUGGESTIONS.map((term) => (
+                <Chip
+                  key={term}
+                  onClick={() => {
+                    setSearchInput(term);
+                    runSearch(term);
+                  }}
+                >
+                  {term}
+                </Chip>
+              ))}
+            </div>
           </div>
         ) : results.length === 0 ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "60px 20px",
-              color: "#666",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 48,
-                marginBottom: 16,
-              }}
-            >
-              😕
-            </div>
-            <h2
-              style={{
-                fontSize: 20,
-                fontWeight: 600,
-                marginBottom: 8,
-                color: "#222",
-              }}
-            >
-              Aucun résultat trouvé
-            </h2>
-            <p style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
-              Nous n'avons trouvé aucun produit correspondant à "
-              <strong>{searchQuery}</strong>"
-            </p>
-            <p style={{ fontSize: 14, color: "#999" }}>
-              Essayez avec d'autres mots-clés ou vérifiez l'orthographe
-            </p>
-          </div>
+          <EmptyState
+            icon={<img src={searchIcon} alt="" />}
+            title="Aucun résultat"
+            description={`Rien ne correspond à « ${searchQuery} ». Essayez un autre terme ou une autre ville.`}
+            actionLabel="Effacer la recherche"
+            onAction={clearSearch}
+          />
         ) : (
           <>
-            <div
-              style={{
-                marginBottom: 16,
-                paddingBottom: 16,
-                borderBottom: "1px solid #e0e0e0",
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: 18,
-                  fontWeight: 600,
-                  color: "#222",
-                  marginBottom: 4,
-                }}
-              >
-                Résultats de recherche
-              </h2>
-              <p style={{ fontSize: 14, color: "#666" }}>
-                {results.length} produit{results.length > 1 ? "s" : ""} trouvé
-                {results.length > 1 ? "s" : ""} pour "
-                <strong>{searchQuery}</strong>"
-              </p>
-            </div>
+            <p className="search-meta">
+              <strong>{results.length}</strong>{" "}
+              {results.length > 1 ? "résultats" : "résultat"} pour «{" "}
+              {searchQuery} »
+            </p>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                gap: "16px",
-              }}
-            >
+            <div className="search-results">
               {results.map((pub) => (
-                <div
-                  key={pub.id}
-                  onClick={() => onPostClick?.(pub.id)}
-                  style={{ cursor: "pointer" }}
-                >
+                <div key={pub.id} onClick={() => onPostClick?.(pub.id)}>
                   <PostCard
                     id={pub.id.toString()}
                     producerName={pub.page_name || "Producteur"}
                     producerAvatar={
-                      userAvatar || "/icons/autofish_blue_logo 1.png"
+                      pub.producer_picture || "/icons/account_icon.svg"
                     }
-                    postImage={pub.picture_url || pub.picture || ""}
+                    postImage={
+                      pub.picture_url ||
+                      pub.picture ||
+                      "/icons/autofish_blue_logo.svg"
+                    }
                     description={pub.description}
                     date={pub.date_posted}
                     likes={pub.likes_count || pub.likes || 0}
-                    comments={0}
-                    category={pub.category_name || ""}
+                    comments={pub.comments_count || 0}
+                    category={pub.category_name || pub.category.name}
                     location={pub.location}
                     price={pub.price}
-                    isLiked={pub.is_liked || false}
+                    isLiked={pub.is_liked}
                     producerPhone={pub.producer_phone}
                     postTitle={pub.title}
                     onLike={() => handleLike(pub.id)}
-                    onComment={() => {}}
-                    onProducerClick={() => {}}
+                    hideContactButton={
+                      !!(userData && pub.producer === userData.id)
+                    }
                   />
                 </div>
               ))}
@@ -456,24 +279,9 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       </div>
 
       <BottomNavBar
-        activeTab={
-          (activeTab as
-            | "home"
-            | "messages"
-            | "producers"
-            | "profile"
-            | "favorites") || "home"
-        }
+        activeTab={(activeTab as NavTab) || "home"}
         onTabChange={onTabChange}
       />
-
-      {/* Spinner Animation */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };

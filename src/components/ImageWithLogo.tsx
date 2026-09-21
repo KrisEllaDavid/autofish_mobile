@@ -1,5 +1,4 @@
 import React from "react";
-import { commonStyles } from "./styles";
 
 interface ImageWithLogoProps {
   imageSrc: string;
@@ -13,13 +12,11 @@ const ImageWithLogo: React.FC<ImageWithLogoProps> = ({
   imageAlt,
   logoSrc,
   logoAlt,
-}) => {
-  return (
-    <div style={commonStyles.imageContainer}>
-      <img src={imageSrc} alt={imageAlt} style={commonStyles.image} />
-      <img src={logoSrc} alt={logoAlt} style={commonStyles.logoOverlay} />
-    </div>
-  );
-};
+}) => (
+  <div className="ob-hero">
+    <img src={imageSrc} alt={imageAlt} className="ob-hero__image" />
+    <img src={logoSrc} alt={logoAlt} className="ob-hero__logo" />
+  </div>
+);
 
 export default ImageWithLogo;

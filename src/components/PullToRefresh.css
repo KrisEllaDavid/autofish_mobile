@@ -1,0 +1,48 @@
+/* ==========================================================================
+   Pull-to-refresh indicator
+   ========================================================================== */
+
+.ptr {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: opacity var(--dur-fast) var(--ease-out);
+  pointer-events: none;
+}
+
+.ptr__spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+/* The ring fills toward the release threshold, so the gesture reports its
+   own progress instead of only saying "pull". */
+.ptr__progress {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-circle);
+  background: conic-gradient(
+    var(--brand-500) var(--ptr-angle, 0deg),
+    var(--ink-200) 0deg
+  );
+  /* A hole in the middle turns the disc into a ring without a second node. */
+  -webkit-mask: radial-gradient(circle 4px at 50% 50%, transparent 99%, #000 100%);
+  mask: radial-gradient(circle 4px at 50% 50%, transparent 99%, #000 100%);
+}

@@ -1,71 +1,93 @@
-import React from 'react';
-import { useAuth } from '../context/AuthContext';
+import React from "react";
+import { useAuth } from "../context/AuthContext";
+import { Banner } from "./ui";
 
 interface VerificationStatusBannerProps {
   className?: string;
 }
 
-const VerificationStatusBanner: React.FC<VerificationStatusBannerProps> = ({ className = '' }) => {
+const ClockIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="20"
+    height="20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7.5V12l3 1.8" />
+  </svg>
+);
+
+const AlertIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    width="20"
+    height="20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 3.8 21 19.2H3z" />
+    <path d="M12 10v4M12 16.8v.2" />
+  </svg>
+);
+
+/**
+ * Producer account status, shown inline above the feed.
+ *
+ * It used to be a solid orange or green bar with an emoji — loud enough to
+ * compete with the content it sits above. It now uses the token banner:
+ * amber for "you need to act", brand for "we are reviewing".
+ */
+const VerificationStatusBanner: React.FC<VerificationStatusBannerProps> = ({
+  className = "",
+}) => {
   const { userData } = useAuth();
 
-  // Only show for producers with limited access
-  if (!userData || userData.userRole !== 'producteur' || userData.access_level === 'full') {
+  if (
+    !userData ||
+    userData.userRole !== "producteur" ||
+    userData.access_level === "full"
+  ) {
     return null;
   }
 
-  const getStatusColor = () => {
-    if (!userData.email_verified) {
-      return '#FF9500'; // Orange for email verification needed
-    } else if (!userData.is_verified) {
-      return '#34C759'; // Green for under review (positive but waiting)
-    }
-    return '#FF9500';
-  };
+  const needsEmail = !userData.email_verified;
 
-  const getStatusMessage = () => {
-    if (userData.status_message) {
-      return userData.status_message;
-    }
+  const title = needsEmail
+    ? "Vérifiez votre email"
+    : "Vérification en cours";
 
-    if (!userData.email_verified) {
-      return "Veuillez vérifier votre email pour accéder à toutes les fonctionnalités.";
-    } else if (!userData.is_verified) {
-      return "Votre compte producteur est en cours de vérification. Vous avez un accès limité.";
-    }
-    return "Votre compte est en cours de vérification.";
-  };
-
-  const getStatusIcon = () => {
-    if (!userData.email_verified) {
-      return "⚠️";
-    } else if (!userData.is_verified) {
-      return "⏳";
-    }
-    return "⚠️";
-  };
+  const message =
+    userData.status_message ||
+    (needsEmail
+      ? "Confirmez votre adresse pour débloquer toutes les fonctionnalités."
+      : "Votre compte producteur est en cours de validation. Certaines actions restent limitées en attendant.");
 
   return (
     <div
-      className={`verification-status-banner ${className}`}
+      className={className}
       style={{
-        backgroundColor: getStatusColor(),
-        color: 'white',
-        padding: '12px 16px',
-        borderRadius: '8px',
-        margin: '8px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '14px',
-        fontWeight: '500',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        maxWidth: "var(--content-max)",
+        margin: "0 auto",
+        padding: "var(--space-2) var(--gutter) var(--space-5)",
       }}
     >
-      <span style={{ marginRight: '8px', fontSize: '16px' }}>
-        {getStatusIcon()}
-      </span>
-      <span style={{ flex: 1, lineHeight: '1.3' }}>
-        {getStatusMessage()}
-      </span>
+      <Banner
+        tone={needsEmail ? "warning" : "info"}
+        icon={needsEmail ? <AlertIcon /> : <ClockIcon />}
+        title={title}
+      >
+        {message}
+      </Banner>
     </div>
   );
 };

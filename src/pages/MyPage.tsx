@@ -4,6 +4,7 @@ import TopNavBar from "../components/TopNavBar";
 import BottomNavBar from "../components/BottomNavBar";
 import { compressImage, validateImage } from "../utils/imageCompression";
 import { useAuth } from "../context/AuthContext";
+import "./MyPage.css";
 import { normalizeImageUrl } from "../utils/imageUtils";
 import Modal from "../components/Modal";
 import PostCard from "../components/PostCard";
@@ -11,6 +12,7 @@ import { Post } from "../mock/posts";
 import { toast } from "react-toastify";
 import { useApiWithLoading } from "../services/apiWithLoading";
 import { ProducerPage } from "../services/api";
+import { Banner } from "../components/ui";
 import "react-toastify/dist/ReactToastify.css";
 
 // Extended Post interface for MyPage with additional properties
@@ -22,7 +24,7 @@ interface MyPost extends Post {
 }
 
 // Constants
-const MAIN_BLUE = "#00B2D6";
+
 const cameraIcon = "/icons/camera_icon_white.svg";
 const editIconWhite = "/icons/edit-white.svg";
 const editIconBlack = "/icons/edit-black.svg";
@@ -596,46 +598,30 @@ const MyPage: React.FC<MyPageProps> = ({
 
     return ReactDOM.createPortal(
       <Modal isOpen={showPostModal} onClose={() => setShowPostModal(false)}>
-        <div
-          style={{
-            maxWidth: "min(400px, 90vw)",
-            width: "100%",
-            maxHeight: "85vh",
-            overflowY: "auto",
-          }}
-        >
-          <h2
-            style={{
-              fontWeight: 700,
-              fontSize: 18,
-              marginBottom: 16,
-              color: MAIN_BLUE,
-              margin: "0 0 16px 0",
-            }}
-          >
+        <div>
+          <h2 className="modal-title-accent">
             {editingPost ? "Modifier la publication" : "Nouvelle publication"}
           </h2>
           <div className="modal-form-label">Image</div>
           {postImage && (
-            <div style={{ marginBottom: 16 }}>
+            <div className="modal-preview">
               <img
                 src={normalizeImageUrl(postImage)}
-                alt="post"
+                alt="Aperçu de la publication"
                 className="modal-form-img-preview"
-                style={{ width: "100%", maxWidth: "100%", borderRadius: 12 }}
               />
-              <div style={{ marginTop: 8, fontSize: 14, color: "#666" }}>
-                {editingPost
-                  ? "Choisir une nouvelle image pour remplacer celle-ci"
-                  : ""}
-              </div>
+              {editingPost && (
+                <p className="modal-note">
+                  Choisissez une nouvelle image pour remplacer celle-ci.
+                </p>
+              )}
             </div>
           )}
           <input
             type="file"
             accept="image/*"
             onChange={handlePostImageChange}
-            style={{ marginBottom: 12 }}
+            className="modal-form-file"
           />
           <div className="modal-form-label">Description</div>
           <textarea
@@ -698,23 +684,8 @@ const MyPage: React.FC<MyPageProps> = ({
         isOpen={showPageNameModal}
         onClose={() => setShowPageNameModal(false)}
       >
-        <div
-          style={{
-            maxWidth: "min(400px, 90vw)",
-            width: "100%",
-            maxHeight: "85vh",
-            overflowY: "auto",
-          }}
-        >
-          <h2
-            style={{
-              fontWeight: 700,
-              fontSize: 18,
-              marginBottom: 16,
-              color: MAIN_BLUE,
-              margin: "0 0 16px 0",
-            }}
-          >
+        <div>
+          <h2 className="modal-title-accent">
             Modifier le nom de la page
           </h2>
           <div className="modal-form-label">Nom de la page</div>
@@ -753,23 +724,8 @@ const MyPage: React.FC<MyPageProps> = ({
         isOpen={showLocationModal}
         onClose={() => setShowLocationModal(false)}
       >
-        <div
-          style={{
-            maxWidth: "min(400px, 90vw)",
-            width: "100%",
-            maxHeight: "85vh",
-            overflowY: "auto",
-          }}
-        >
-          <h2
-            style={{
-              fontWeight: 700,
-              fontSize: 18,
-              marginBottom: 16,
-              color: MAIN_BLUE,
-              margin: "0 0 16px 0",
-            }}
-          >
+        <div>
+          <h2 className="modal-title-accent">
             Modifier l'adresse
           </h2>
           <div className="modal-form-label">Adresse</div>
@@ -805,35 +761,11 @@ const MyPage: React.FC<MyPageProps> = ({
 
     return ReactDOM.createPortal(
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)}>
-        <div
-          style={{
-            maxWidth: "min(400px, 90vw)",
-            width: "100%",
-            maxHeight: "85vh",
-            overflowY: "auto",
-          }}
-        >
-          <h2
-            style={{
-              fontWeight: 700,
-              fontSize: 18,
-              marginBottom: 12,
-              color: "#FF4B4B",
-              margin: "0 0 12px 0",
-            }}
-          >
-            Supprimer la publication
-          </h2>
-          <p
-            style={{
-              marginBottom: 20,
-              color: "#666",
-              fontSize: 14,
-              lineHeight: 1.5,
-            }}
-          >
-            Êtes-vous sûr de vouloir supprimer cette publication ? Cette action
-            est irréversible.
+        <div>
+          <h2 className="modal-title-accent">Supprimer la publication ?</h2>
+          <p className="modal-note">
+            Cette publication et ses commentaires seront définitivement
+            effacés. Cette action est irréversible.
           </p>
           <div className="modal-btn-row">
             <button
@@ -857,386 +789,6 @@ const MyPage: React.FC<MyPageProps> = ({
 
   return (
     <>
-      <style>{`
-        .my-page-container {
-          min-height: 100vh;
-          background-color: #f8f9fa;
-          display: flex;
-          flex-direction: column;
-        }
-        .fade-in-page {
-          opacity: 0;
-          animation: fadeInPage 0.5s ease-in forwards;
-          flex: 1;
-          overflow-y: auto;
-          position: relative;
-          padding-bottom: 100px;
-        }
-        @keyframes fadeInPage { to { opacity: 1; } }
-
-        /* Banner Section */
-        .banner-container {
-          position: relative;
-          width: 100%;
-          height: 350px;
-          background: linear-gradient(135deg, #009cb7 0%, #007a8f 100%);
-          overflow: hidden;
-          border-radius: 0 0 0 0;
-          box-shadow: 0 4px 16px rgba(0, 156, 183, 0.15);
-        }
-        .banner {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        .banner-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(135deg, rgba(0, 156, 183, 0.8) 0%, rgba(0, 122, 143, 0.9) 100%);
-        }
-        .banner-camera {
-          position: absolute;
-          bottom: 30px;
-          right: 12px;
-          width: 48px;
-          height: 48px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: rgba(20, 20, 20, 1);
-          border-radius: 50%;
-          cursor: pointer;
-          z-index: 3;
-          transition: all 0.3s ease;
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-        }
-        .banner-camera:active {
-          transform: scale(0.95);
-        }
-        .banner-camera img { width: 20px; height: 20px; opacity: 1; }
-
-        /* Profile Info */
-        .profile-info {
-          position: absolute;
-          left: 16px;
-          bottom: 30px;
-          z-index: 4;
-          color: #fff;
-          max-width: calc(100% - 80px);
-        }
-        .profile-name {
-          display: flex;
-          align-items: center;
-          margin-bottom: 8px;
-        }
-        .profile-name-text {
-          font-size: 20px;
-          font-weight: 700;
-          color: #fff;
-          text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-          margin-right: 8px;
-          line-height: 1.2;
-        }
-        .edit-btn {
-          background: rgba(255, 255, 255, 0.25);
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-          min-width: 32px;
-          min-height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          border: none;
-        }
-        .edit-btn:active {
-          transform: scale(0.95);
-          background: rgba(255, 255, 255, 0.35);
-        }
-        .edit-btn img { width: 16px; height: 16px; }
-        .profile-location {
-          display: flex;
-          align-items: center;
-          margin-bottom: 6px;
-        }
-        .profile-location-text {
-          font-size: 14px;
-          font-weight: 500;
-          opacity: 0.95;
-          text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-          margin-right: 8px;
-          display: flex;
-          align-items: center;
-          line-height: 1.3;
-        }
-        .profile-location-text img {
-          margin-right: 6px;
-        }
-        .verification-status {
-          margin-top: 6px;
-        }
-        .status-badge {
-          display: inline-flex;
-          align-items: center;
-          padding: 4px 10px;
-          border-radius: 16px;
-          font-size: 12px;
-          font-weight: 600;
-          text-shadow: none;
-        }
-        .status-verified {
-          background: rgba(76, 175, 80, 0.9);
-          color: #fff;
-        }
-        .status-pending {
-          background: rgba(255, 107, 53, 0.9);
-          color: #fff;
-        }
-
-        /* Content Section */
-        .content-section {
-          padding: 24px 16px 0;
-          max-width: 100%;
-          margin: 0 auto;
-          width: 100%;
-        }
-        .section-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 20px;
-          padding: 0;
-        }
-        .section-title {
-          color: #1a1a1a;
-          font-size: 18px;
-          font-weight: 700;
-        }
-        .add-button-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 6px;
-          min-height: 48px;
-          min-width: 48px;
-        }
-        .warning-text {
-          font-size: 10px;
-          color: #FF6B35;
-          font-weight: 600;
-          text-align: center;
-          max-width: 110px;
-          line-height: 1.3;
-        }
-        .publications-add {
-          width: 48px;
-          height: 48px;
-          min-width: 48px;
-          min-height: 48px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #009cb7 0%, #007a8f 100%);
-          color: #fff;
-          font-size: 28px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          font-weight: 400;
-          transition: all 0.2s ease;
-          box-shadow: 0 4px 12px rgba(0, 156, 183, 0.3);
-          border: none;
-          padding : 0;
-        }
-        .publications-add.disabled {
-          background: #ccc;
-          cursor: not-allowed;
-          box-shadow: none;
-          opacity: 0.6;
-        }
-        .publications-add:active:not(.disabled) {
-          transform: scale(0.95);
-        }
-
-        /* Posts Grid */
-        .posts-grid {
-          display: grid;
-          gap: 16px;
-        }
-        .post-card-container {
-          position: relative;
-          animation: fadeIn 0.3s ease-out forwards;
-          border-radius: 12px;
-          overflow: hidden;
-          transition: all 0.2s ease;
-        }
-        .post-card-container:active {
-          transform: scale(0.98);
-        }
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .post-card-container:nth-child(1) { animation-delay: 0.1s; }
-        .post-card-container:nth-child(2) { animation-delay: 0.2s; }
-        .post-card-container:nth-child(3) { animation-delay: 0.3s; }
-        .post-card-container:nth-child(4) { animation-delay: 0.4s; }
-        .post-card-container:nth-child(5) { animation-delay: 0.5s; }
-        .post-card-container:nth-child(n + 6) { animation-delay: 0.6s; }
-
-        .post-actions {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          display: flex;
-          gap: 8px;
-          z-index: 10;
-        }
-        .post-menu-btn {
-          background: rgba(255, 255, 255, 0.95);
-          border: none;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          min-width: 40px;
-          min-height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          padding: 0;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-        }
-        .post-menu-btn:active {
-          transform: scale(0.92);
-          background: #fff;
-        }
-
-        /* Loading and Empty States */
-        .loading-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          padding: 40px 16px;
-        }
-        .loading-spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid #f3f3f3;
-          border-top: 3px solid #009cb7;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .empty-state {
-          text-align: center;
-          padding: 48px 20px;
-          background: #fff;
-          border-radius: 12px;
-          margin-top: 8px;
-        }
-        .empty-state-icon {
-          font-size: 56px;
-          margin-bottom: 12px;
-          opacity: 0.5;
-        }
-        .empty-state-title {
-          font-size: 18px;
-          font-weight: 700;
-          margin-bottom: 8px;
-          color: #333;
-        }
-        .empty-state-subtitle {
-          font-size: 14px;
-          color: #666;
-          line-height: 1.5;
-        }
-        .modal-form-label {
-          font-weight: 600;
-          margin-bottom: 8px;
-          color: #222;
-          font-size: 14px;
-        }
-        .modal-form-input, .modal-form-select, .modal-form-textarea {
-          width: 100%;
-          padding: 14px;
-          border-radius: 12px;
-          border: 1.5px solid #e0e0e0;
-          background: #fff;
-          font-size: 16px;
-          color: #222;
-          margin-bottom: 16px;
-          box-sizing: border-box;
-          transition: border-color 0.2s;
-        }
-        .modal-form-input:focus, .modal-form-select:focus, .modal-form-textarea:focus {
-          outline: none;
-          border-color: #009cb7;
-        }
-        .modal-form-textarea {
-          min-height: 100px;
-          resize: vertical;
-          font-family: inherit;
-        }
-        .modal-form-img-preview {
-          width: 100%;
-          max-width: 100%;
-          border-radius: 12px;
-          margin-bottom: 12px;
-        }
-        .modal-btn-row {
-          display: flex;
-          justify-content: center;
-          gap: 12px;
-          margin-top: 12px;
-        }
-        .modal-btn {
-          padding: 16px 24px;
-          border-radius: 12px;
-          border: none;
-          font-weight: 700;
-          font-size: 15px;
-          cursor: pointer;
-          width: 50%;
-          transition: all 0.2s;
-        }
-        .modal-btn:active {
-          transform: scale(0.97);
-        }
-        .modal-btn.save {
-          background: #009cb7;
-          color: #fff;
-        }
-        .modal-btn.cancel {
-          background: #f5f5f5;
-          color: #666;
-        }
-        .modal-btn.delete {
-          background: #FF4B4B;
-          color: #fff;
-        }
-        .modal-buttons {
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-        }
-      `}</style>
       <div className="my-page-container">
         <TopNavBar
           title="Ma page"
@@ -1252,44 +804,18 @@ const MyPage: React.FC<MyPageProps> = ({
           {/* Banner Section */}
           <div
             className="banner-container"
-            style={{
-              background: banner
-                ? `url(${normalizeImageUrl(banner)}) center/cover no-repeat`
-                : 'linear-gradient(135deg, #00B2D6 0%, #009CB7 100%)'
-            }}
-            onLoad={() => console.log("🎨 Banner rendered:", { originalBanner: banner, normalizedBanner: normalizeImageUrl(banner) })}
+            style={
+              banner
+                ? { backgroundImage: `url(${normalizeImageUrl(banner)})` }
+                : undefined
+            }
           >
             <div className="banner-overlay" />
 
             {fetchingPageData && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                  background: "rgba(255, 255, 255, 0.9)",
-                  borderRadius: "12px",
-                  padding: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                  zIndex: 5,
-                }}
-              >
-                <div
-                  style={{
-                    width: "20px",
-                    height: "20px",
-                    border: "2px solid #e0e0e0",
-                    borderTop: "2px solid #00B2D6",
-                    borderRadius: "50%",
-                    animation: "spin 1s linear infinite",
-                  }}
-                />
-                <span style={{ fontSize: "14px", color: "#666" }}>
-                  Chargement des informations...
-                </span>
+              <div className="banner-loading">
+                <span className="af-spinner" aria-hidden="true" />
+                Chargement des informations…
               </div>
             )}
 
@@ -1324,13 +850,9 @@ const MyPage: React.FC<MyPageProps> = ({
                 <span className="profile-location-text">
                   <img
                     src="/icons/Location.svg"
-                    alt="location"
-                    style={{
-                      width: 14,
-                      height: 14,
-                      opacity: 0.9,
-                      filter: "brightness(0) invert(1)",
-                    }}
+                    alt=""
+                    aria-hidden="true"
+                    className="profile-location-pin"
                   />
                   {producerPageData?.address ||
                     userData?.page?.address ||
@@ -1348,11 +870,11 @@ const MyPage: React.FC<MyPageProps> = ({
                 <div className="verification-status">
                   {userData?.is_verified ? (
                     <span className="status-badge status-verified">
-                      ✅ Compte vérifié
+                      Compte vérifié
                     </span>
                   ) : (
                     <span className="status-badge status-pending">
-                      ⏳ En attente de vérification
+                      En attente de vérification
                     </span>
                   )}
                 </div>
@@ -1360,45 +882,16 @@ const MyPage: React.FC<MyPageProps> = ({
             </div>
           </div>
 
-          {/* Page Validation Warning */}
-          {userData?.userRole === "producteur" && producerPageData && !producerPageData.is_validated && (
-            <div
-              style={{
-                backgroundColor: "#FFF3CD",
-                border: "1px solid #FFC107",
-                borderRadius: 12,
-                padding: "16px",
-                margin: "16px 16px 0 16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  color: "#856404",
-                }}
-              >
-                <span>⚠️</span>
-                <span>Page en attente de validation</span>
+          {userData?.userRole === "producteur" &&
+            producerPageData &&
+            !producerPageData.is_validated && (
+              <div className="my-page-notice">
+                <Banner tone="warning" title="Page en attente de validation">
+                  Nos équipes vérifient vos informations. Vos publications
+                  deviendront visibles par les clients dès la validation.
+                </Banner>
               </div>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  color: "#856404",
-                  lineHeight: 1.5,
-                }}
-              >
-                Les administrateurs d'Autofish vont vérifier que toutes vos informations sont correctes avant que vos publications soient disponibles pour les consommateurs.
-              </p>
-            </div>
-          )}
+            )}
 
           {/* Content Section */}
           <div className="content-section">
@@ -1407,9 +900,9 @@ const MyPage: React.FC<MyPageProps> = ({
               {userData?.userRole === "producteur" && (
                 <div className="add-button-container">
                   {!userData?.is_verified && (
-                    <div className="warning-text">
-                      ⚠️ Compte en attente de vérification
-                    </div>
+                    <span className="warning-text">
+                      Compte en attente de vérification
+                    </span>
                   )}
                   <button
                     className={`publications-add ${
@@ -1430,7 +923,20 @@ const MyPage: React.FC<MyPageProps> = ({
               </div>
             ) : posts.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-state-icon">📝</div>
+                <div className="empty-state-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--brand-700)"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 4.8h9l5 5v9.4a.8.8 0 0 1-.8.8H5a.8.8 0 0 1-.8-.8V5.6A.8.8 0 0 1 5 4.8z" />
+                    <path d="M13.6 4.9v5h5M8.4 13.4h7.2M8.4 16.6h4.6" />
+                  </svg>
+                </div>
                 <div className="empty-state-title">Aucune publication</div>
                 <div className="empty-state-subtitle">
                   Vous n'avez pas encore publié de contenu.
@@ -1443,23 +949,9 @@ const MyPage: React.FC<MyPageProps> = ({
                 {posts.map((post) => (
                   <div key={post.id} className="post-card-container">
                     {!post.willAppearInFeed && (
-                      <div
-                        style={{
-                          backgroundColor: "#FFF3CD",
-                          border: "1px solid #FFC107",
-                          borderRadius: "8px 8px 0 0",
-                          padding: "8px 12px",
-                          fontSize: 12,
-                          color: "#856404",
-                          fontWeight: 600,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
-                        }}
-                      >
-                        <span>⚠️</span>
-                        <span>Page non validée - Publication non visible publiquement</span>
-                      </div>
+                      <p className="post-card-flag">
+                        Page non validée — cette publication reste privée.
+                      </p>
                     )}
                     <PostCard
                       id={post.id}
@@ -1488,7 +980,7 @@ const MyPage: React.FC<MyPageProps> = ({
                         <img
                           src={editIconBlack}
                           alt="edit"
-                          style={{ width: 20, height: 20, opacity: 0.7 }}
+                          className="post-menu-btn__icon"
                         />
                       </button>
                       <button
@@ -1499,7 +991,7 @@ const MyPage: React.FC<MyPageProps> = ({
                         <img
                           src="/icons/delete-icon.svg"
                           alt="delete"
-                          style={{ width: 20, height: 20, opacity: 0.7 }}
+                          className="post-menu-btn__icon"
                         />
                       </button>
                     </div>

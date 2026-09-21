@@ -1,0 +1,67 @@
+/* ==========================================================================
+   Verification success dialog
+   ========================================================================== */
+
+.verif-modal {
+  text-align: center;
+}
+
+.verif-modal__badge {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto var(--space-7);
+  border-radius: var(--radius-circle);
+  background: var(--success-soft);
+  /* One authored moment: the badge settles in, the rest of the dialog does
+     not compete with it. */
+  animation: verif-pop var(--dur-slow) var(--ease-out) both;
+}
+
+.verif-modal__badge svg {
+  width: 36px;
+  height: 36px;
+}
+
+.verif-modal__list {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
+  padding: var(--space-6);
+  background: var(--success-soft);
+  border-radius: var(--radius-md);
+  text-align: start;
+}
+
+.verif-modal__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: var(--text-base);
+  line-height: var(--leading-snug);
+  color: var(--success-600);
+}
+
+.verif-modal__check {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-circle);
+  background: var(--success-500);
+  color: #fff;
+}
+
+.verif-modal__check svg {
+  width: 11px;
+  height: 11px;
+}
+
+@keyframes verif-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+}

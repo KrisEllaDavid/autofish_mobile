@@ -1,3 +1,4 @@
+import "./ErrorBoundary.css";
 import { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
@@ -29,43 +30,38 @@ class ErrorBoundary extends Component<Props, State> {
       // Render custom fallback UI or default error message
       return (
         this.props.fallback || (
-          <div
-            style={{
-              minHeight: "100vh",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "2rem",
-              background: "#fff",
-              color: "#333",
-              textAlign: "center",
-            }}
-          >
-            <h2 style={{ color: "#e74c3c", marginBottom: "1rem" }}>
-              Oops! Quelque chose s'est mal passé
+          <div className="error-boundary">
+            <div className="error-boundary__icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--danger-600)"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 3.8 21 19.2H3z" />
+                <path d="M12 10v4M12 16.8v.2" />
+              </svg>
+            </div>
+
+            <h2 className="error-boundary__title">
+              Une erreur est survenue
             </h2>
-            <p style={{ marginBottom: "1.5rem", color: "#666" }}>
-              Une erreur inattendue s'est produite. Veuillez rafraîchir la page.
+            <p className="error-boundary__text">
+              L&apos;application a rencontré un problème inattendu. Revenez à
+              l&apos;accueil pour reprendre.
             </p>
+
             <button
+              type="button"
+              className="af-btn af-btn--primary af-btn--lg"
               onClick={() => {
-                // Reset error state and go to home
                 this.setState({ hasError: false });
-                window.location.href = '/';
-              }}
-              style={{
-                background: "#00B2D6",
-                color: "white",
-                border: "none",
-                padding: "12px 24px",
-                borderRadius: "8px",
-                fontSize: "16px",
-                cursor: "pointer",
-                fontWeight: "600",
+                window.location.href = "/";
               }}
             >
-              Retour à l'accueil
+              Retour à l&apos;accueil
             </button>
           </div>
         )

@@ -1,90 +1,51 @@
-import React from 'react';
+import React from "react";
+import "./PullToRefresh.css";
 
 interface PullToRefreshIndicatorProps {
   show: boolean;
   text: string;
+  /** 0–1, how far the gesture has travelled toward the release threshold. */
   opacity: number;
   isRefreshing: boolean;
 }
 
+/**
+ * Pull-to-refresh affordance.
+ *
+ * The ring fills as the finger travels, so the user can see the threshold
+ * approaching rather than guessing when to let go.
+ */
 const PullToRefreshIndicator: React.FC<PullToRefreshIndicatorProps> = ({
   show,
   text,
   opacity,
-  isRefreshing
+  isRefreshing,
 }) => {
   if (!show) return null;
 
   return (
     <div
-      style={{
-        position: 'absolute',
-        top: '-60px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        padding: '12px 20px',
-        background: 'rgba(255, 255, 255, 0.95)',
-        borderRadius: '20px',
-        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
-        opacity: opacity,
-        transition: 'opacity 0.2s ease',
-        fontSize: '14px',
-        color: '#666',
-        fontWeight: '500',
-        zIndex: 1000,
-        backdropFilter: 'blur(10px)',
-      }}
+      className="ptr"
+      role="status"
+      aria-live="polite"
+      style={{ opacity }}
     >
       {isRefreshing ? (
-        <div
-          style={{
-            width: '16px',
-            height: '16px',
-            border: '2px solid #e0e0e0',
-            borderTop: '2px solid #00B2D6',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }}
-        />
+        <span className="af-spinner ptr__spinner" aria-hidden="true" />
       ) : (
-        <div
-          style={{
-            width: '16px',
-            height: '16px',
-            borderRadius: '50%',
-            background: `conic-gradient(#00B2D6 ${opacity * 360}deg, #e0e0e0 0deg)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div
-            style={{
-              width: '8px',
-              height: '8px',
-              background: 'white',
-              borderRadius: '50%',
-            }}
-          />
-        </div>
+        <span
+          className="ptr__progress"
+          aria-hidden="true"
+          style={
+            {
+              "--ptr-angle": `${Math.min(opacity, 1) * 360}deg`,
+            } as React.CSSProperties
+          }
+        />
       )}
       <span>{text}</span>
-      
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
 
 export default PullToRefreshIndicator;
-
-
-

@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "react-toastify";
 import Modal from "./Modal";
-import { normalizeImageUrl } from "../utils/imageUtils";
+import { Avatar, Banner, Button, Chip } from "./ui";
+import "./AccountMenu.css";
 
 interface AccountMenuProps {
   open: boolean;
@@ -11,7 +12,8 @@ interface AccountMenuProps {
   onChangePassword?: () => void;
 }
 
-const mainBlue = "#00B2D6";
+const MENU_WIDTH = 268;
+const EDGE_GAP = 12;
 
 const AccountMenu: React.FC<AccountMenuProps> = ({
   open,
@@ -23,279 +25,199 @@ const AccountMenu: React.FC<AccountMenuProps> = ({
   const { userData, logout } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(
+    null
+  );
 
-  // Close on click outside
+  // Measured before paint so the menu never appears in the wrong place for a
+  // frame, and clamped to the viewport so it cannot hang off a narrow screen.
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current) return;
+
+    const place = () => {
+      const rect = anchorRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const maxLeft = window.innerWidth - MENU_WIDTH - EDGE_GAP;
+      setPosition({
+        top: rect.bottom + 8,
+        left: Math.max(EDGE_GAP, Math.min(rect.right - MENU_WIDTH, maxLeft)),
+      });
+    };
+
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [open, anchorRef]);
+
   useEffect(() => {
     if (!open) return;
-    const handleClick = (e: MouseEvent) => {
+
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node;
       if (
-        menuRef.current &&
-        !menuRef.current.contains(e.target as Node) &&
-        (!anchorRef.current || !anchorRef.current.contains(e.target as Node))
+        !menuRef.current?.contains(target) &&
+        !anchorRef.current?.contains(target)
       ) {
         onClose();
       }
     };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown, {
+      passive: true,
+    });
+    document.addEventListener("keydown", handleKey);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [open, onClose, anchorRef]);
 
   const handleLogout = () => {
     onClose();
-    toast.info("Déconnexion en cours...");
-    setTimeout(() => {
-      logout();
-    }, 500);
+    toast.info("Déconnexion…");
+    setTimeout(() => logout(), 500);
   };
 
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
-      // Import API client dynamically to avoid circular dependencies
       const { apiClient } = await import("../services/api");
-
       await apiClient.deleteAccount();
 
-      toast.success("Votre compte a été supprimé avec succès");
+      toast.success("Votre compte a été supprimé.");
       setShowDeleteModal(false);
       onClose();
-
-      // Logout after successful deletion
-      setTimeout(() => {
-        logout();
-      }, 1000);
+      setTimeout(() => logout(), 1000);
     } catch (error) {
-      console.error("Error deleting account:", error);
-
-      // Show specific error message if available
-      let errorMessage = "Erreur lors de la suppression du compte. Veuillez réessayer.";
-      if (error && typeof error === 'object' && 'message' in error) {
-        errorMessage = `Erreur: ${(error as { message: string }).message}`;
-      } else if (error && typeof error === 'object' && 'error' in error) {
-        errorMessage = `Erreur: ${(error as { error: string }).error}`;
+      let message = "Le compte n'a pas pu être supprimé. Réessayez.";
+      if (error && typeof error === "object") {
+        if ("message" in error) message = (error as { message: string }).message;
+        else if ("error" in error) message = (error as { error: string }).error;
       }
-
-      toast.error(errorMessage, {
-        autoClose: 5000
-      });
+      toast.error(message, { autoClose: 5000 });
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Positioning: below anchor
-  const getMenuStyle = (): React.CSSProperties => {
-    if (!anchorRef.current) return { display: "none" };
-    const rect = anchorRef.current.getBoundingClientRect();
-    return {
-      position: "fixed",
-      top: rect.bottom + 8,
-      left: rect.right - 260, // right-align
-      zIndex: 2000,
-      minWidth: 260,
-      maxWidth: 320,
-      boxShadow: "0 4px 24px rgba(0,0,0,0.13)",
-      borderRadius: 18,
-      background: "#fff",
-      padding: 0,
-      animation: open ? "fadeScaleIn 0.22s cubic-bezier(.4,0,.2,1)" : undefined,
-      opacity: open ? 1 : 0,
-      pointerEvents: open ? "auto" : "none",
-      transition: "opacity 0.18s cubic-bezier(.4,0,.2,1)",
-    };
-  };
+  const roleLabel = userData?.userRole
+    ? userData.userRole.charAt(0).toUpperCase() + userData.userRole.slice(1)
+    : "Client";
 
   return (
     <>
-      <style>{`
-        @keyframes fadeScaleIn {
-          from { opacity: 0; transform: scale(0.95) translateY(-10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-      `}</style>
-      {open && (
-        <div ref={menuRef} style={getMenuStyle()}>
-          <div style={{ padding: 20, borderBottom: "1px solid #f0f0f0" }}>
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 10 }}>
-              Mon compte
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <img
-                src={normalizeImageUrl(userData?.avatar) || "/icons/autofish_blue_logo.svg"}
-                alt={userData?.name}
-                style={{
-                  width: 54,
-                  height: 54,
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  marginRight: 14,
-                }}
-              />
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 15, color: "black" }}>
-                  {userData?.name}
-                </div>
-                <div style={{ color: "#888", fontSize: 13 }}>
-                  {userData?.email || "-"}
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: 10,
-              }}
-            >
-              <span
-                style={{
-                  background: mainBlue,
-                  color: "#fff",
-                  borderRadius: 8,
-                  padding: "4px 24px",
-                  fontWeight: 700,
-                  fontSize: 15,
-                  letterSpacing: 0.2,
-                }}
-              >
-                {userData?.userRole
-                  ? userData.userRole.charAt(0).toUpperCase() +
-                    userData.userRole.slice(1)
-                  : "Client"}
-              </span>
+      {open && position && (
+        <div
+          ref={menuRef}
+          className="af-menu account-menu"
+          role="menu"
+          aria-label="Mon compte"
+          style={{
+            position: "fixed",
+            top: position.top,
+            left: position.left,
+            width: MENU_WIDTH,
+          }}
+        >
+          <div className="account-menu__identity">
+            <Avatar
+              src={userData?.avatar}
+              name={userData?.name}
+              size="lg"
+              alt=""
+            />
+            <div className="account-menu__details">
+              <p className="account-menu__name">{userData?.name}</p>
+              <p className="account-menu__email">{userData?.email}</p>
+              <Chip as="span" tone="brand" className="account-menu__role">
+                {roleLabel}
+              </Chip>
             </div>
           </div>
-          <div style={{ padding: 18 }}>
-            <button
-              style={{
-                width: "100%",
-                background: "none",
-                border: "none",
-                color: mainBlue,
-                fontWeight: 600,
-                fontSize: 15,
-                marginBottom: 10,
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-              onClick={() => {
-                onClose();
-                if (onChangePassword) {
-                  onChangePassword();
-                }
-              }}
-            >
-              Modifier mon mot de passe
-            </button>
-            <button
-              style={{
-                width: "100%",
-                background: "none",
-                border: "none",
-                color: mainBlue,
-                fontWeight: 600,
-                fontSize: 15,
-                marginBottom: 10,
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-              onClick={() => {
-                setShowDeleteModal(true);
-                onClose();
-              }}
-            >
-              Supprimer mon compte
-            </button>
-            <button
-              style={{
-                width: "100%",
-                background: "none",
-                border: "none",
-                color: "#e74c3c",
-                fontWeight: 600,
-                fontSize: 15,
-                cursor: "pointer",
-                textAlign: "left",
-              }}
-              onClick={handleLogout}
-            >
-              Déconnexion
-            </button>
-          </div>
+
+          <div className="af-menu__separator" />
+
+          <button
+            type="button"
+            role="menuitem"
+            className="af-menu__item"
+            onClick={() => {
+              onClose();
+              onChangePassword?.();
+            }}
+          >
+            Modifier mon mot de passe
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            className="af-menu__item"
+            onClick={handleLogout}
+          >
+            Se déconnecter
+          </button>
+
+          <div className="af-menu__separator" />
+
+          <button
+            type="button"
+            role="menuitem"
+            className="af-menu__item af-menu__item--danger"
+            onClick={() => {
+              setShowDeleteModal(true);
+              onClose();
+            }}
+          >
+            Supprimer mon compte
+          </button>
         </div>
       )}
 
-      {/* Delete Account Confirmation Modal */}
       {showDeleteModal && (
         <Modal
           isOpen={showDeleteModal}
           onClose={() => !isDeleting && setShowDeleteModal(false)}
+          label="Supprimer mon compte"
         >
-          <div style={{ maxWidth: 400 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16, color: "#222", textAlign: "center" }}>
-              Supprimer mon compte
-            </h2>
-            <p style={{ marginBottom: 16, fontSize: 15, lineHeight: 1.6, color: "#555", textAlign: "center" }}>
-              Êtes-vous sûr de vouloir supprimer votre compte ?
-            </p>
-            <div style={{
-              padding: "16px",
-              background: "#fff3f3",
-              borderRadius: 12,
-              marginBottom: 24,
-              border: "1px solid #ffdbdb"
-            }}>
-              <p style={{ fontSize: 14, color: "#e74c3c", lineHeight: 1.6, margin: 0 }}>
-                <strong>⚠️ Cette action est irréversible.</strong><br />
-                Toutes vos données, y compris vos publications, messages et informations personnelles seront définitivement supprimées.
-              </p>
-            </div>
-            <div style={{ display: "flex", gap: 12 }}>
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                disabled={isDeleting}
-                style={{
-                  flex: 1,
-                  padding: "14px 20px",
-                  borderRadius: 12,
-                  border: "1.5px solid #ddd",
-                  background: "#fff",
-                  color: "#666",
-                  fontWeight: 600,
-                  fontSize: 15,
-                  cursor: isDeleting ? "not-allowed" : "pointer",
-                  opacity: isDeleting ? 0.5 : 1,
-                  transition: "all 0.2s",
-                }}
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                disabled={isDeleting}
-                style={{
-                  flex: 1,
-                  padding: "14px 20px",
-                  borderRadius: 12,
-                  border: "none",
-                  background: "#e74c3c",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 15,
-                  cursor: isDeleting ? "not-allowed" : "pointer",
-                  opacity: isDeleting ? 0.7 : 1,
-                  transition: "all 0.2s",
-                }}
-              >
-                {isDeleting ? "Suppression..." : "Supprimer définitivement"}
-              </button>
-            </div>
+          <h2 className="modal-title">Supprimer votre compte ?</h2>
+          <p className="modal-text">
+            Vos publications, vos messages et vos informations personnelles
+            seront définitivement effacés.
+          </p>
+
+          <Banner
+            tone="danger"
+            title="Cette action est irréversible"
+            style={{ marginTop: "var(--space-7)" }}
+          >
+            Aucune de ces données ne pourra être récupérée après la
+            suppression.
+          </Banner>
+
+          <div className="modal-actions">
+            <Button
+              variant="outline"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={isDeleting}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteAccount}
+              loading={isDeleting}
+              loadingLabel="Suppression…"
+            >
+              Supprimer
+            </Button>
           </div>
         </Modal>
       )}

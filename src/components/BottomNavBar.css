@@ -1,0 +1,247 @@
+/* ==========================================================================
+   Bottom navigation
+   The notched silhouette is drawn with a CSS mask on a plain element rather
+   than a fixed-width SVG, so the curve sits under the home button at any
+   screen width instead of stretching with the viewport.
+   ========================================================================== */
+
+.af-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-tabbar);
+  display: flex;
+  justify-content: center;
+  /* The bar itself is not a tap target; only its children are, so the feed
+     stays scrollable through the transparent area beside the notch. */
+  pointer-events: none;
+  padding-bottom: var(--safe-bottom);
+}
+
+.af-tabbar__inner {
+  position: relative;
+  width: 100%;
+  max-width: var(--content-max);
+  height: var(--tabbar-h);
+  pointer-events: auto;
+}
+
+/*
+  The surface. A radial mask cuts the notch; the element is otherwise a flat
+  white bar. `--notch-r` is the cut radius, `--notch-y` how far the cut centre
+  sits above the bar's top edge.
+*/
+.af-tabbar__surface {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-card);
+  box-shadow: 0 -1px 0 var(--border-subtle), 0 -8px 24px rgba(19, 32, 38, 0.06);
+
+  --notch-r: 42px;
+  --notch-y: 6px;
+
+  -webkit-mask: radial-gradient(
+      circle var(--notch-r) at 50% calc(-1 * var(--notch-y)),
+      transparent 99%,
+      #000 100%
+    )
+    50% 0 / 100% 100% no-repeat;
+  mask: radial-gradient(
+      circle var(--notch-r) at 50% calc(-1 * var(--notch-y)),
+      transparent 99%,
+      #000 100%
+    )
+    50% 0 / 100% 100% no-repeat;
+}
+
+/* A soft fade above the bar so feed content dissolves into it rather than
+   being cut by a hard edge. */
+.af-tabbar__veil {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 56px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(245, 247, 249, 0) 0%,
+    rgba(245, 247, 249, 0.72) 62%,
+    var(--surface-page) 100%
+  );
+}
+
+/* Two tab groups flanking the notch. */
+.af-tabbar__group {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.af-tabbar__group--start {
+  left: 0;
+  right: 50%;
+  margin-right: 46px;
+  padding-left: max(var(--space-2), var(--safe-left));
+}
+
+.af-tabbar__group--end {
+  left: 50%;
+  right: 0;
+  margin-left: 46px;
+  padding-right: max(var(--space-2), var(--safe-right));
+}
+
+.af-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding-top: var(--space-2);
+  color: var(--ink-500);
+  transition: color var(--dur-fast) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.af-tab__icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+.af-tab__icon img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.af-tab__label {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  line-height: 1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.af-tab:active .af-tab__icon {
+  transform: scale(0.88);
+}
+
+.af-tab--active {
+  color: var(--brand-700);
+}
+
+.af-tab__badge {
+  position: absolute;
+  top: -4px;
+  left: 56%;
+  transform: none;
+}
+
+/* The floating home button, centred in the notch. */
+.af-tabbar__home {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--tabbar-h) - 34px);
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: var(--radius-circle);
+  background: var(--ink-900);
+  box-shadow: 0 6px 16px rgba(19, 32, 38, 0.2), 0 2px 4px rgba(19, 32, 38, 0.12);
+  transition: transform var(--dur-fast) var(--ease-spring),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.af-tabbar__home img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.af-tabbar__home::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-circle);
+  border: 3px solid var(--brand-500);
+  opacity: 0;
+  transform: scale(0.86);
+  transition: opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-spring);
+}
+
+.af-tabbar__home--active {
+  background: var(--brand-700);
+  box-shadow: var(--shadow-brand);
+}
+
+.af-tabbar__home--active::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.af-tabbar__home:active {
+  transform: translateX(-50%) scale(0.92);
+}
+
+/* Small phones: shrink the notch and the button so five targets still fit. */
+@media (max-width: 360px) {
+  .af-tabbar__surface {
+    --notch-r: 37px;
+  }
+  .af-tabbar__group--start {
+    margin-right: 40px;
+  }
+  .af-tabbar__group--end {
+    margin-left: 40px;
+  }
+  .af-tabbar__home {
+    width: 54px;
+    height: 54px;
+    bottom: calc(var(--tabbar-h) - 30px);
+  }
+  .af-tabbar__home img {
+    width: 24px;
+    height: 24px;
+  }
+  .af-tab__label {
+    font-size: 10px;
+  }
+}
+
+/* Short landscape: labels cost more than they give back. */
+@media (orientation: landscape) and (max-height: 480px) {
+  .af-tab__label {
+    display: none;
+  }
+  .af-tab {
+    padding-top: 0;
+  }
+  .af-tabbar__home {
+    width: 52px;
+    height: 52px;
+    bottom: calc(var(--tabbar-h) - 26px);
+  }
+  .af-tabbar__surface {
+    --notch-r: 34px;
+  }
+}

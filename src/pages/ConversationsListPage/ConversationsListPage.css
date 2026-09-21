@@ -1,113 +1,138 @@
+/* ==========================================================================
+   Conversations list
+   ========================================================================== */
+
 .conversations-list-page {
-  min-height: 100vh;
-  background-color: #f8f9fa;
   display: flex;
   flex-direction: column;
-  font-family: Arial, sans-serif;
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--surface-page);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
 }
 
 .conversations-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-bottom: 80px;
-  background-color: #f8f9fa;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--header-total);
+  padding-bottom: var(--tabbar-clearance);
 }
 
 .conversations-loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 300px;
+  display: grid;
+  place-items: center;
+  min-height: 280px;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f0f0f0;
-  border-top-color: #00b2d6;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--brand-a20);
+  border-top-color: var(--brand-600);
+  border-radius: var(--radius-circle);
+  animation: af-spin 0.7s linear infinite;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* ── Search ──────────────────────────────────────────────────────────── */
 
-/* Search Bar */
 .search-container {
-  padding: 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #e8e8e8;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  padding: var(--space-5) var(--gutter);
+  background: linear-gradient(
+    to bottom,
+    var(--surface-page) 74%,
+    rgba(245, 247, 249, 0)
+  );
 }
 
 .search-input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
 }
 
 .search-icon {
   position: absolute;
-  left: 14px;
-  color: #a0a0a0;
+  left: var(--space-6);
+  display: flex;
+  color: var(--ink-400);
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  padding: 11px 14px 11px 42px;
-  border: 1px solid #e0e0e0;
-  border-radius: 20px;
-  background-color: #f7f7f7;
-  font-size: 14px;
-  font-family: Arial, sans-serif;
-  color: #333;
+  min-height: 46px;
+  padding: var(--space-4) var(--space-6) var(--space-4) var(--space-11);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  /* 16px floor keeps iOS from zooming the page on focus. */
+  font-size: var(--text-md);
+  color: var(--text-primary);
   outline: none;
-  transition: all 0.2s;
+  transition: box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .search-input:focus {
-  background-color: #ffffff;
-  border-color: #00b2d6;
+  box-shadow: var(--shadow-sm), inset 0 0 0 1.5px var(--brand-500),
+    0 0 0 4px var(--brand-a12);
 }
 
 .search-input::placeholder {
-  color: #a0a0a0;
-  font-family: Arial, sans-serif;
+  color: var(--text-placeholder);
 }
 
-/* Conversations List */
+/* ── List ────────────────────────────────────────────────────────────── */
+
 .conversations-list {
   flex: 1;
-  overflow-y: auto;
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: var(--space-2) var(--gutter) 0;
 }
 
 .conversation-item {
+  position: relative;
   display: flex;
   align-items: center;
-  padding: 14px 30px;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
+  gap: var(--space-5);
+  width: 100%;
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
   cursor: pointer;
-  transition: background-color 0.1s ease;
-  position: relative;
+  transition: background-color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
 }
 
 .conversation-item:active {
-  background-color: #f5f5f5;
+  transform: scale(0.99);
+  background: var(--ink-50);
+  box-shadow: none;
 }
 
 .conversation-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  overflow: hidden;
+  width: 50px;
+  height: 50px;
   flex-shrink: 0;
-  margin-right: 12px;
-  background: #e0e0e0;
+  border-radius: var(--radius-circle);
+  overflow: hidden;
+  background: var(--ink-100);
 }
 
 .conversation-avatar img {
@@ -117,112 +142,115 @@
 }
 
 .avatar-initials {
+  display: grid;
+  place-items: center;
   width: 100%;
   height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #00b2d6 0%, #0099bb 100%);
-  color: white;
-  font-weight: 600;
-  font-size: 20px;
+  background: var(--brand-a12);
+  color: var(--brand-800);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
 }
 
 .conversation-details {
   flex: 1;
   min-width: 0;
-  margin-right: 8px;
 }
 
 .conversation-header {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
 }
 
 .conversation-name {
-  font-size: 15px;
-  font-weight: 600;
-  font-family: Arial, sans-serif;
-  color: #000000;
-  margin: 0;
-  white-space: nowrap;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .conversation-time {
-  font-size: 11px;
-  font-family: Arial, sans-serif;
-  color: #8e8e93;
-  white-space: nowrap;
-  margin-left: 8px;
   flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+  white-space: nowrap;
 }
 
 .conversation-preview {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--space-4);
 }
 
 .conversation-message {
-  font-size: 13px;
-  font-family: Arial, sans-serif;
-  color: #8e8e93;
-  margin: 0;
-  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
+  white-space: nowrap;
 }
 
 .unread-count {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
   min-width: 20px;
   height: 20px;
-  padding: 0;
-  border-radius: 50%;
-  background-color: #00b2d6;
-  flex-shrink: 0;
-  margin-left: 8px;
-  text-align: center;
+  padding-inline: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-brand-strong);
+  color: var(--text-on-brand);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* A row with unread messages promotes its name and preview to full weight,
+   so the list can be scanned without reading every line. */
+.conversation-item:has(.unread-count) .conversation-name,
+.conversation-item:has(.unread-count) .conversation-message {
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
 }
 
 .conversation-indicator {
-  flex-shrink: 0;
-  color: #c7c7cc;
   display: flex;
-  align-items: center;
-  margin-left: 4px;
+  flex-shrink: 0;
+  color: var(--ink-300);
 }
 
-/* Delete Button */
+/* ── Delete ──────────────────────────────────────────────────────────── */
+
 .delete-conversation-button {
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border: none;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius-circle);
   background: transparent;
-  color: #ff3b30;
+  color: var(--danger-500);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s;
-  padding: 0;
-  margin-left: 8px;
-}
-
-.delete-conversation-button:hover {
-  background-color: #fff5f5;
+  transition: background-color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
 }
 
 .delete-conversation-button:active {
   transform: scale(0.9);
-  background-color: #ffe5e5;
+  background: var(--danger-soft);
 }
 
 .delete-conversation-button:disabled {
@@ -230,56 +258,58 @@
   opacity: 0.5;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .delete-conversation-button:hover {
+    background: var(--danger-soft);
+  }
+}
+
 .delete-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid #ffcccc;
-  border-top-color: #ff3b30;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  border: 2px solid var(--danger-soft);
+  border-top-color: var(--danger-500);
+  border-radius: var(--radius-circle);
+  animation: af-spin 0.8s linear infinite;
 }
 
-/* Empty State - Match My Account Page Style */
+/* ── Empty state ─────────────────────────────────────────────────────── */
+
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  max-width: 320px;
+  margin: var(--space-11) auto;
+  padding: var(--space-6);
   text-align: center;
-  max-width: 300px;
-  margin: 60px auto;
-  padding: 20px;
 }
 
 .empty-state-icon {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 24px auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 178, 214, 0.1);
-  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-circle);
+  background: var(--brand-a08);
 }
 
 .empty-state-icon img {
-  width: 40px;
-  height: 40px;
-  opacity: 0.6;
+  width: 34px;
+  height: 34px;
+  opacity: 0.75;
 }
 
 .empty-state h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 12px;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
 }
 
 .empty-state p {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.5;
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .conversations-content {
-    padding-bottom: 60px;
-  }
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
 }

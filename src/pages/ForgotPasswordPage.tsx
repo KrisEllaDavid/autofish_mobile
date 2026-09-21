@@ -1,81 +1,68 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import NavBar from "../components/NavBar";
+import { Button, TextField } from "../components/ui";
 import { apiClient } from "../services/api";
+import "./Auth.css";
 
 const autofishBlueLogo = "/icons/autofish_blue_logo.svg";
 const emailIcon = "/icons/Email.svg";
 const emailIconBlue = "/icons/Email_blue.svg";
-
-const getInputStyle = (hasContent: boolean): React.CSSProperties => ({
-  width: "100%",
-  padding: "16px 48px 16px 55px",
-  borderRadius: 15,
-  border: hasContent ? "1.2px solid #222" : "1.2px solid #e0e0e0",
-  background: "#fafbfc",
-  fontSize: 16,
-  color: "#222",
-  marginBottom: 12,
-  outline: "none",
-  fontFamily: "inherit",
-  boxSizing: "border-box",
-  fontWeight: 500,
-});
-
-const inputContainerStyle: React.CSSProperties = {
-  position: "relative",
-  width: "100%",
-  marginBottom: 12,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexDirection: "row",
-};
-
-const iconStyle: React.CSSProperties = {
-  position: "absolute",
-  left: 18,
-  top: "40%",
-  transform: "translateY(-50%)",
-  width: 22,
-  height: 22,
-  opacity: 0.6,
-};
 
 interface ForgotPasswordPageProps {
   onBack?: () => void;
   onSubmit?: () => void;
 }
 
-const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack, onSubmit }) => {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const MailSentIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="var(--brand-700)"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5z" />
+    <path d="m3.6 7 7.3 5.2a2 2 0 0 0 2.2 0L20.4 7" />
+  </svg>
+);
+
+const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({
+  onBack,
+  onSubmit,
+}) => {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [fieldError, setFieldError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email.trim()) {
-      toast.error("Veuillez entrer votre email");
+    const value = email.trim();
+    if (!value) {
+      setFieldError("Entrez votre email.");
+      return;
+    }
+    if (!EMAIL_RE.test(value)) {
+      setFieldError("Cet email ne semble pas valide.");
       return;
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      toast.error("Veuillez entrer un email valide");
-      return;
-    }
-
+    setFieldError("");
     setIsLoading(true);
 
     try {
-      await apiClient.forgotPassword(email.trim());
+      await apiClient.forgotPassword(value);
       setEmailSent(true);
-      toast.success("Un lien de réinitialisation a été envoyé à votre email");
     } catch (error: any) {
-      console.error("Error sending password reset email:", error);
-      toast.error(error?.message || "Erreur lors de l'envoi de l'email");
+      toast.error(
+        error?.message || "Envoi impossible. Réessayez dans un instant."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -83,220 +70,88 @@ const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onBack, onSubmi
 
   if (emailSent) {
     return (
-      <>
-        <style>{`
-          .fade-in-page {
-            opacity: 0;
-            animation: fadeInPage 0.5s ease-in forwards;
-          }
-          @keyframes fadeInPage {
-            to { opacity: 1; }
-          }
-        `}</style>
-        <div
-          className="fade-in-page"
-          style={{
-            minHeight: "100vh",
-            background: "#fff",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            paddingTop: 64,
-          }}
-        >
-          <NavBar title="Email envoyé" onBack={onBack} />
-          <div style={{ height: 16 }} />
-          <img
-            src={autofishBlueLogo}
-            alt="Autofish Logo"
-            style={{ width: 90, height: 90, margin: "18px 0 8px 0" }}
-          />
-          <div
-            style={{
-              fontSize: 26,
-              fontWeight: 700,
-              color: "#009CB7",
-              marginBottom: 10,
-              fontFamily: "Arial Rounded MT Bold",
-            }}
-          >
-            Email Envoyé !
+      <div className="auth-screen fade-in-page">
+        <NavBar title="Email envoyé" onBack={onBack} />
+
+        <div className="auth-body">
+          <div className="auth-heading auth-heading--center">
+            <div className="auth-plate">
+              <MailSentIcon />
+            </div>
+            <h1 className="auth-heading__title">Vérifiez votre boîte mail</h1>
+            <p className="auth-heading__text">
+              Un lien de réinitialisation vient d&apos;être envoyé à{" "}
+              <strong>{email}</strong>. Suivez les instructions du message pour
+              choisir un nouveau mot de passe.
+            </p>
           </div>
-          <div
-            style={{
-              fontSize: 16,
-              color: "#222",
-              marginBottom: 32,
-              textAlign: "center",
-              maxWidth: 340,
-              padding: "0 20px",
-              fontFamily: "Arial, sans-serif",
-              lineHeight: 1.5,
-            }}
-          >
-            Un lien de réinitialisation de mot de passe a été envoyé à
-            <br />
-            <strong>{email}</strong>
-            <br />
-            <br />
-            Vérifiez votre boîte mail et suivez les instructions pour réinitialiser votre mot de passe.
-          </div>
-          <button
-            onClick={onSubmit}
-            style={{
-              width: "90vw",
-              maxWidth: 340,
-              background: "#009CB7",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 18,
-              borderRadius: 15,
-              border: "none",
-              padding: "16px 0",
-              marginTop: 20,
-              cursor: "pointer",
-            }}
-          >
+
+          <Button size="lg" block onClick={onSubmit}>
             Entrer le code
-          </button>
-          <div style={{ marginTop: 18, fontSize: 15, color: "#b0b0b0" }}>
-            <span
-              onClick={onBack}
-              style={{
-                color: "#009CB7",
-                fontWeight: 600,
-                textDecoration: "none",
-                cursor: "pointer",
-              }}
-            >
+          </Button>
+
+          <p className="auth-footer auth-footer__spacer">
+            <button type="button" className="af-link" onClick={onBack}>
               Retour à la connexion
-            </span>
-          </div>
+            </button>
+          </p>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <style>{`
-        .fade-in-page {
-          opacity: 0;
-          animation: fadeInPage 0.5s ease-in forwards;
-        }
-        @keyframes fadeInPage {
-          to { opacity: 1; }
-        }
-        input::placeholder {
-          color: #222;
-          opacity: 0.3;
-        }
-      `}</style>
-      <div
-        className="fade-in-page"
-        style={{
-          minHeight: "100vh",
-          background: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          paddingTop: 64,
-        }}
-      >
-        <NavBar title="Mot de passe oublié" onBack={onBack} />
-        <div style={{ height: 16 }} />
-        <img
-          src={autofishBlueLogo}
-          alt="Autofish Logo"
-          style={{ width: 90, height: 90, margin: "18px 0 8px 0" }}
-        />
-        <div
-          style={{
-            fontSize: 26,
-            fontWeight: 700,
-            color: "#009CB7",
-            marginBottom: 10,
-            fontFamily: "Arial Rounded MT Bold",
-          }}
-        >
-          Mot de passe oublié?
+    <div className="auth-screen fade-in-page">
+      <NavBar title="Mot de passe oublié" onBack={onBack} />
+
+      <div className="auth-body">
+        <div className="auth-brand">
+          <img src={autofishBlueLogo} alt="" className="auth-brand__logo" />
+          <h1 className="auth-brand__name">Mot de passe oublié ?</h1>
+          <p className="auth-brand__tagline">
+            Entrez votre email et nous vous enverrons un lien pour le
+            réinitialiser.
+          </p>
         </div>
-        <div
-          style={{
-            fontSize: 16,
-            color: "#222",
-            marginBottom: 32,
-            textAlign: "center",
-            maxWidth: 320,
-            fontFamily: "Arial, sans-serif",
-          }}
-        >
-          Entrez votre email pour recevoir
-          <br />
-          un lien de réinitialisation
-        </div>
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            width: "90vw",
-            maxWidth: 340,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-          }}
-        >
-          <div style={inputContainerStyle}>
-            <span style={iconStyle}>
-              <img
-                src={email ? emailIconBlue : emailIcon}
-                alt="email"
-                style={{ width: 22, height: 22, opacity: email ? 1 : 0.6 }}
-              />
-            </span>
-            <input
-              type="email"
-              placeholder="Entrez votre email"
-              style={getInputStyle(!!email)}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-          </div>
-          <button
+
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <TextField
+            label="Email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            enterKeyHint="send"
+            placeholder="vous@exemple.com"
+            value={email}
+            error={fieldError}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (fieldError) setFieldError("");
+            }}
+            iconStart={<img src={email ? emailIconBlue : emailIcon} alt="" />}
+          />
+
+          <Button
             type="submit"
-            disabled={isLoading}
-            style={{
-              width: "100%",
-              background: isLoading ? "#ccc" : "#009CB7",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 18,
-              borderRadius: 15,
-              border: "none",
-              padding: "16px 0",
-              marginTop: 18,
-              cursor: isLoading ? "not-allowed" : "pointer",
-              opacity: isLoading ? 0.7 : 1,
-            }}
+            size="lg"
+            block
+            loading={isLoading}
+            loadingLabel="Envoi…"
+            className="auth-form__submit"
           >
-            {isLoading ? "Envoi en cours..." : "Envoyer le lien"}
-          </button>
+            Envoyer le lien
+          </Button>
         </form>
-        <div style={{ marginTop: 18, fontSize: 15, color: "#b0b0b0" }}>
-          <span
-            onClick={onBack}
-            style={{
-              color: "#009CB7",
-              fontWeight: 600,
-              textDecoration: "none",
-              cursor: "pointer",
-            }}
-          >
+
+        <p className="auth-footer auth-footer__spacer">
+          <button type="button" className="af-link" onClick={onBack}>
             Retour à la connexion
-          </span>
-        </div>
+          </button>
+        </p>
       </div>
-    </>
+    </div>
   );
 };
 

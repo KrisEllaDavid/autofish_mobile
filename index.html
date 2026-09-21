@@ -1,13 +1,62 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/icons/autofish_blue_logo 1.png" />
+    <link rel="apple-touch-icon" href="/icons/autofish_blue_logo 1.png" />
+
+    <!--
+      viewport-fit=cover       lets the app paint under the notch and home bar;
+                               without it every env(safe-area-inset-*) is 0px.
+      interactive-widget       makes the Android software keyboard shrink the
+        =resizes-content       layout viewport, so 100dvh and bottom-pinned
+                               composers react the way they do on iOS.
+      No user-scalable=no      — zoom stays available; input font size is 16px
+                               so iOS never auto-zooms on focus.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+
+    <!-- Status bar takes the colour at the very top of the page, per scheme. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#ffffff" />
+    <meta name="color-scheme" content="light" />
+
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="AutoFish" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta
+      name="description"
+      content="AutoFish Store — achetez et vendez du poisson frais directement auprès des producteurs."
+    />
+
     <title>AutoFish</title>
 
     <!-- Allow HTTP images from our image server to bypass mixed content blocking -->
     <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https: http://31.97.178.131 http://31.97.178.131:3001 blob:;">
+
+    <!-- The brand display face is used above the fold on every auth screen. -->
+    <link
+      rel="preload"
+      href="/Fonts/Arial-Rounded-MT-Bold-Bold.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+
+    <style>
+      /* Painted before the bundle parses, so the first frame is the app's
+         background rather than a white flash. */
+      html,
+      body {
+        margin: 0;
+        background-color: #f5f7f9;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

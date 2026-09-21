@@ -2,21 +2,8 @@ import React, { useState } from "react";
 import NavBar from "../components/NavBar";
 import CategoriesPage from "./CategoriesPage/CategoriesPage";
 import { useAuth } from "../context/AuthContext";
-
-const getInputStyle = (hasContent: boolean): React.CSSProperties => ({
-  width: "100%",
-  padding: "16px 18px",
-  borderRadius: 15,
-  border: hasContent ? "1.2px solid #222" : "1.2px solid #e0e0e0",
-  background: "#fafbfc",
-  fontSize: 16,
-  color: "#222",
-  marginBottom: 16,
-  outline: "none",
-  fontFamily: "inherit",
-  boxSizing: "border-box",
-  fontWeight: 500,
-});
+import { Button, TextField } from "../components/ui";
+import "./Flow.css";
 
 interface AddressPageProps {
   onBack: () => void;
@@ -30,10 +17,9 @@ const AddressPage: React.FC<AddressPageProps> = ({ onBack }) => {
   const isValid = address.trim().length > 0;
 
   const handleContinue = () => {
-    if (isValid) {
-      updateUserData({ address: address.trim() });
-      setGoToCategories(true);
-    }
+    if (!isValid) return;
+    updateUserData({ address: address.trim() });
+    setGoToCategories(true);
   };
 
   if (goToCategories) {
@@ -46,78 +32,43 @@ const AddressPage: React.FC<AddressPageProps> = ({ onBack }) => {
   }
 
   return (
-    <>
-      <style>{`
-        .fade-in-page {
-          opacity: 0;
-          animation: fadeInPage 0.5s ease-in forwards;
-        }
-        @keyframes fadeInPage {
-          to { opacity: 1; }
-        }
-        input::placeholder {
-          color: #b0b0b0;
-          opacity: 1;
-        }
-      `}</style>
-      <div
-        className="fade-in-page"
-        style={{
-          minHeight: "100vh",
-          background: "#fff",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          paddingTop: 10,
-          paddingBottom: 40,
-        }}
-      >
-        <NavBar title="Adresse complète" onBack={onBack} />
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 370,
-            margin: "0 auto",
-            padding: "0 16px",
-            boxSizing: "border-box",
-            marginTop: 60,
+    <div className="flow-screen fade-in-page">
+      <NavBar title="Adresse complète" onBack={onBack} />
+
+      <div className="flow-body">
+        <div className="flow-intro">
+          <h1 className="flow-intro__title">Où vous trouve-t-on ?</h1>
+          <p className="flow-intro__text">
+            Votre adresse complète aide les clients à organiser les
+            livraisons et les retraits.
+          </p>
+        </div>
+
+        <form
+          className="flow-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleContinue();
           }}
         >
-          <div style={{ fontSize: 15, color: "#222", marginBottom: 24 }}>
-            Entrez votre adresse complète pour faciliter les livraisons
-          </div>
-
-          <input
-            type="text"
-            placeholder="Adresse complète (quartier, rue, etc.)"
-            style={getInputStyle(!!address)}
+          <TextField
+            label="Adresse"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
+            placeholder="Quartier, rue, repère…"
+            autoComplete="street-address"
+            enterKeyHint="done"
+            hint="Par exemple : Akwa, rue Njo-Njo, face pharmacie du port."
           />
+        </form>
 
-          <div style={{ marginTop: 32 }}>
-            <button
-              onClick={handleContinue}
-              disabled={!isValid}
-              style={{
-                width: "100%",
-                background: isValid ? "#009CB7" : "#ccc",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 18,
-                borderRadius: 15,
-                border: "none",
-                padding: "16px 0",
-                cursor: isValid ? "pointer" : "not-allowed",
-                opacity: isValid ? 1 : 0.7,
-              }}
-            >
-              Continuer
-            </button>
-          </div>
+        <div className="flow-actions">
+          <Button size="lg" block disabled={!isValid} onClick={handleContinue}>
+            Continuer
+          </Button>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

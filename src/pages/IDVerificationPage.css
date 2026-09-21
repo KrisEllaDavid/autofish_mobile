@@ -1,0 +1,282 @@
+/* ==========================================================================
+   ID verification — two captures, then the camera surface.
+   ========================================================================== */
+
+.idv-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+.idv-card__label {
+  display: block;
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-secondary);
+  padding-inline-start: var(--space-1);
+}
+
+.idv-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  /* An ID card's own proportion, so the preview matches what was framed. */
+  aspect-ratio: 8 / 5;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface-field);
+  box-shadow: inset 0 0 0 1.5px var(--border-default);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+
+.idv-slot:active {
+  transform: scale(0.99);
+  box-shadow: inset 0 0 0 1.5px var(--brand-500);
+}
+
+/* Empty: a dashed outline reads as "something goes here", where a solid
+   border read as a finished field. */
+.idv-slot--empty {
+  border: 1.5px dashed var(--ink-300);
+  background: var(--ink-50);
+  box-shadow: none;
+}
+
+.idv-slot--empty:active {
+  border-color: var(--brand-500);
+  box-shadow: none;
+}
+
+.idv-slot__prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.idv-slot__prompt img {
+  width: 34px;
+  height: 34px;
+  opacity: 0.55;
+}
+
+.idv-slot__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.idv-slot__retake {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius-circle);
+  background: rgba(16, 22, 26, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out);
+}
+
+.idv-slot__retake svg {
+  width: 17px;
+  height: 17px;
+}
+
+.idv-slot__retake:active {
+  transform: scale(0.9);
+  background: rgba(16, 22, 26, 0.8);
+}
+
+/* A captured side gets a quiet confirmation rather than nothing. */
+.idv-slot__done {
+  position: absolute;
+  left: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: rgba(16, 22, 26, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.idv-slot__done svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ── Camera ──────────────────────────────────────────────────────────── */
+
+.idv-camera {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  flex-direction: column;
+  background: #000;
+}
+
+.idv-camera__bar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: calc(var(--space-5) + var(--safe-top)) var(--gutter) var(--space-5);
+  color: #fff;
+}
+
+.idv-camera__cancel {
+  min-height: var(--tap-min);
+  padding: var(--space-3) var(--space-4);
+  margin-inline-start: calc(var(--space-4) * -1);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: #fff;
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+}
+
+.idv-camera__title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+/* Balances the cancel button so the title stays centred. */
+.idv-camera__spacer {
+  width: 64px;
+}
+
+.idv-camera__stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: calc(var(--space-9) + var(--safe-bottom));
+}
+
+.idv-camera__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The framing guide, sized from the viewport so it fits every phone. */
+.id-frame {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  width: min(86vw, 360px);
+  aspect-ratio: 8 / 5;
+  transform: translate(-50%, -50%);
+  border: 2.5px dashed var(--brand-400);
+  border-radius: var(--radius-md);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.idv-camera__hint {
+  position: relative;
+  z-index: 11;
+  margin-bottom: var(--space-8);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-pill);
+  background: rgba(16, 22, 26, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.idv-camera__shutter {
+  position: relative;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: var(--radius-circle);
+  background: rgba(255, 255, 255, 0.24);
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+/* The inner disc is the button; the ring around it is the affordance. */
+.idv-camera__shutter::after {
+  content: "";
+  width: 58px;
+  height: 58px;
+  border-radius: var(--radius-circle);
+  background: #fff;
+  transition: transform var(--dur-press) var(--ease-out);
+}
+
+.idv-camera__shutter:active::after {
+  transform: scale(0.88);
+}
+
+.idv-camera__shutter:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.idv-camera__error {
+  position: relative;
+  z-index: 12;
+  margin: auto;
+  padding: var(--space-8) var(--gutter);
+  color: #fff;
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  text-align: center;
+}
+
+.flash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 1);
+  background: #fff;
+  pointer-events: none;
+  animation: flashAnim 0.18s linear;
+}
+
+@keyframes flashAnim {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+  }
+}

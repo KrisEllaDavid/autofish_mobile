@@ -218,7 +218,7 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
       />
 
       {/* Profile Content */}
-      <div className="profile-content" style={{ marginTop: '80px' }}>
+      <div className="profile-content">
         {/* Avatar Section */}
         <div className="profile-avatar-section">
           <div className="profile-avatar-container">
@@ -239,7 +239,7 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
               type="button"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <circle cx="10" cy="10" r="9" fill="#00b2d6"/>
+                <circle cx="10" cy="10" r="9" fill="var(--brand-500)"/>
                 <path d="M10 6.5v7M6.5 10h7" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </button>
@@ -271,7 +271,7 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
           <div className="profile-field">
             <div className="profile-field-icon">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M16 17v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 9a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 17v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M10 9a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <input
@@ -288,7 +288,7 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
               type="button"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M14.166 2.5a2.12 2.12 0 0 1 3 3L6.25 16.416l-4.167 1.25 1.25-4.167L14.166 2.5z" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14.166 2.5a2.12 2.12 0 0 1 3 3L6.25 16.416l-4.167 1.25 1.25-4.167L14.166 2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           </div>
@@ -297,7 +297,7 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
           <div className="profile-field">
             <div className="profile-field-icon">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M18.333 14.1v2.5a1.667 1.667 0 0 1-1.816 1.667 16.492 16.492 0 0 1-7.192-2.559 16.25 16.25 0 0 1-5-5A16.492 16.492 0 0 1 1.767 3.517 1.667 1.667 0 0 1 3.425 1.7h2.5a1.667 1.667 0 0 1 1.667 1.434c.105.792.3 1.567.583 2.316a1.667 1.667 0 0 1-.375 1.759l-1.058 1.058a13.333 13.333 0 0 0 5 5l1.058-1.058a1.667 1.667 0 0 1 1.759-.375c.749.283 1.524.478 2.316.583a1.667 1.667 0 0 1 1.434 1.692z" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18.333 14.1v2.5a1.667 1.667 0 0 1-1.816 1.667 16.492 16.492 0 0 1-7.192-2.559 16.25 16.25 0 0 1-5-5A16.492 16.492 0 0 1 1.767 3.517 1.667 1.667 0 0 1 3.425 1.7h2.5a1.667 1.667 0 0 1 1.667 1.434c.105.792.3 1.567.583 2.316a1.667 1.667 0 0 1-.375 1.759l-1.058 1.058a13.333 13.333 0 0 0 5 5l1.058-1.058a1.667 1.667 0 0 1 1.759-.375c.749.283 1.524.478 2.316.583a1.667 1.667 0 0 1 1.434 1.692z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <input
@@ -314,7 +314,7 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
               type="button"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M14.166 2.5a2.12 2.12 0 0 1 3 3L6.25 16.416l-4.167 1.25 1.25-4.167L14.166 2.5z" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14.166 2.5a2.12 2.12 0 0 1 3 3L6.25 16.416l-4.167 1.25 1.25-4.167L14.166 2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           </div>
@@ -323,8 +323,8 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
           <div className="profile-field">
             <div className="profile-field-icon">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M17.5 8.333c0 5.834-7.5 10-7.5 10s-7.5-4.166-7.5-10a7.5 7.5 0 1 1 15 0z" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="10" cy="8.333" r="2.5" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M17.5 8.333c0 5.834-7.5 10-7.5 10s-7.5-4.166-7.5-10a7.5 7.5 0 1 1 15 0z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="10" cy="8.333" r="2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <input
@@ -341,7 +341,7 @@ const MyAccountPage: React.FC<MyAccountPageProps> = ({
               type="button"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M14.166 2.5a2.12 2.12 0 0 1 3 3L6.25 16.416l-4.167 1.25 1.25-4.167L14.166 2.5z" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14.166 2.5a2.12 2.12 0 0 1 3 3L6.25 16.416l-4.167 1.25 1.25-4.167L14.166 2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
           </div>
