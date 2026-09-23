@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Ad-hoc debug/screenshot scripts — useful in the moment, never meant to ship
+shot*.mjs
+crop*.mjs
+/shots/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
