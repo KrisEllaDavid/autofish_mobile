@@ -1,0 +1,10 @@
+node_modules
+dist
+android
+ios
+.git
+.github
+shots
+*.log
+Dockerfile
+.dockerignore
